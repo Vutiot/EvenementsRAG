@@ -1,0 +1,2567 @@
+{
+  "phase": "phase2_hybrid_temporal",
+  "timestamp": "2025-12-31T14:36:55.323038",
+  "bm25_weight": 0.3,
+  "total_questions": 49,
+  "temporal_queries_detected": 12,
+  "questions": [
+    {
+      "question": "Who was a prominent Nazi official that supported the idea of concentrating Jews in a specific territory?",
+      "source_article": "New Order (Nazism)",
+      "source_chunk_id": "b3d3ff14-8663-d2bd-febf-cd22030e3ad8",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.2,
+        "ndcg_at_5": 0.38685280723454163,
+        "ndcg_at_10": 0.38685280723454163
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "775fcf25-bdcd-2bea-3982-d135eaf66e50",
+          "article_title": "Relations between Nazi Germany and the Arab world",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "bf007c09-6bcc-fe75-5e4c-3e215e1b4c0c",
+          "article_title": "Final Solution",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "e1c9b1eb-44c2-d8c7-4bb2-2f83c6866c99",
+          "article_title": "Jewish collaboration with Nazi Germany",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "6a5f59c3-ac6d-3b80-0140-0d7a2e6b9890",
+          "article_title": "Comparisons between Israel and Nazi Germany",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "b3d3ff14-8663-d2bd-febf-cd22030e3ad8",
+          "article_title": "New Order (Nazism)",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Which Nazi officials did Hitler collaborate with to design and construct neoclassical public buildings, and what notable structures did they create?",
+      "source_article": "Nazi Germany",
+      "source_chunk_id": "f99bc788-1bf7-2e36-ae16-aaa3ac19aa9b",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "f99bc788-1bf7-2e36-ae16-aaa3ac19aa9b",
+          "article_title": "Nazi Germany",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "764efd3e-e515-5065-3643-5a60dc9a8261",
+          "article_title": "Religion in Nazi Germany",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "cddfb653-4543-4d49-d21d-39ca03eb601b",
+          "article_title": "Wehrbauer",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "8427c49d-a25a-ff8d-509f-e42c820224ed",
+          "article_title": "Nazism",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "406a0317-6083-a101-f0c8-3f3c074521b4",
+          "article_title": "Anschluss",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How does the role of animals in World War II, as described in 'They Also Serve' by Dorothea St. H. Bourne, compare to the contributions highlighted in 'Dogs for Defense' by Fairfax D. Downey?",
+      "source_article": "Bibliography of World War II",
+      "source_chunk_id": "eaaef14b-c85e-a047-cc53-801b446809b6",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "cd2e6289-d668-7390-0362-a4c2b654063a",
+          "article_title": "Animal welfare in Nazi Germany",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "eaaef14b-c85e-a047-cc53-801b446809b6",
+          "article_title": "Bibliography of World War II",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "102981be-4873-6272-edff-370bcd3eadaa",
+          "article_title": "Bibliography of World War II",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "d486a7b3-7940-c11b-84c1-0226304c2d09",
+          "article_title": "Animal welfare in Nazi Germany",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "f8799942-7e3c-dd75-6847-203f36c36a53",
+          "article_title": "Syria\u2013Lebanon campaign",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did the military actions of the 12th Army Group contribute to Hitler's suicide on April 30?",
+      "source_article": "Western Allied invasion of Germany",
+      "source_chunk_id": "089bcc0d-7946-8daf-fec9-2c26d79a6ab5",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg_at_5": 0.5,
+        "ndcg_at_10": 0.5
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "e2d2bfb5-ca93-9af6-d89c-c72a3cbd4087",
+          "article_title": "Nazi Germany",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "16077886-6187-8b91-6898-5580ec5b8297",
+          "article_title": "Friedrich Paulus",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "089bcc0d-7946-8daf-fec9-2c26d79a6ab5",
+          "article_title": "Western Allied invasion of Germany",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "931345f3-cc0b-7d65-b435-47dd3e0737b4",
+          "article_title": "Battle of Berlin",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "b443deb5-59d2-1aeb-299f-be472e03b8ca",
+          "article_title": "Nazi Germany",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How many aircraft reached the target during the mission on 21 November 1944?",
+      "source_article": "1944 Hochdahl-Trills Handley Page Halifax shootdown",
+      "source_chunk_id": "30def58d-b2c1-7165-285f-a473b978565d",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "year",
+        "start_year": 1944,
+        "end_year": 1944
+      },
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 0.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 0.0,
+        "article_hit_at_10": 0.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "0a224ade-3f02-d8ce-3f42-96eca973a6cd",
+          "article_title": "Air warfare of World War II",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "e79c9c2b-0892-eb9b-1cb5-4eba16171386",
+          "article_title": "Bombing of South-East Asia (1944\u20131945)",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "d3c177b9-d77e-0077-72b2-5269ee391c01",
+          "article_title": "List of World War II battles",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "200006c8-d97a-59ac-1457-a48610002168",
+          "article_title": "Air raids on Japan",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "695d7af8-523f-1e10-8c13-76cfc1ff5a3c",
+          "article_title": "List of air operations during the Battle of Europe",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Who were Mary Jayne Gold's parents?",
+      "source_article": "Mary Jayne Gold",
+      "source_chunk_id": "5d0f429f-24cf-f7bb-c531-73627ee61a9b",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "5563eb89-3d70-c90f-6380-d56cc4541d7e",
+          "article_title": "Mary Jayne Gold",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "5d0f429f-24cf-f7bb-c531-73627ee61a9b",
+          "article_title": "Mary Jayne Gold",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "3a532000-b5a3-fc41-d072-2fa6ff542fd5",
+          "article_title": "Mary Jayne Gold",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "70e7ad8d-bb52-6ab3-fe54-78ec3bdd175d",
+          "article_title": "1943",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "8933e9ad-9775-e077-47db-1a8fa753df76",
+          "article_title": "Catholic resistance to Nazi Germany",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Which type of tanks were used to clear hardened Japanese positions at Iwo Jima and were equipped with flamethrowers?",
+      "source_article": "Battle of Iwo Jima",
+      "source_chunk_id": "ac842ab2-9752-e74d-7e53-7d7902d799c5",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "f5367ea8-5cd1-bd6e-cce1-3c0ca6be1ad3",
+          "article_title": "Battle of Iwo Jima",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "ac842ab2-9752-e74d-7e53-7d7902d799c5",
+          "article_title": "Battle of Iwo Jima",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "6ce8858d-104f-fe9a-a658-af4064bd475b",
+          "article_title": "Battle of Iwo Jima",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "355e4727-735d-985b-6f47-0386f543be45",
+          "article_title": "List of World War II infantry weapons",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "0c8634e5-b0a4-b380-a7ac-72b217e1c83f",
+          "article_title": "M3 Stuart",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did the Wannsee Conference, specifically the actions taken by Heydrich, reflect the pre-existing policies and decisions regarding the extermination of the Jews by the Nazi regime?",
+      "source_article": "Wannsee Conference",
+      "source_chunk_id": "ba5cb248-958c-a0a2-a3cd-c24b28395dc3",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "ba5cb248-958c-a0a2-a3cd-c24b28395dc3",
+          "article_title": "Wannsee Conference",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "358b1ee0-3ea9-2f36-2fd0-dde84b7a20e6",
+          "article_title": "Final Solution",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "3d1d848e-31cd-1616-5030-6f51e6cfc3f9",
+          "article_title": "Wannsee Conference",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "33ac635e-1a15-6e71-fa4c-7b04195927df",
+          "article_title": "Wannsee Conference",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "94afc676-b111-5af7-4bdc-b0d0918dfae4",
+          "article_title": "Wannsee Conference",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How was the M30 Cargo Carrier related to the 155 mm Gun Motor Carriage M12 in terms of their design and use?",
+      "source_article": "M3 Lee",
+      "source_chunk_id": "885f7861-5731-ca78-fdb0-e7abf62d67a1",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "885f7861-5731-ca78-fdb0-e7abf62d67a1",
+          "article_title": "M3 Lee",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "309f1e24-517e-a2e6-c3db-bcf2c2b08452",
+          "article_title": "M3 Lee",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "4cb878fa-543c-d70d-d815-b7cf2007b83f",
+          "article_title": "M3 Stuart",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "25538bc1-41af-9c01-db87-af6c9cd02aee",
+          "article_title": "M3 Stuart",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "2cb70a28-f0e2-4969-b24c-507ca413c8e3",
+          "article_title": "M3 Lee",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Which Norwegian entity contributed significantly to the fuel supply for the RAF during the Battle of Britain?",
+      "source_article": "Non-British personnel in the RAF during the Battle of Britain",
+      "source_chunk_id": "868cc794-fe2b-aebd-7cff-53a3c6193408",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "868cc794-fe2b-aebd-7cff-53a3c6193408",
+          "article_title": "Non-British personnel in the RAF during the Battle of Britain",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "cb7ca132-8a0d-676f-3a78-0776df9781ce",
+          "article_title": "German occupation of Norway",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "4e664680-3357-dc37-9c29-c621c9cd6ee7",
+          "article_title": "German occupation of Norway",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "726ac531-c133-b11f-6d87-ff7b7096d1de",
+          "article_title": "Norwegian resistance movement",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "d620fb02-04c1-89b6-4e61-d016a9a35ea0",
+          "article_title": "Aircraft of the Battle of Britain",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Who is the author of the book '607 Squadron: A Shade of Blue' that is mentioned in the bibliography?",
+      "source_article": "List of RAF aircrew in the Battle of Britain (O\u2013R)",
+      "source_chunk_id": "8cc73044-1483-f587-20dd-fad343c48e0d",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 0.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.14285714285714285,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.3333333333333333
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "d5070522-54be-36e9-1e4f-6059eb4ccb7f",
+          "article_title": "List of RAF aircrew in the Battle of Britain",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "fb04370a-f408-64d3-9361-a0b6602a02a5",
+          "article_title": "Bibliography of the Battle of Britain",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "3e789c34-854a-dace-a341-5f6fe338e502",
+          "article_title": "Battle of Britain",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "5c256ee9-6eb5-7980-321d-dcea145c708a",
+          "article_title": "Air warfare of World War II",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "f56d4ebb-2ddf-9dd4-79f7-7cc0fb424268",
+          "article_title": "Bibliography of World War II",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "When did Swedish Prime Minister Fredrik Reinfeldt officially apologize to the Baltic states for the extradition of Baltic soldiers?",
+      "source_article": "Swedish extradition of Baltic soldiers",
+      "source_chunk_id": "fe810470-5615-c7a6-3a6a-f7442ba2e599",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "35afc619-4ad9-03b9-3d05-fd8514402eb5",
+          "article_title": "Swedish extradition of Baltic soldiers",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "fe810470-5615-c7a6-3a6a-f7442ba2e599",
+          "article_title": "Swedish extradition of Baltic soldiers",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "7a0a5b9f-fc6a-4727-129d-ff4a252cbf8a",
+          "article_title": "Swedish extradition of Baltic soldiers",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "98442c0b-49f3-70e1-93be-8daedc0116db",
+          "article_title": "Sweden during World War II",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "6a2681e2-4ea6-8f40-6959-9d7ebf0afcc3",
+          "article_title": "Sweden during World War II",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "In what ways did Si Ali Sakkat and Khaled Abdul-Wahab's actions differ during the Holocaust, especially considering the duration and scale of their rescue efforts?",
+      "source_article": "Arab and Muslim rescue efforts during the Holocaust",
+      "source_chunk_id": "761d9e98-7979-985d-a14e-b8f6e00cfb45",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "761d9e98-7979-985d-a14e-b8f6e00cfb45",
+          "article_title": "Arab and Muslim rescue efforts during the Holocaust",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "491b01bd-9158-d9ff-ffaf-d27a5c765653",
+          "article_title": "The Holocaust and the Nakba",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "9058a02a-941a-2b50-529f-1dd0b0f1cd85",
+          "article_title": "Relations between Nazi Germany and the Arab world",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "e6964d3b-63ff-a618-e991-f94280abbb1b",
+          "article_title": "Righteous Among the Nations",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "cb190036-bec5-46c4-5c29-fb2aa19e1432",
+          "article_title": "The Holocaust and the Nakba",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did V\u00e4in\u00f6 Tanner's role as foreign minister relate to Erkko's diplomatic efforts regarding the Soviet Union during the start of the Winter War?",
+      "source_article": "Eljas Erkko",
+      "source_chunk_id": "06cbe958-b50d-cea5-29ae-bbe73815f427",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "06cbe958-b50d-cea5-29ae-bbe73815f427",
+          "article_title": "Eljas Erkko",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "317f9f5c-982e-f6ac-8e42-3eecbde51e19",
+          "article_title": "Winter War",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "ff197f56-fcbc-d6b0-7fd1-abf6d1a9237d",
+          "article_title": "Winter War",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "d50b1719-6aaa-4dc2-5e79-318e7fcbdcc5",
+          "article_title": "Germany\u2013Soviet Union relations, 1918\u20131941",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "801df032-b8d9-5755-e2c9-78ef9f2a86dd",
+          "article_title": "Winter War",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Compare the number of tank brigades between the Bryansk and Southwestern Fronts during the opening phase of the Case Blue offensive. Which front had more tank brigades and by how many?",
+      "source_article": "Case Blue",
+      "source_chunk_id": "14efc304-6a55-d0fc-32cf-bad2593e4f1b",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "14efc304-6a55-d0fc-32cf-bad2593e4f1b",
+          "article_title": "Case Blue",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "d5ade19a-09d3-97f7-a3c9-c158c5796987",
+          "article_title": "Strategic operations of the Red Army in World War II",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "947230af-fd50-baaa-f091-ecd5b358608c",
+          "article_title": "Battle of Kalach",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "0cb566d2-8946-7368-1525-9202028ce2ab",
+          "article_title": "Operation Husky order of battle",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "3759d42d-e514-2f6e-b7ea-9b2b1617f281",
+          "article_title": "Operation Compass",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "On what date did the Eighth Air Force conduct their first attack on Norway during Blitz Week?",
+      "source_article": "Blitz Week",
+      "source_chunk_id": "2dde5fee-f793-f544-1a1e-258fb258004a",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "2dde5fee-f793-f544-1a1e-258fb258004a",
+          "article_title": "Blitz Week",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "cb88977f-b992-bbc2-5c57-b7cae05d8462",
+          "article_title": "German occupation of Norway",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "902c1782-8eab-90f9-aeb8-209bf03632ce",
+          "article_title": "List of air operations during the Battle of Europe",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "29f469c7-9563-8009-90d4-d97f25137037",
+          "article_title": "List of air operations during the Battle of Europe",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "4e664680-3357-dc37-9c29-c621c9cd6ee7",
+          "article_title": "German occupation of Norway",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "What was the relationship between John C. Raaen Jr.'s role as Brigadier General and the establishment of the Aberdeen Research and Development Center (ARDC)?",
+      "source_article": "John C. Raaen Jr.",
+      "source_chunk_id": "baf73eea-b6c9-ced0-a471-49a019c4a659",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "b26f025b-7229-f4de-ad2b-db5dbba9c67e",
+          "article_title": "John C. Raaen Jr.",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "baf73eea-b6c9-ced0-a471-49a019c4a659",
+          "article_title": "John C. Raaen Jr.",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "0be32d2c-18f0-8b13-a5bd-80abe7356b59",
+          "article_title": "John C. Raaen Jr.",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "56543f34-9f4c-58a2-da2b-bd58467b097f",
+          "article_title": "John C. Raaen Jr.",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "1cc6bb74-3b47-bc2f-7a8a-5458ba8176f6",
+          "article_title": "John C. Raaen Jr.",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did the relationship between Major Ed Hardin and Captain Stu Hamilton change over the course of the film, specifically regarding Hamilton's marriage and his final mission?",
+      "source_article": "Fighter Squadron",
+      "source_chunk_id": "0f0eacd1-c356-3965-81ae-13234562025e",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "0f0eacd1-c356-3965-81ae-13234562025e",
+          "article_title": "Fighter Squadron",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "7a17c781-bfd4-e336-4605-ad6359f7b162",
+          "article_title": "The Great Escaper",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "74a82fd1-ae91-9d87-5276-75b4294d692f",
+          "article_title": "Ben Chifley",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "fcd23ca8-d55e-a1b1-2079-80a693a57686",
+          "article_title": "Haigerloch atomic pile",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "fde669b5-83a7-d2d4-20af-9d71ed463529",
+          "article_title": "The Pacific (miniseries)",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "What was the relationship between the British army, the police, and the protestors in Athens on December 3rd, 1944?",
+      "source_article": "Timeline of World War II (1944)",
+      "source_chunk_id": "fce5881c-9bce-81c4-e5d1-7b7e24357d5c",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "year",
+        "start_year": 1944,
+        "end_year": 1944
+      },
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 0.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.14285714285714285,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.3333333333333333
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "170bbfbd-3312-1352-b3ad-baffafd15881",
+          "article_title": "List of Greek Resistance organizations",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "d68dd724-e0c3-1afb-2106-acaa73a40cbd",
+          "article_title": "Military history of Italy during World War II",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "eb4d75d3-42e8-7ac2-2c30-47b66d74b9fe",
+          "article_title": "List of Greek Resistance organizations",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "9483512c-498f-8abe-7534-e9954003400d",
+          "article_title": "Collaboration with Nazi Germany and Fascist Italy",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "8fec4491-568c-40d4-6183-c83c64ec564c",
+          "article_title": "Timeline of World War II (1941)",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Analyze the strategic shift of the Comet Line in the spring of 1944 and discuss the implications of this change on the safety and logistics of the airmen they were assisting, considering the impending Allied invasion and the role of MI9.",
+      "source_article": "Comet Line",
+      "source_chunk_id": "4c01f001-a539-88cd-1209-d35c95ee5980",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "year",
+        "start_year": 1944,
+        "end_year": 1944
+      },
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 0.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "2bffc6e6-0412-e8be-0f9d-4c7f74915bd9",
+          "article_title": "Belgian Resistance",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "5277ef90-d54d-fb47-2c7a-3f3f6fdd560a",
+          "article_title": "Comet Line",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "914a21ac-3c0f-9165-f424-70a0da7791cd",
+          "article_title": "Comet Line",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "a975332a-e249-d46b-1264-44caff9a4a15",
+          "article_title": "Operation Market Garden",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "c5449bdf-5b30-56c2-9693-95aea4540495",
+          "article_title": "Operation Marathon (World War II)",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "What shotgun model was standard-issued to the US Army during World War I, and when was it superseded by the Winchester M1912?",
+      "source_article": "List of World War II infantry weapons",
+      "source_chunk_id": "fbaaf852-84dc-ece0-cf96-795aa085a1ba",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "fbaaf852-84dc-ece0-cf96-795aa085a1ba",
+          "article_title": "List of World War II infantry weapons",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "65c6a544-38d8-434b-2ad3-efcc20569c56",
+          "article_title": "List of World War II infantry weapons",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "bad6d0df-9bab-bd8f-79ab-dbaf667a2a36",
+          "article_title": "List of World War II infantry weapons",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "cbfd3b63-77d0-48ff-fbec-28897b2cc55d",
+          "article_title": "List of World War II infantry weapons",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "045454f0-a8cc-da57-91cd-b3c1962e937b",
+          "article_title": "List of World War II infantry weapons",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Who was the architect responsible for designing Hardwick Hall in the late 16th century?",
+      "source_article": "Hardwick Hall",
+      "source_chunk_id": "9a1cc6f4-cda0-7710-a356-aa49fc859ab4",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg_at_5": 0.5,
+        "ndcg_at_10": 0.5
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "0021e87e-9d80-e815-f2ae-c57aa51e94cc",
+          "article_title": "Ohel Yizkor",
+          "score": 0.013376623376623376
+        },
+        {
+          "chunk_id": "c65a33cb-e7c2-6973-5c85-0c5d37c456c9",
+          "article_title": "Hardwick Hall",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "9a1cc6f4-cda0-7710-a356-aa49fc859ab4",
+          "article_title": "Hardwick Hall",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "3eb89ea8-3867-d274-897d-4a785af6d13c",
+          "article_title": "Hardwick Hall",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "0ae94bf3-5153-5814-5505-43403823dbcf",
+          "article_title": "Hardwick Hall",
+          "score": 0.0109375
+        }
+      ]
+    },
+    {
+      "question": "How did Churchill's suggestion to create the French National Committee influence its structure and functioning, and how did de Gaulle's actions reflect his leadership style within the Free France movement?",
+      "source_article": "French National Committee",
+      "source_chunk_id": "0e993bfc-07f2-1d4a-bded-8595cad52675",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "0e993bfc-07f2-1d4a-bded-8595cad52675",
+          "article_title": "French National Committee",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "9a76c233-cf84-f057-e570-f5fe2e9c9b5b",
+          "article_title": "Casablanca Conference",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "0ca09f56-f341-6dae-a045-26d609947c5e",
+          "article_title": "Vichy France",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "be195e3f-2ef3-a7e3-a986-f1cc19e18fe0",
+          "article_title": "The Second World War (book series)",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "0d2605ad-8bb0-c771-552a-5339a326b0b7",
+          "article_title": "Free France",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "On what date was the article for the U.S. Holocaust Memorial Museum archived?",
+      "source_article": "United States Holocaust Memorial Museum",
+      "source_chunk_id": "cfd05690-81b1-a9af-53b2-cf43bc626b55",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "cfd05690-81b1-a9af-53b2-cf43bc626b55",
+          "article_title": "United States Holocaust Memorial Museum",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "f9eb88fb-109f-0b44-193f-7f40eee78319",
+          "article_title": "Censorship in Auschwitz",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "6791bbd4-14d4-d516-1953-c237d2f888d9",
+          "article_title": "B\u00e4stlein-Jacob-Abshagen Group",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "600654fd-03eb-b736-79dd-a7570819bdc8",
+          "article_title": "Yad Vashem",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "15c9071b-ab0c-ea3a-edad-b863752afdd2",
+          "article_title": "The Holocaust in Poland",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Between which dates did Winston Field serve as the Prime Minister of Southern Rhodesia?",
+      "source_article": "Winston Field",
+      "source_chunk_id": "b4138974-3898-f364-c92a-8a72ce16a291",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "b4138974-3898-f364-c92a-8a72ce16a291",
+          "article_title": "Winston Field",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "76264d1b-9e94-4792-54bc-a0af46c50244",
+          "article_title": "Winston Field",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "31d4d8d0-ed37-a8b0-5109-165a3f9847a4",
+          "article_title": "Winston Field",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "9fb1b086-19de-190e-edac-38fe3d4ffaa0",
+          "article_title": "Non-British personnel in the RAF during the Battle of Britain",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "eb390e57-bb01-cba6-479c-e16a297495ee",
+          "article_title": "Winston Churchill",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Which four countries were part of the Normandy Format group?",
+      "source_article": "Normandy Format",
+      "source_chunk_id": "eeb0182c-f2a5-8d97-aa8e-ab52cbd820c1",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "event",
+        "start_year": 1943,
+        "end_year": 1945
+      },
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "eeb0182c-f2a5-8d97-aa8e-ab52cbd820c1",
+          "article_title": "Normandy Format",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "8e0ba020-ac71-ec2f-2357-78746a76efce",
+          "article_title": "History of Normandy",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "d20aff34-5915-376a-d7e8-7fece1012536",
+          "article_title": "Operation Overlord",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "fa719793-d02c-eab8-8876-f0df8995bdf6",
+          "article_title": "Normandy",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "93a9f258-3d1d-d4ad-584b-4c85a58b03b9",
+          "article_title": "Normandy",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Which British aircraft carriers were involved in Operation Splice, and how many Hurricanes did they transport?",
+      "source_article": "Siege of Malta (World War II)",
+      "source_chunk_id": "ee0af8db-1c30-a0e8-c3cc-da5e26b7d5ce",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "ee0af8db-1c30-a0e8-c3cc-da5e26b7d5ce",
+          "article_title": "Siege of Malta (World War II)",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "4c8f4f70-544f-0482-8dc1-e965e8d738ee",
+          "article_title": "Hawker Hurricane",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "f23e5a11-08e6-d24a-9fe2-c43486c2b5c9",
+          "article_title": "Hawker Hurricane",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "738fde3e-d0b3-c1bd-0c22-5077945af990",
+          "article_title": "Aircraft carrier operations during World War II",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "9258d2a5-e858-3440-ab3c-68944b2e9176",
+          "article_title": "Hawker Hurricane",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did the experiences of Japanese holdouts in Southeast Asia and the Pacific islands differ from those who surrendered immediately after the official surrender of Japan on September 2, 1945?",
+      "source_article": "Japanese holdout",
+      "source_chunk_id": "51ec6ffe-8a83-28ed-0c63-931f3481ee21",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "year",
+        "start_year": 1945,
+        "end_year": 1945
+      },
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "0046abf3-02a2-ad6d-6410-007e0f439c5c",
+          "article_title": "End of World War II in Asia",
+          "score": 0.014403706688154713
+        },
+        {
+          "chunk_id": "51ec6ffe-8a83-28ed-0c63-931f3481ee21",
+          "article_title": "Japanese holdout",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "8e8cf055-ece7-98c9-f140-cf23e4142bf2",
+          "article_title": "Surrender of Japan",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "0fd07725-85c3-cf2f-ffd0-23a8b5b9c28b",
+          "article_title": "Second Sino-Japanese War",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "1abe684e-d2b1-4d1c-9c73-33b49f7c09af",
+          "article_title": "Soviet\u2013Japanese War",
+          "score": 0.0109375
+        }
+      ]
+    },
+    {
+      "question": "Compare the initial distribution of the Kommissarbefehl to its final distribution in terms of the seniority of the commanders who received it.",
+      "source_article": "Commissar Order",
+      "source_chunk_id": "4ecc2449-a71a-e325-5797-698871db75fe",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 0.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 0.0,
+        "article_hit_at_10": 0.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "19474af0-2289-001a-7520-67b2a374be9c",
+          "article_title": "Battle of Buna\u2013Gona: Allied forces and order of battle",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "14efc304-6a55-d0fc-32cf-bad2593e4f1b",
+          "article_title": "Case Blue",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "b600f998-cd82-93e0-dd4e-a9047edfd863",
+          "article_title": "Italian front (World War I)",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "b07ea008-6e6c-ade1-9ad2-0173083c00b8",
+          "article_title": "Battle of Jaktor\u00f3w",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "91438e4b-2bd0-622b-c258-191e6d242382",
+          "article_title": "Axis capture of Tobruk",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Compare and contrast how the Dutch Resistance and surviving Jewish adults in the Netherlands envisioned the future of the Jewish children who were hidden during the Holocaust.",
+      "source_article": "The Holocaust in the Netherlands",
+      "source_chunk_id": "2f747421-d401-8d0a-e8b8-4e22492c9948",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "2f747421-d401-8d0a-e8b8-4e22492c9948",
+          "article_title": "The Holocaust in the Netherlands",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "32a35868-9672-1d46-3702-edef31120a7e",
+          "article_title": "Netherlands in World War II",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "03ab6e71-832c-1f26-090b-7f4e93ce21e9",
+          "article_title": "The Holocaust in the Netherlands",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "3c000b04-5450-dbe6-1728-c08d7b01c600",
+          "article_title": "The Holocaust in the Netherlands",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "6dc7cdf2-4596-f2fa-f52c-f5f20fd606e7",
+          "article_title": "Dutch resistance",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "What was the codename for the diversionary effort against southern France as part of the plans for Operation Overlord?",
+      "source_article": "Allied logistics in the Southern France campaign",
+      "source_chunk_id": "43819cd6-83fd-72ff-8c90-1681c23258ea",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "event",
+        "start_year": 1943,
+        "end_year": 1945
+      },
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "14085fc0-1373-4575-8c9d-e8ed8cf482c8",
+          "article_title": "Case Anton",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "43819cd6-83fd-72ff-8c90-1681c23258ea",
+          "article_title": "Allied logistics in the Southern France campaign",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "5459378b-ecc3-fddf-b662-c8cce18f08d4",
+          "article_title": "List of expansion operations and planning of the Axis powers",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "224c04d8-27d3-41be-33e4-508cd02e7053",
+          "article_title": "Allied logistics in the Southern France campaign",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "0257dede-198f-e4a6-cde8-3272d910380c",
+          "article_title": "Allied logistics in the Southern France campaign",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How do you think the demonetization of the Fresh and Fit Podcast on August 18, 2023, influenced public perception of the hosts' views on women, antisemitism, and Holocaust denial, and how might this have affected their audience dynamics?",
+      "source_article": "Fresh and Fit Podcast",
+      "source_chunk_id": "f9307809-a74a-680b-7385-1870550f63bb",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "e31f06c3-3819-6b03-2733-c16169578c3e",
+          "article_title": "Fresh and Fit Podcast",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "f9307809-a74a-680b-7385-1870550f63bb",
+          "article_title": "Fresh and Fit Podcast",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "7dee6209-eb3d-3376-a4e2-30b264fe3def",
+          "article_title": "Fresh and Fit Podcast",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "bf056210-78ca-f1c1-1bae-73a2a8c36e74",
+          "article_title": "The U.S. and the Holocaust",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "ddd4f0cd-7100-8a54-6247-ddc7096cf98e",
+          "article_title": "Holocaust humor",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "What category of the Deutsche Volksliste was reserved exclusively for SS membership?",
+      "source_article": "Lebensraum",
+      "source_chunk_id": "1975c9d4-1d40-1544-bbb4-7fa9f5f98df8",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.2,
+        "ndcg_at_5": 0.38685280723454163,
+        "ndcg_at_10": 0.38685280723454163
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "034970cc-7e40-7f31-989f-ae46e4647ae6",
+          "article_title": "SS-Totenkopfverb\u00e4nde",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "37fa5abc-7a57-cb19-f472-5e3a911051ac",
+          "article_title": "Schutzstaffel",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "c0919a6a-4dae-d22f-0719-aa6bab506947",
+          "article_title": "Schutzstaffel",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "56084a75-21a9-6b83-524c-1a3044e1e482",
+          "article_title": "Schutzstaffel",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "1975c9d4-1d40-1544-bbb4-7fa9f5f98df8",
+          "article_title": "Lebensraum",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Who was the commander of the French navy in the occupied zone in September 1942?",
+      "source_article": "Forced labour under German rule during World War II",
+      "source_chunk_id": "94f3db05-4fdc-b720-ca78-06e75a6a3b4b",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "year",
+        "start_year": 1942,
+        "end_year": 1942
+      },
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 0.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 0.0,
+        "article_hit_at_10": 0.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "306a0e7c-a876-43ce-0d3d-316df7eac3fd",
+          "article_title": "Case Anton",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "fff6e83b-0038-ad7f-9811-10c8eeaceb46",
+          "article_title": "Free France",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "c4a7c31b-9b7e-94f7-0c93-4ad485b7f7c3",
+          "article_title": "Naval history of World War II",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "7a6dc32b-8ce1-3ab9-5ed6-f07c554c2d22",
+          "article_title": "Western Front (World War II)",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "927a75b7-4b56-74f4-d414-1ca65573a18a",
+          "article_title": "Vichy France",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Who was the commander that trapped overextended Red Army units during the Third Battle of Kharkov?",
+      "source_article": "Timeline of the Eastern Front of World War II",
+      "source_chunk_id": "67857bad-e342-8c8d-fc53-b1ecb16034e7",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 0.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 0.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "c97d09c3-ccd0-3013-bd03-058d5b56de55",
+          "article_title": "Eastern Front (World War II)",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "6b2ff8e5-9823-f07b-1305-db4396e27d90",
+          "article_title": "Erich von Manstein",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "f874acd6-f720-4b33-7bbd-4a5b9faa8d8c",
+          "article_title": "Operation Uranus",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "b9b992e9-7fa0-d1d4-c38b-f5bfbae3ee44",
+          "article_title": "Eastern Front (World War II)",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "9a1b6461-76f8-cc61-1ce6-93f9d402a531",
+          "article_title": "Erich von Manstein",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did the relationship between King Constantine and Eleftherios Venizelos influence Greece's involvement in World War I?",
+      "source_article": "Balkan Front (World War I)",
+      "source_chunk_id": "c5c2e510-c8c6-1303-7706-d9a15d883710",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "c2110c6b-0e26-29a1-5022-76a54803cd2d",
+          "article_title": "Allies of World War I",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "c5c2e510-c8c6-1303-7706-d9a15d883710",
+          "article_title": "Balkan Front (World War I)",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "337ad73a-abcb-4d65-a062-c7b1e94b9a38",
+          "article_title": "George II of Greece",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "a57d6d1c-bc4a-6b42-561f-20f736f76028",
+          "article_title": "George II of Greece",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "dc796f97-c294-9621-0262-eae1e22ddc83",
+          "article_title": "Allies of World War I",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Who was tasked with multiple successful forays in Burma in 1944?",
+      "source_article": "Timeline of World War II (1944)",
+      "source_chunk_id": "9bc9d1f5-a505-b922-daad-0e6a3d05eae7",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "year",
+        "start_year": 1944,
+        "end_year": 1944
+      },
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 0.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 0.0,
+        "article_hit_at_10": 0.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "f5cabeae-81fc-893f-fd22-300f68d41be3",
+          "article_title": "Ba Maw",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "ad823a1a-9633-3e20-6d31-6c89fde019bd",
+          "article_title": "Asiatic-Pacific theater",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "9fae47fa-eae6-3c98-1971-f381d22234d8",
+          "article_title": "Burma campaign",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "0f2c335e-148c-265b-3489-58ad6d647f61",
+          "article_title": "Burma campaign",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "212c8c19-e8c2-e873-04c9-b7afa587fdbb",
+          "article_title": "State of Burma",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "During which years were the Operation Wintergewitter and Operation Fr\u00fchlingserwachen conducted?",
+      "source_article": "List of military operations on the Eastern Front of World War II",
+      "source_chunk_id": "046b0666-dc4f-f033-7265-c4b43ff44445",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 0.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 0.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "fc5d843a-168c-9209-28e1-c46578ff1be6",
+          "article_title": "Operation Spring Awakening",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "18f7f2da-2818-3897-9db9-6afe2fb212e3",
+          "article_title": "Operation Spring Awakening",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "e292539d-8b0f-171e-4f6d-6073ab5470d3",
+          "article_title": "Operation Spring Awakening",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "48f03490-8c70-8395-20ce-e0d1981b4de9",
+          "article_title": "Strategic operations of the Red Army in World War II",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "fa4ef9c8-f68f-5015-7ea9-499864dc02e3",
+          "article_title": "Operation Rentier",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How does Daniel Blatman's work in 2015 relate to the broader debate on the uniqueness of the Holocaust as discussed by Wulf Kansteiner in 2009?",
+      "source_article": "Holocaust uniqueness debate",
+      "source_chunk_id": "73a62c5d-89b0-c75a-8cb9-c89e8b72a7d4",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "73a62c5d-89b0-c75a-8cb9-c89e8b72a7d4",
+          "article_title": "Holocaust uniqueness debate",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "20d6b011-c572-2366-51a7-89e8a76564c4",
+          "article_title": "Wannsee Conference",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "f4979c8a-8d98-eecc-b22b-c20208ea3317",
+          "article_title": "Holocaust uniqueness debate",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "9e70377c-ff9c-cfdd-8211-1ea9694c3cc0",
+          "article_title": "Holocaust uniqueness debate",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "ce74ab5c-e48b-67e8-c6b8-fac7b58d84ae",
+          "article_title": "Holocaust studies",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did the USAAF's assessment of the firebombing campaign's potential impact on Japanese industrial capabilities and civilian population influence the strategic decisions made by LeMay in early 1945?",
+      "source_article": "Air raids on Japan",
+      "source_chunk_id": "971f83e9-7510-6378-cda6-80a7b6fa6816",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "year",
+        "start_year": 1945,
+        "end_year": 1945
+      },
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "971f83e9-7510-6378-cda6-80a7b6fa6816",
+          "article_title": "Air raids on Japan",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "20852dd9-840f-de48-f5cd-d657775b8926",
+          "article_title": "Air raids on Japan",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "49dc0147-b22b-7b43-b3ad-082e2b29d370",
+          "article_title": "Japan during World War II",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "1ed31319-e9b7-29d4-5efd-ca9d42a0d223",
+          "article_title": "Strategic bombing during World War II",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "720a3573-5617-e06f-97c9-2e4319924aa8",
+          "article_title": "Empire of Japan",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did Roosevelt and Churchill's views on Turkish neutrality differ before and after the early victories of the Axis in 1942?",
+      "source_article": "Second Cairo Conference",
+      "source_chunk_id": "1733b321-6214-00bc-2415-ff5385fd9a6d",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "year",
+        "start_year": 1942,
+        "end_year": 1942
+      },
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6309297535714575,
+        "ndcg_at_10": 0.6309297535714575
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "1e78c911-3c02-28f0-c07d-2ef8d9cb992a",
+          "article_title": "Bibliography of World War II",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "1733b321-6214-00bc-2415-ff5385fd9a6d",
+          "article_title": "Second Cairo Conference",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "332c783a-f7da-f637-8ee2-2080a21b81d4",
+          "article_title": "Adana Conference",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "1474f327-0fd9-c914-a0be-69267dd7e91b",
+          "article_title": "Second Cairo Conference",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "90ecf19e-ceee-7e68-5924-3cd3a8c6d99b",
+          "article_title": "New Order (Nazism)",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Evaluate the impact of the French fleet's scuttling on the strategic goals of the Axis powers during Case Anton, specifically considering Hitler's perspective and the broader implications for the Free French Navy.",
+      "source_article": "Case Anton",
+      "source_chunk_id": "306a0e7c-a876-43ce-0d3d-316df7eac3fd",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg_at_5": 0.5,
+        "ndcg_at_10": 0.5
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "92ee0d8f-e7b8-3221-42ff-cf900fd7002d",
+          "article_title": "Free France",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "a94ab257-45fb-39c9-31fd-fd69fd23a46e",
+          "article_title": "Abbeville Conference",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "306a0e7c-a876-43ce-0d3d-316df7eac3fd",
+          "article_title": "Case Anton",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "9af298c8-98be-a1dd-5c7a-88ccecbefe46",
+          "article_title": "Western Desert campaign",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "c778379f-1247-5527-e292-4fb3c3bb15b1",
+          "article_title": "Free France",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did the increased duration of battles in the 20th century impact the strategic planning and execution of military campaigns compared to the 19th century?",
+      "source_article": "Battle",
+      "source_chunk_id": "4ab44a9d-363a-f168-f553-31c068ee2b3e",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "4ab44a9d-363a-f168-f553-31c068ee2b3e",
+          "article_title": "Battle",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "a4d45b34-33f6-d941-6ed1-63fa9e0ab1f4",
+          "article_title": "Battle",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "8cb5c67b-d683-f195-b838-a4e4b3bc9e7a",
+          "article_title": "Battle",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "6732052a-b067-aa3e-2069-6d1f5353fd85",
+          "article_title": "List of World War II battles",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "ae76660d-5fdb-4b6f-e086-ac9f75b74b1f",
+          "article_title": "Battle",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How did the Nazi's Generalplan Ost policy relate to the classification of Slavic populations as Untermenschen?",
+      "source_article": "Untermensch",
+      "source_chunk_id": "3a63c505-bc38-3603-92b0-a69bfb071e6a",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 0.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "9d6801f1-6cf2-f2a0-35b5-76a94dd4cd44",
+          "article_title": "Racial policy of Nazi Germany",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "66454257-6e4c-c9c4-668e-3f8245699832",
+          "article_title": "Untermensch",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "42c2b108-7c82-df0d-d103-6780f4f20a52",
+          "article_title": "Nazi war crimes in occupied Poland during World War II",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "8035b0a3-75ab-a822-5dba-faeb24bef8b4",
+          "article_title": "Racial policy of Nazi Germany",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "1ac48fd2-83f3-cdf5-0088-36e634fbd9af",
+          "article_title": "Generalplan Ost",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "What was the relationship between Spain and the Axis powers during World War II, and how did Spain's actions reflect this relationship despite officially maintaining neutrality?",
+      "source_article": "Foreign relations of the Axis powers",
+      "source_chunk_id": "32042b58-fd85-d958-177f-e1c6f8830a26",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg_at_5": 0.5,
+        "ndcg_at_10": 0.5
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "983095d2-988c-8361-0c58-d36310b2bac1",
+          "article_title": "Spain during World War II",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "ef6744f3-f190-03be-9c11-3bcdd9f2490e",
+          "article_title": "Foreign relations of the Axis powers",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "32042b58-fd85-d958-177f-e1c6f8830a26",
+          "article_title": "Foreign relations of the Axis powers",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "b0a6901f-9bb0-ab5b-ee54-6422f894e8bf",
+          "article_title": "Spain during World War II",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "ea72cdae-d7f7-d870-6c2b-359e63e6a714",
+          "article_title": "Spain during World War II",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How has the political climate influenced the perception of Victory Day in Ukraine from 2010 to 2024?",
+      "source_article": "Day of Remembrance and Victory over Nazism in World War II 1939 \u2013 1945",
+      "source_chunk_id": "933532bf-aa7e-0ebe-d7a1-40dc5d5ed56f",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "933532bf-aa7e-0ebe-d7a1-40dc5d5ed56f",
+          "article_title": "Day of Remembrance and Victory over Nazism in World War II 1939 \u2013 1945",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "2f4dac26-fae0-bf68-f9ce-5cac76aefefc",
+          "article_title": "Outline of the Russo-Ukrainian war",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "ae99ac76-c1fa-0b16-aff0-433b09e8c4a0",
+          "article_title": "Day of Remembrance and Victory over Nazism in World War II 1939 \u2013 1945",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "b082e581-984f-4a24-dad4-1d7bf7f12c03",
+          "article_title": "Modern history of Ukraine",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "97cfca3c-4b9f-fa65-9d94-acc08e5318b2",
+          "article_title": "Ukraine",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How was the relationship between the United States and Hawaii, as illustrated by the events surrounding the establishment of the Pearl Harbor Naval Shipyard?",
+      "source_article": "Pearl Harbor Naval Shipyard",
+      "source_chunk_id": "1e1ae8fd-c089-d8ea-32df-ae8f3781e8e0",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "event",
+        "start_year": 1940,
+        "end_year": 1942
+      },
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 0.3333333333333333,
+        "ndcg_at_5": 0.5,
+        "ndcg_at_10": 0.5
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "f7ec9496-b6ce-03f3-cc37-94da61005939",
+          "article_title": "Pearl Harbor",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "fe6d778a-83c2-ceb1-e94e-482823a70572",
+          "article_title": "Pearl Harbor",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "1e1ae8fd-c089-d8ea-32df-ae8f3781e8e0",
+          "article_title": "Pearl Harbor Naval Shipyard",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "4dec9ad5-d280-96b5-fb19-febc792e0014",
+          "article_title": "Pearl Harbor",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "3295423d-16b1-e04d-6d7f-c56763532987",
+          "article_title": "Naval Base Hawaii",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "Who was the Chief of Staff to the Commander-in-Chief of Poland during the events described in the passage?",
+      "source_article": "Abbeville Conference",
+      "source_chunk_id": "d126bd4d-4c09-7023-2f2a-2e8780e77e3e",
+      "is_temporal": false,
+      "temporal_info": null,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.0,
+        "recall_at_5": 0.0,
+        "recall_at_10": 0.0,
+        "article_hit_at_1": 0.0,
+        "article_hit_at_3": 0.0,
+        "article_hit_at_5": 0.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 0.0,
+        "chunk_hit_at_3": 0.0,
+        "chunk_hit_at_5": 0.0,
+        "chunk_hit_at_10": 0.0,
+        "mrr": 0.0,
+        "ndcg_at_5": 0.0,
+        "ndcg_at_10": 0.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "2855a1c0-08b5-f7c9-7917-7930971d9326",
+          "article_title": "Timeline of the 1939 invasion of Poland",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "52116ed7-fd06-8f50-67ad-62fa6d0a20d0",
+          "article_title": "Battle of Jaktor\u00f3w",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "72728adb-d689-5e57-be49-4385ea38be4d",
+          "article_title": "Battle of Jaktor\u00f3w",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "68121a45-bdd6-5d33-4b64-b2d76d03ff84",
+          "article_title": "Nazi war crimes in occupied Poland during World War II",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "dd07ece1-2be8-b93c-7d92-717f927d87bd",
+          "article_title": "Jewish collaboration with Nazi Germany",
+          "score": 0.010769230769230769
+        }
+      ]
+    },
+    {
+      "question": "How does the number of members attending the USS Pearl Harbor (LSD-52) launch in 1996 compare to the peak membership of the Pearl Harbor Survivors Association (PHSA) both nationally and worldwide?",
+      "source_article": "Pearl Harbor Survivors Association",
+      "source_chunk_id": "7edcaea1-6014-f09e-6912-47887033c69a",
+      "is_temporal": true,
+      "temporal_info": {
+        "type": "event",
+        "start_year": 1940,
+        "end_year": 1942
+      },
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "article_hit_at_1": 1.0,
+        "article_hit_at_3": 1.0,
+        "article_hit_at_5": 1.0,
+        "article_hit_at_10": 1.0,
+        "chunk_hit_at_1": 1.0,
+        "chunk_hit_at_3": 1.0,
+        "chunk_hit_at_5": 1.0,
+        "chunk_hit_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      },
+      "top_5_results": [
+        {
+          "chunk_id": "7edcaea1-6014-f09e-6912-47887033c69a",
+          "article_title": "Pearl Harbor Survivors Association",
+          "score": 0.011475409836065573
+        },
+        {
+          "chunk_id": "62d58b59-4591-48f2-dadc-41c333b74c32",
+          "article_title": "Pearl Harbor Survivors Association",
+          "score": 0.01129032258064516
+        },
+        {
+          "chunk_id": "dd9207f5-a799-4701-9a18-a12233f0c76a",
+          "article_title": "Pearl Harbor Survivors Association",
+          "score": 0.01111111111111111
+        },
+        {
+          "chunk_id": "b24b9cd0-357c-444c-c0d6-38cb1f57a5e6",
+          "article_title": "Pearl Harbor Survivors Association",
+          "score": 0.0109375
+        },
+        {
+          "chunk_id": "37fcd5b2-a639-f4a1-2ae2-9205a943952e",
+          "article_title": "Attack on Pearl Harbor",
+          "score": 0.010769230769230769
+        }
+      ]
+    }
+  ],
+  "aggregated_metrics": {
+    "avg_mrr": 0.5786200194363459,
+    "avg_article_hit_at_1": 0.5306122448979592,
+    "avg_chunk_hit_at_1": 0.42857142857142855,
+    "avg_article_hit_at_3": 0.7755102040816326,
+    "avg_chunk_hit_at_3": 0.7346938775510204,
+    "avg_article_hit_at_5": 0.8163265306122449,
+    "avg_chunk_hit_at_5": 0.7755102040816326,
+    "avg_article_hit_at_10": 0.9183673469387755,
+    "avg_chunk_hit_at_10": 0.8163265306122449
+  }
+}

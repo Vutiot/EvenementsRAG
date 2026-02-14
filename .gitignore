@@ -1,0 +1,295 @@
+# EvenementsRAG .gitignore
+
+# ============================================================================
+# Environment and Secrets
+# ============================================================================
+.env
+.env.local
+.env.*.local
+*.key
+*.pem
+credentials.json
+
+# ============================================================================
+# Python
+# ============================================================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+pip-wheel-metadata/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+test-results/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff:
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff:
+instance/
+.webassets-cache
+
+# Scrapy stuff:
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb_checkpoints/
+
+# IPython
+profile_default/
+ipython_config.py
+
+# pyenv
+.python-version
+
+# pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# PEP 582
+__pypackages__/
+
+# Celery stuff
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Environments
+.venv
+env/
+venv/
+ENV/
+env.bak/
+venv.bak/
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mkdocs documentation
+/site
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# ============================================================================
+# IDEs and Editors
+# ============================================================================
+# VSCode
+.vscode/
+*.code-workspace
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*~
+.vim/
+
+# Emacs
+\#*\#
+.\#*
+
+# ============================================================================
+# OS
+# ============================================================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+
+# Linux
+.directory
+.Trash-*
+
+# ============================================================================
+# Project-Specific Data
+# ============================================================================
+
+# Qdrant storage
+qdrant_storage/
+.qdrant/
+
+# Downloaded Wikipedia data
+data/raw/wikipedia_articles/*.json
+data/raw/wikipedia_articles/*.txt
+data/raw/wikipedia_articles/*.html
+data/raw/wikipedia_articles_1000/
+data/raw/wikipedia_articles_10000/
+data/raw/metadata/*.json
+
+# Processed data
+data/processed/chunks/*.json
+data/processed/chunks/*.pkl
+data/processed/embeddings/*.npy
+data/processed/embeddings/*.pkl
+data/processed/entities/*.json
+
+# Graph data
+data/graph/nodes/*.json
+data/graph/edges/*.json
+data/graph/*.graphml
+data/graph/*.gexf
+
+# Evaluation results
+data/evaluation/benchmarks/*.json
+data/evaluation/results/*.csv
+data/evaluation/results/*.json
+
+# Keep directory structure but ignore contents
+!data/raw/wikipedia_articles/.gitkeep
+!data/raw/metadata/.gitkeep
+!data/processed/chunks/.gitkeep
+!data/processed/embeddings/.gitkeep
+!data/processed/entities/.gitkeep
+!data/graph/nodes/.gitkeep
+!data/graph/edges/.gitkeep
+!data/evaluation/benchmarks/.gitkeep
+
+# ============================================================================
+# Cache and Temporary Files
+# ============================================================================
+.cache/
+*.cache
+__cache__/
+.tmp/
+tmp/
+temp/
+*.tmp
+
+# Model cache
+.transformers_cache/
+.sentence_transformers/
+huggingface_cache/
+
+# Embeddings cache
+embeddings_cache/
+
+# ============================================================================
+# Logs
+# ============================================================================
+logs/
+*.log
+log/
+
+# ============================================================================
+# Documentation Build
+# ============================================================================
+docs/_build/
+docs/_static/
+docs/_templates/
+
+# ============================================================================
+# Misc
+# ============================================================================
+.pkl
+*.pickle
+*.db
+*.sqlite
+
+# Large model files
+*.pt
+*.pth
+*.bin
+*.onnx
+
+# Backup files
+*.bak
+*.backup
+*~
+
+# Archives
+*.zip
+*.tar.gz
+*.tgz
+*.rar

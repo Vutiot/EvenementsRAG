@@ -1,0 +1,127 @@
+{
+  "metadata": {
+    "generated_at": "2025-12-30T23:57:31.123029",
+    "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+    "total_questions": 10,
+    "articles_sampled": 5,
+    "taxonomy_distribution": {
+      "factual": 2,
+      "temporal": 2,
+      "comparative": 2,
+      "entity_centric": 2,
+      "relationship": 2
+    }
+  },
+  "questions": [
+    {
+      "question": "Who was the Prime Minister of the United Kingdom during the Casablanca Conference?",
+      "type": "factual",
+      "difficulty": "easy",
+      "expected_answer_hint": "Name of the British Prime Minister who attended the conference",
+      "source_article": "Casablanca Conference",
+      "source_article_id": "1030859",
+      "generated_at": "2025-12-30T23:57:16.507207",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q001"
+    },
+    {
+      "question": "What was the codename for the Casablanca Conference?",
+      "type": "factual",
+      "difficulty": "medium",
+      "expected_answer_hint": "The codename given to the conference held in Casablanca",
+      "source_article": "Casablanca Conference",
+      "source_article_id": "1030859",
+      "generated_at": "2025-12-30T23:57:16.507244",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q002"
+    },
+    {
+      "question": "When in 1942 was the Doolittle Raid launched?",
+      "type": "temporal",
+      "difficulty": "easy",
+      "expected_answer_hint": "specific date in April 1942",
+      "source_article": "Doolittle Raid",
+      "source_article_id": "159895",
+      "generated_at": "2025-12-30T23:57:18.638689",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q003"
+    },
+    {
+      "question": "How many days after the Doolittle Raid did the Battle of Midway take place?",
+      "type": "temporal",
+      "difficulty": "medium",
+      "expected_answer_hint": "duration in days between the Doolittle Raid and the Battle of Midway",
+      "source_article": "Doolittle Raid",
+      "source_article_id": "159895",
+      "generated_at": "2025-12-30T23:57:18.638712",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q004"
+    },
+    {
+      "question": "How did the treatment of Jews in Germany and German-occupied territories differ before and after the invasion of the Soviet Union in June 1941?",
+      "type": "comparative",
+      "difficulty": "medium",
+      "expected_answer_hint": "methods of persecution, key events, and changes in policy",
+      "source_article": "The Holocaust",
+      "source_article_id": "10396793",
+      "generated_at": "2025-12-30T23:57:20.878120",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q005"
+    },
+    {
+      "question": "Compare the experiences of Jews living in central and western Europe with those in eastern Europe during the lead-up to World War II.",
+      "type": "comparative",
+      "difficulty": "hard",
+      "expected_answer_hint": "level of integration, religious practices, and political climate",
+      "source_article": "The Holocaust",
+      "source_article_id": "10396793",
+      "generated_at": "2025-12-30T23:57:20.878149",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q006"
+    },
+    {
+      "question": "Who was the First Lord of the Admiralty who requested additional ships and men to fight the Battle of the Atlantic on 5 March 1941?",
+      "type": "entity_centric",
+      "difficulty": "easy",
+      "expected_answer_hint": "The name of the person who made the request to Parliament.",
+      "source_article": "Battle of the Atlantic",
+      "source_article_id": "57765",
+      "generated_at": "2025-12-30T23:57:23.423140",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q007"
+    },
+    {
+      "question": "Which German naval commander believed that a large surface fleet was not needed to defeat the British, and instead advocated for the use of U-boats?  Provide the title and name of the commander.",
+      "type": "entity_centric",
+      "difficulty": "medium",
+      "expected_answer_hint": "The title and name of the German naval commander who proposed using U-boats to strangle the British economy.",
+      "source_article": "Battle of the Atlantic",
+      "source_article_id": "57765",
+      "generated_at": "2025-12-30T23:57:23.423172",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q008"
+    },
+    {
+      "question": "How did the relationship between the United Kingdom and the United States evolve from September 1940 to December 1941, and what key documents reflected this relationship?",
+      "type": "relationship",
+      "difficulty": "medium",
+      "expected_answer_hint": "mention the Atlantic Charter and the formality of the neutrality during this time",
+      "source_article": "Allies of World War II",
+      "source_article_id": "2198844",
+      "generated_at": "2025-12-30T23:57:31.120419",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q009"
+    },
+    {
+      "question": "What resulted in the Soviet Union joining the Allies in June 1941, and how did this event alter the dynamics of World War II alliances?",
+      "type": "relationship",
+      "difficulty": "medium",
+      "expected_answer_hint": "mention the German invasion of the Soviet Union and previous non-aggression pact",
+      "source_article": "Allies of World War II",
+      "source_article_id": "2198844",
+      "generated_at": "2025-12-30T23:57:31.120445",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q010"
+    }
+  ]
+}

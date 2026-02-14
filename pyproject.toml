@@ -1,0 +1,94 @@
+[tool.poetry]
+name = "evenementsrag"
+version = "0.1.0"
+description = "Historical Events RAG system with progressive complexity (Vanilla → Temporal → Hybrid → Graph RAG)"
+authors = ["Alex <alex@example.com>"]
+readme = "README.md"
+packages = [{include = "src"}]
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+# Vector Database
+qdrant-client = "^1.7.0"
+
+# Embeddings & LLM
+sentence-transformers = "^2.3.0"
+anthropic = "^0.18.0"
+openai = "^1.12.0"
+langchain = "^0.1.6"
+langchain-community = "^0.0.19"
+
+# Wikipedia & Data Ingestion
+wikipedia = "^1.4.0"
+mwparserfromhell = "^0.6.6"
+beautifulsoup4 = "^4.12.3"
+requests = "^2.31.0"
+
+# NLP & Entity Extraction
+spacy = "^3.7.0"
+transformers = "^4.37.0"
+dateparser = "^1.2.0"
+datefinder = "^0.7.3"
+
+# Keyword Search
+rank-bm25 = "^0.2.2"
+
+# Graph Database (Phase 4)
+networkx = "^3.2.1"
+pyvis = "^0.3.2"
+# neo4j = "^5.16.0"  # Optional: uncomment for production graph DB
+
+# Evaluation
+ragas = "^0.1.1"
+rouge-score = "^0.1.2"
+bert-score = "^0.3.13"
+datasets = "^2.16.0"
+
+# Utilities
+pydantic = "^2.6.0"
+pydantic-settings = "^2.1.0"
+python-dotenv = "^1.0.1"
+loguru = "^0.7.2"
+tqdm = "^4.66.1"
+pandas = "^2.1.4"
+numpy = "^1.26.3"
+pyyaml = "^6.0.1"
+
+[tool.poetry.group.dev.dependencies]
+# Testing
+pytest = "^8.0.0"
+pytest-asyncio = "^0.23.4"
+pytest-cov = "^4.1.0"
+
+# Development
+jupyter = "^1.0.0"
+ipykernel = "^6.29.0"
+black = "^24.1.1"
+ruff = "^0.2.1"
+isort = "^5.13.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.black]
+line-length = 100
+target-version = ['py310']
+include = '\.pyi?$'
+
+[tool.isort]
+profile = "black"
+line_length = 100
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+select = ["E", "F", "I", "N", "W"]
+ignore = ["E501"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = "test_*.py"
+python_functions = "test_*"
+addopts = "-v --cov=src --cov-report=term-missing"

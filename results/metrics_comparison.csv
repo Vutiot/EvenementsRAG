@@ -1,0 +1,40 @@
+Metric,Phase,Value,Notes
+Article Hit@1,Phase 1,0.743,Pure semantic search
+Article Hit@1,Phase 2,0.743,Hybrid + temporal
+Article Hit@3,Phase 1,0.914,Pure semantic search
+Article Hit@3,Phase 2,0.914,Hybrid + temporal
+Article Hit@5,Phase 1,0.914,Pure semantic search
+Article Hit@5,Phase 2,0.914,Hybrid + temporal
+Article Hit@10,Phase 1,0.971,Pure semantic search
+Article Hit@10,Phase 2,0.971,Hybrid + temporal
+Chunk Hit@1,Phase 1,0.600,Pure semantic search
+Chunk Hit@1,Phase 2,0.600,Hybrid + temporal
+Chunk Hit@3,Phase 1,0.657,Pure semantic search
+Chunk Hit@3,Phase 2,0.657,Hybrid + temporal
+Chunk Hit@5,Phase 1,0.714,Pure semantic search
+Chunk Hit@5,Phase 2,0.714,Hybrid + temporal
+Chunk Hit@10,Phase 1,0.800,Pure semantic search
+Chunk Hit@10,Phase 2,0.800,Hybrid + temporal
+Recall@1,Phase 1,0.600,Pure semantic search
+Recall@1,Phase 2,0.600,Hybrid + temporal
+Recall@3,Phase 1,0.657,Pure semantic search
+Recall@3,Phase 2,0.657,Hybrid + temporal
+Recall@5,Phase 1,0.714,Pure semantic search
+Recall@5,Phase 2,0.714,Hybrid + temporal
+Recall@10,Phase 1,0.800,Pure semantic search
+Recall@10,Phase 2,0.800,Hybrid + temporal
+MRR,Phase 1,0.654,Pure semantic search
+MRR,Phase 2,0.553,Hybrid + temporal - DECREASED
+NDCG@5,Phase 1,0.659,Pure semantic search
+NDCG@5,Phase 2,0.659,Hybrid + temporal
+NDCG@10,Phase 1,0.688,Pure semantic search
+NDCG@10,Phase 2,0.688,Hybrid + temporal
+Precision Gap,Phase 1,0.200,Article Hit@5 - Chunk Hit@5
+Precision Gap,Phase 2,0.200,Article Hit@5 - Chunk Hit@5
+Temporal Queries,Phase 1,0,Not applicable
+Temporal Queries,Phase 2,8,Out of 35 questions
+Avg Retrieval Time (ms),Phase 1,9.3,Fast
+Avg Retrieval Time (ms),Phase 2,-,Not measured
+Total Questions,Both,35,Generated from chunks
+Dataset Articles,Both,49,WW2 Wikipedia articles
+Dataset Chunks,Both,1849,512 tokens per chunk

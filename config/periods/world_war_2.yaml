@@ -1,0 +1,396 @@
+# World War II Period Configuration
+# This configuration defines the scope and parameters for collecting
+# historical event data about World War II from Wikipedia
+
+# ============================================================================
+# Period Metadata
+# ============================================================================
+name: "World War II"
+short_name: "ww2"
+description: "The Second World War, a global conflict from 1939 to 1945"
+
+# Temporal boundaries
+start_date: "1939-09-01"  # Invasion of Poland
+end_date: "1945-09-02"     # Formal Japanese surrender
+period_type: "global_conflict"
+
+# ============================================================================
+# Wikipedia Data Collection
+# ============================================================================
+
+# Seed articles - starting points for data collection
+seed_articles:
+  # Main overview article
+  - "World War II"
+
+  # Major alliances
+  - "Axis powers"
+  - "Allies of World War II"
+
+  # Key theaters
+  - "European theatre of World War II"
+  - "Pacific War"
+  - "Mediterranean and Middle East theatre of World War II"
+  - "North African campaign"
+
+  # Major operations and campaigns
+  - "Operation Barbarossa"
+  - "Operation Overlord"
+  - "D-Day"
+  - "Battle of Stalingrad"
+  - "Battle of Midway"
+  - "Battle of Britain"
+  - "Siege of Leningrad"
+
+  # Important conferences and treaties
+  - "Yalta Conference"
+  - "Tehran Conference"
+  - "Potsdam Conference"
+  - "Atlantic Charter"
+  - "German Instrument of Surrender"
+  - "Surrender of Japan"
+
+# Wikipedia categories to crawl
+categories:
+  military_events:
+    - "Battles of World War II"
+    - "Military operations of World War II"
+    - "Battles and operations of World War II by theatre"
+    - "Naval battles of World War II"
+    - "Aerial operations and battles of World War II"
+    - "Amphibious operations of World War II"
+
+  diplomatic_events:
+    - "World War II conferences"
+    - "World War II treaties"
+    - "Declarations of war during World War II"
+    - "Diplomatic history of World War II"
+
+  political_events:
+    - "Political history of World War II"
+    - "World War II resistance movements"
+    - "Axis leaders"
+    - "Allied leaders"
+
+  military_units:
+    - "Military units and formations of World War II"
+    - "Divisions of World War II"
+
+  technology:
+    - "World War II weapons"
+    - "World War II aircraft"
+    - "World War II tanks"
+    - "World War II naval ships"
+    - "Manhattan Project"
+
+  atrocities:
+    - "The Holocaust"
+    - "War crimes of World War II"
+    - "Massacres of World War II"
+
+# Article filtering criteria
+filters:
+  min_article_length: 500        # Minimum words
+  max_article_length: 50000      # Maximum words
+  require_infobox: false         # Must have Wikipedia infobox
+  require_references: true       # Must have citations
+
+  # Date validation
+  require_dates: true            # Must contain dates
+  date_within_period: true       # Dates must be within 1939-1945
+
+  # Quality filters
+  exclude_stub_articles: true
+  exclude_disambiguation: true
+  exclude_list_articles: false   # Keep list articles (e.g., "List of WW2 battles")
+
+  # Language
+  language: "en"
+
+# ============================================================================
+# Entity Types to Extract
+# ============================================================================
+entity_types:
+  events:
+    - "military_battle"
+    - "naval_battle"
+    - "air_battle"
+    - "siege"
+    - "campaign"
+    - "military_operation"
+    - "conference"
+    - "treaty"
+    - "surrender"
+    - "declaration_of_war"
+    - "armistice"
+
+  people:
+    - "political_leader"
+    - "military_commander"
+    - "general"
+    - "admiral"
+    - "air_marshal"
+    - "resistance_leader"
+
+  organizations:
+    - "military_unit"
+    - "army"
+    - "navy"
+    - "air_force"
+    - "division"
+    - "regiment"
+    - "political_party"
+    - "resistance_movement"
+    - "government"
+
+  locations:
+    - "battle_site"
+    - "city"
+    - "country"
+    - "region"
+    - "military_base"
+    - "concentration_camp"
+
+  equipment:
+    - "weapon"
+    - "aircraft"
+    - "ship"
+    - "tank"
+    - "submarine"
+
+# ============================================================================
+# Data Collection Parameters
+# ============================================================================
+collection:
+  # Crawling settings
+  max_articles: 500              # Maximum articles to collect
+  crawl_depth: 2                 # How many hops from seed articles
+  max_links_per_article: 50      # Maximum links to follow per article
+
+  # Rate limiting (respect Wikipedia's terms)
+  request_delay_seconds: 1.0     # Delay between requests
+  max_requests_per_minute: 30    # Rate limit
+
+  # Caching
+  cache_articles: true
+  cache_directory: "data/raw/wikipedia_articles"
+
+  # Parallel processing
+  parallel_downloads: 3          # Number of concurrent downloads
+
+  # Incremental updates
+  allow_incremental: true        # Can resume interrupted downloads
+  update_existing: false         # Don't re-download existing articles
+
+# ============================================================================
+# Temporal Keywords for Event Detection
+# ============================================================================
+temporal_keywords:
+  # Generic temporal terms
+  - "battle"
+  - "campaign"
+  - "operation"
+  - "offensive"
+  - "invasion"
+  - "siege"
+  - "retreat"
+  - "surrender"
+  - "armistice"
+  - "liberation"
+  - "occupation"
+  - "bombardment"
+  - "raid"
+
+  # Conference/diplomatic
+  - "conference"
+  - "treaty"
+  - "declaration"
+  - "pact"
+  - "agreement"
+
+  # Years (for validation)
+  - "1939"
+  - "1940"
+  - "1941"
+  - "1942"
+  - "1943"
+  - "1944"
+  - "1945"
+
+# ============================================================================
+# Geographic Scope
+# ============================================================================
+geographic_regions:
+  europe:
+    - "Western Front (World War II)"
+    - "Eastern Front (World War II)"
+    - "Italian campaign (World War II)"
+    - "Balkans campaign (World War II)"
+    - "Battle of France"
+
+  pacific:
+    - "Pacific Ocean theatre"
+    - "Southeast Asian theatre"
+    - "China Burma India Theater"
+
+  africa:
+    - "North African campaign"
+    - "East African campaign (World War II)"
+
+  middle_east:
+    - "Middle East theatre of World War II"
+
+  atlantic:
+    - "Battle of the Atlantic"
+    - "Arctic convoys of World War II"
+
+# ============================================================================
+# Priority Articles for MVP (First 50)
+# ============================================================================
+priority_articles:
+  # Overview (1)
+  - "World War II"
+
+  # Major battles - Europe (12)
+  - "D-Day"
+  - "Battle of Stalingrad"
+  - "Battle of Britain"
+  - "Battle of the Bulge"
+  - "Battle of France"
+  - "Siege of Leningrad"
+  - "Battle of Kursk"
+  - "Battle of Berlin"
+  - "Operation Market Garden"
+  - "Battle of Dunkirk"
+  - "Warsaw Uprising"
+  - "Battle of Monte Cassino"
+
+  # Major battles - Pacific (10)
+  - "Attack on Pearl Harbor"
+  - "Battle of Midway"
+  - "Battle of Guadalcanal"
+  - "Battle of Iwo Jima"
+  - "Battle of Okinawa"
+  - "Battle of the Coral Sea"
+  - "Battle of Leyte Gulf"
+  - "Battle of the Philippine Sea"
+  - "Doolittle Raid"
+  - "Battle of Singapore"
+
+  # Major operations (5)
+  - "Operation Barbarossa"
+  - "Operation Overlord"
+  - "Operation Torch"
+  - "Operation Husky"
+  - "Operation Market Garden"
+
+  # Key conferences (4)
+  - "Yalta Conference"
+  - "Tehran Conference"
+  - "Potsdam Conference"
+  - "Casablanca Conference"
+
+  # Alliances and leaders (6)
+  - "Axis powers"
+  - "Allies of World War II"
+  - "Winston Churchill"
+  - "Franklin D. Roosevelt"
+  - "Adolf Hitler"
+  - "Joseph Stalin"
+
+  # Campaigns (5)
+  - "North African campaign"
+  - "Italian campaign (World War II)"
+  - "Burma campaign"
+  - "Battle of the Atlantic"
+  - "Strategic bombing during World War II"
+
+  # Technology and special events (4)
+  - "Manhattan Project"
+  - "Atomic bombings of Hiroshima and Nagasaki"
+  - "The Holocaust"
+  - "Enigma machine"
+
+  # End of war (3)
+  - "End of World War II in Europe"
+  - "Surrender of Japan"
+  - "Nuremberg trials"
+
+# ============================================================================
+# Metadata Enrichment Rules
+# ============================================================================
+enrichment_rules:
+  # Automatically tag articles containing these terms
+  tags:
+    naval_battle:
+      - "naval"
+      - "fleet"
+      - "carrier"
+      - "submarine"
+      - "destroyer"
+
+    air_battle:
+      - "aerial"
+      - "air force"
+      - "bombing"
+      - "fighter"
+      - "bomber"
+
+    conference:
+      - "conference"
+      - "summit"
+      - "meeting"
+
+    siege:
+      - "siege"
+      - "surrounded"
+      - "encirclement"
+
+  # Importance scoring factors
+  importance_factors:
+    - has_infobox: 1.2
+    - article_length_words: 0.0001  # Small boost per word
+    - num_references: 0.05
+    - is_featured_article: 2.0
+    - is_good_article: 1.5
+    - in_priority_list: 1.8
+
+# ============================================================================
+# Validation Rules
+# ============================================================================
+validation:
+  # Required fields
+  required_fields:
+    - "title"
+    - "content"
+    - "url"
+
+  # Content quality checks
+  min_unique_words: 100
+  max_duplicate_ratio: 0.3
+
+  # Date validation
+  require_valid_date_format: true
+  date_range_check: true
+
+# ============================================================================
+# Export Configuration
+# ============================================================================
+export:
+  # Output formats
+  formats:
+    - "json"           # Structured JSON
+    - "markdown"       # Human-readable markdown
+
+  # What to include in exports
+  include_metadata: true
+  include_raw_html: false
+  include_links: true
+  include_categories: true
+  include_infobox: true
+
+  # File naming
+  filename_template: "{period}_{article_id}_{slug}"
+
+  # Compression
+  compress: false     # Don't compress initially for easier debugging

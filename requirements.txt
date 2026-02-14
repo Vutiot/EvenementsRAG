@@ -1,0 +1,58 @@
+# EvenementsRAG - Historical Events RAG System
+# Python 3.10+
+
+# Vector Database
+qdrant-client>=1.7.0,<2.0.0
+
+# Embeddings & LLM
+sentence-transformers>=2.3.0,<3.0.0
+anthropic>=0.18.0,<1.0.0
+openai>=1.12.0,<2.0.0
+langchain>=0.1.6,<0.2.0
+langchain-community>=0.0.19,<0.1.0
+
+# Wikipedia & Data Ingestion
+wikipedia>=1.4.0,<2.0.0
+mwparserfromhell>=0.6.6,<0.7.0
+beautifulsoup4>=4.12.3,<5.0.0
+requests>=2.31.0,<3.0.0
+
+# NLP & Entity Extraction
+spacy>=3.7.0,<4.0.0
+transformers>=4.37.0,<5.0.0
+dateparser>=1.2.0,<2.0.0
+datefinder>=0.7.3,<0.8.0
+
+# Keyword Search
+rank-bm25>=0.2.2,<0.3.0
+
+# Graph Database (Phase 4)
+networkx>=3.2.1,<4.0.0
+pyvis>=0.3.2,<0.4.0
+# neo4j>=5.16.0,<6.0.0  # Optional: uncomment for production
+
+# Evaluation
+ragas>=0.1.1,<0.2.0
+rouge-score>=0.1.2,<0.2.0
+bert-score>=0.3.13,<0.4.0
+datasets>=2.16.0,<3.0.0
+
+# Utilities
+pydantic>=2.6.0,<3.0.0
+pydantic-settings>=2.1.0,<3.0.0
+python-dotenv>=1.0.1,<2.0.0
+loguru>=0.7.2,<0.8.0
+tqdm>=4.66.1,<5.0.0
+pandas>=2.1.4,<3.0.0
+numpy>=1.26.3,<2.0.0
+pyyaml>=6.0.1,<7.0.0
+
+# Development Dependencies
+pytest>=8.0.0,<9.0.0
+pytest-asyncio>=0.23.4,<0.24.0
+pytest-cov>=4.1.0,<5.0.0
+jupyter>=1.0.0,<2.0.0
+ipykernel>=6.29.0,<7.0.0
+black>=24.1.1,<25.0.0
+ruff>=0.2.1,<0.3.0
+isort>=5.13.2,<6.0.0

@@ -1,0 +1,255 @@
+{
+  "avg_recall_at_k": {
+    "1": 0.21916666666666668,
+    "3": 0.4608333333333333,
+    "5": 0.5700000000000001,
+    "10": 1.0
+  },
+  "avg_mrr": 0.85,
+  "avg_ndcg": {
+    "5": 0.8988133802487532,
+    "10": 0.8742811469288803
+  },
+  "metrics_by_type": {
+    "factual": {
+      "recall_at_1": 0.75,
+      "recall_at_3": 0.75,
+      "recall_at_5": 0.75,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_5": 1.0,
+      "ndcg_at_10": 0.9087647951769722
+    },
+    "temporal": {
+      "recall_at_1": 0.0625,
+      "recall_at_3": 0.4375,
+      "recall_at_5": 0.5,
+      "recall_at_10": 1.0,
+      "mrr": 0.75,
+      "ndcg_at_5": 0.8381592427869793,
+      "ndcg_at_10": 0.8269614412887905
+    },
+    "comparative": {
+      "recall_at_1": 0.15000000000000002,
+      "recall_at_3": 0.44999999999999996,
+      "recall_at_5": 0.65,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_5": 1.0,
+      "ndcg_at_10": 0.985446158805285
+    },
+    "entity_centric": {
+      "recall_at_1": 0.13333333333333333,
+      "recall_at_3": 0.31666666666666665,
+      "recall_at_5": 0.5,
+      "recall_at_10": 1.0,
+      "mrr": 1.0,
+      "ndcg_at_5": 0.9837339917445846,
+      "ndcg_at_10": 0.9572841736517527
+    },
+    "relationship": {
+      "recall_at_1": 0.0,
+      "recall_at_3": 0.35,
+      "recall_at_5": 0.45,
+      "recall_at_10": 1.0,
+      "mrr": 0.5,
+      "ndcg_at_5": 0.6721736667122017,
+      "ndcg_at_10": 0.6929491657216015
+    }
+  },
+  "per_question_metrics": [
+    {
+      "question_id": "gen_q001",
+      "question": "Who was the Prime Minister of the United Kingdom during the Casablanca Conference?",
+      "type": "factual",
+      "difficulty": "easy",
+      "source_article": "Casablanca Conference",
+      "ground_truth_count": 2,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 39.75105285644531,
+      "metrics": {
+        "recall_at_1": 0.5,
+        "recall_at_3": 0.5,
+        "recall_at_5": 0.5,
+        "recall_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 0.8175295903539445
+      }
+    },
+    {
+      "question_id": "gen_q002",
+      "question": "What was the codename for the Casablanca Conference?",
+      "type": "factual",
+      "difficulty": "medium",
+      "source_article": "Casablanca Conference",
+      "ground_truth_count": 1,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 18.756866455078125,
+      "metrics": {
+        "recall_at_1": 1.0,
+        "recall_at_3": 1.0,
+        "recall_at_5": 1.0,
+        "recall_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      }
+    },
+    {
+      "question_id": "gen_q003",
+      "question": "When in 1942 was the Doolittle Raid launched?",
+      "type": "temporal",
+      "difficulty": "easy",
+      "source_article": "Doolittle Raid",
+      "ground_truth_count": 8,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 13.410568237304688,
+      "metrics": {
+        "recall_at_1": 0.125,
+        "recall_at_3": 0.375,
+        "recall_at_5": 0.5,
+        "recall_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 0.9828920819566879,
+        "ndcg_at_10": 0.9605291479810893
+      }
+    },
+    {
+      "question_id": "gen_q004",
+      "question": "How many days after the Doolittle Raid did the Battle of Midway take place?",
+      "type": "temporal",
+      "difficulty": "medium",
+      "source_article": "Doolittle Raid",
+      "ground_truth_count": 4,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 16.48879051208496,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.5,
+        "recall_at_5": 0.5,
+        "recall_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6934264036172708,
+        "ndcg_at_10": 0.6933937345964917
+      }
+    },
+    {
+      "question_id": "gen_q005",
+      "question": "How did the treatment of Jews in Germany and German-occupied territories differ before and after the invasion of the Soviet Union in June 1941?",
+      "type": "comparative",
+      "difficulty": "medium",
+      "source_article": "The Holocaust",
+      "ground_truth_count": 5,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 17.465591430664062,
+      "metrics": {
+        "recall_at_1": 0.2,
+        "recall_at_3": 0.6,
+        "recall_at_5": 0.8,
+        "recall_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 0.9708923176105698
+      }
+    },
+    {
+      "question_id": "gen_q006",
+      "question": "Compare the experiences of Jews living in central and western Europe with those in eastern Europe during the lead-up to World War II.",
+      "type": "comparative",
+      "difficulty": "hard",
+      "source_article": "The Holocaust",
+      "ground_truth_count": 10,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 12.633085250854492,
+      "metrics": {
+        "recall_at_1": 0.1,
+        "recall_at_3": 0.3,
+        "recall_at_5": 0.5,
+        "recall_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      }
+    },
+    {
+      "question_id": "gen_q007",
+      "question": "Who was the First Lord of the Admiralty who requested additional ships and men to fight the Battle of the Atlantic on 5 March 1941?",
+      "type": "entity_centric",
+      "difficulty": "easy",
+      "source_article": "Battle of the Atlantic",
+      "ground_truth_count": 6,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 14.029741287231445,
+      "metrics": {
+        "recall_at_1": 0.16666666666666666,
+        "recall_at_3": 0.3333333333333333,
+        "recall_at_5": 0.5,
+        "recall_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 0.9674679834891693,
+        "ndcg_at_10": 0.9145683473035053
+      }
+    },
+    {
+      "question_id": "gen_q008",
+      "question": "Which German naval commander believed that a large surface fleet was not needed to defeat the British, and instead advocated for the use of U-boats?  Provide the title and name of the commander.",
+      "type": "entity_centric",
+      "difficulty": "medium",
+      "source_article": "Battle of the Atlantic",
+      "ground_truth_count": 10,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 17.472505569458008,
+      "metrics": {
+        "recall_at_1": 0.1,
+        "recall_at_3": 0.3,
+        "recall_at_5": 0.5,
+        "recall_at_10": 1.0,
+        "mrr": 1.0,
+        "ndcg_at_5": 1.0,
+        "ndcg_at_10": 1.0
+      }
+    },
+    {
+      "question_id": "gen_q009",
+      "question": "How did the relationship between the United Kingdom and the United States evolve from September 1940 to December 1941, and what key documents reflected this relationship?",
+      "type": "relationship",
+      "difficulty": "medium",
+      "source_article": "Allies of World War II",
+      "ground_truth_count": 4,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 15.105724334716797,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.5,
+        "recall_at_5": 0.5,
+        "recall_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6934264036172708,
+        "ndcg_at_10": 0.7036997876179215
+      }
+    },
+    {
+      "question_id": "gen_q010",
+      "question": "What resulted in the Soviet Union joining the Allies in June 1941, and how did this event alter the dynamics of World War II alliances?",
+      "type": "relationship",
+      "difficulty": "medium",
+      "source_article": "Allies of World War II",
+      "ground_truth_count": 5,
+      "retrieved_count": 10,
+      "retrieval_time_ms": 13.456344604492188,
+      "metrics": {
+        "recall_at_1": 0.0,
+        "recall_at_3": 0.2,
+        "recall_at_5": 0.4,
+        "recall_at_10": 1.0,
+        "mrr": 0.5,
+        "ndcg_at_5": 0.6509209298071326,
+        "ndcg_at_10": 0.6821985438252814
+      }
+    }
+  ],
+  "total_questions": 10,
+  "questions_with_recall_at_5_gt_50": 9,
+  "avg_retrieval_time_ms": 17.857027053833008
+}

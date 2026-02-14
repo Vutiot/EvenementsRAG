@@ -1,0 +1,103 @@
+{
+  "metadata": {
+    "generated_at": "2025-12-31T01:15:26.790358",
+    "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+    "total_questions": 7,
+    "chunks_sampled": 20,
+    "questions_per_chunk": 1,
+    "sampling_strategy": "stratified",
+    "taxonomy_distribution": {
+      "temporal": 2,
+      "analytical": 2,
+      "entity_centric": 2,
+      "relationship": 1
+    },
+    "unique_articles": 7
+  },
+  "questions": [
+    {
+      "question": "At what specific time did Takagi launch 12 Nakajima B5Ns to scout for TF 17?",
+      "type": "temporal",
+      "difficulty": "easy",
+      "expected_answer_hint": "The exact time given in the passage.",
+      "source_chunk_id": "9e775616-7c61-0fa2-dbd9-80ceb2e4251d",
+      "source_article": "Battle of the Coral Sea",
+      "source_article_id": "61992",
+      "generated_at": "2025-12-31T01:15:06.144005",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q001"
+    },
+    {
+      "question": "How did the direct involvement of the authors in the military efforts during the Battle of France influence the perspectives presented in their witness accounts, and what might this reveal about the propaganda efforts through Franz Eher Nachfolger?",
+      "type": "analytical",
+      "difficulty": "hard",
+      "expected_answer_hint": "Compare and analyze the roles of Leixner and Berndt in the Wehrmacht and their subsequent publications. Consider the role of Franz Eher Nachfolger in disseminating these accounts and the potential propaganda impact.",
+      "source_chunk_id": "697ebb3e-b786-eca4-4e0f-671c83d81260",
+      "source_article": "Battle of France",
+      "source_article_id": "228080",
+      "generated_at": "2025-12-31T01:15:10.709883",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q002"
+    },
+    {
+      "question": "Who were the local troops that surrendered in Singapore and became prisoners of war along with British, Indian, and Australian troops?",
+      "type": "entity_centric",
+      "difficulty": "easy",
+      "expected_answer_hint": "The local troops are from Singapore.",
+      "source_chunk_id": "955962df-6fe4-7d20-621a-758d1dfc647f",
+      "source_article": "Fall of Singapore",
+      "source_article_id": "1106744",
+      "generated_at": "2025-12-31T01:15:12.415078",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q003"
+    },
+    {
+      "question": "How did Operation Torch in November 1942 contribute to the strategic goals of the Allies and the Soviet Union, specifically in terms of relieving pressure on the Eastern Front and impacting the supply of Axis forces at Stalingrad?",
+      "type": "analytical",
+      "difficulty": "hard",
+      "expected_answer_hint": "Relief for the Red Army, diversion of Axis forces, impact on German Ju 52 transport planes supplying Stalingrad.",
+      "source_chunk_id": "36220299-fe92-7879-db13-054545eaf443",
+      "source_article": "North African campaign",
+      "source_article_id": "493688",
+      "generated_at": "2025-12-31T01:15:17.187338",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q004"
+    },
+    {
+      "question": "On what date was the agreement validating the London negotiations signed?",
+      "type": "temporal",
+      "difficulty": "easy",
+      "expected_answer_hint": "The date when the agreement for the London negotiations was signed.",
+      "source_chunk_id": "a22b72f3-7dee-dd82-3e59-2224597dea0f",
+      "source_article": "Potsdam Conference",
+      "source_article_id": "24298",
+      "generated_at": "2025-12-31T01:15:19.748010",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q005"
+    },
+    {
+      "question": "What specific items did the soldiers have strapped to their waists as mentioned in the passage?",
+      "type": "entity_centric",
+      "difficulty": "easy",
+      "expected_answer_hint": "A specific weapon is mentioned.",
+      "source_chunk_id": "b1b2937a-da0a-134a-1646-5979505545a3",
+      "source_article": "Normandy landings",
+      "source_article_id": "252854",
+      "generated_at": "2025-12-31T01:15:23.930444",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q006"
+    },
+    {
+      "question": "How did Hitler's Operational Order No. 5 relate to Manstein's plan for the Kursk offensive?",
+      "type": "relationship",
+      "difficulty": "medium",
+      "expected_answer_hint": "The relationship between Manstein's plan presented on 10 March for a rapid offensive and the operational order signed by Hitler on 13 March.",
+      "source_chunk_id": "1c77f294-5a8d-ebac-c08d-b52bec3bd37b",
+      "source_article": "Battle of Kursk",
+      "source_article_id": "33102",
+      "generated_at": "2025-12-31T01:15:26.788211",
+      "model": "mistralai/mistral-small-3.1-24b-instruct:free",
+      "id": "gen_q007"
+    }
+  ]
+}
