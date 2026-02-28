@@ -77,9 +77,9 @@ graph TD
   E2F3T3 --> E5F1T1
   E5F1T1 --> E5F1T2
 
-  style E1F1T1 fill:#3b82f6
-  style E1F1T2 fill:#3b82f6
-  style E1F1T3 fill:#f59e0b
+  style E1F1T1 fill:#22c55e
+  style E1F1T2 fill:#22c55e
+  style E1F1T3 fill:#3b82f6
   style E1F2T1 fill:#f59e0b
   style E1F2T2 fill:#f59e0b
   style E2F1T1 fill:#6b7280
@@ -114,23 +114,23 @@ The foundation for parameterized evaluation. Establishes config management, metr
 
 #### E1-F1: Benchmark Configuration & Execution
 
-##### 🔵 E1-F1-T1: Setup benchmarking config schema
+##### ✅ E1-F1-T1: Setup benchmarking config schema
 - blocked_by: []
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Create YAML/Pydantic schema for benchmark config (dataset, vector_db, chunk_size, embeddings, rag_technique, reranker, generation_params). Should support presets and CLI override.
 - description: Define the configuration structure for parameterized benchmarks. Must support all parameters from benchmark.md (retrieval params, generation params, metrics config). Create Pydantic BaseModel for validation and serialization.
 
-##### 🔵 E1-F1-T2: Create benchmark runner framework
+##### ✅ E1-F1-T2: Create benchmark runner framework
 - blocked_by: [E1-F1-T1]
-- status: ready
+- status: done
 - effort: L
 - agent_hint: Implement BenchmarkRunner class that takes a config, initializes the RAG pipeline, runs queries, collects results in standardized format. Should be composable and support batching.
 - description: Build the main benchmarking orchestrator. Takes a config, sets up the RAG system, executes evaluation questions, and returns structured results (retrieval metrics, generation metrics, latency). Must be reusable across different phases.
 
-##### 🟡 E1-F1-T3: Add result serialization & logging
+##### 🔵 E1-F1-T3: Add result serialization & logging
 - blocked_by: [E1-F1-T2]
-- status: in_progress
+- status: ready
 - effort: S
 - agent_hint: Save benchmark results to JSON with timestamp, config, all metrics. Add structured logging with timestamps and config hashing for traceability.
 - description: Implement JSON serialization for benchmark results with config, timestamps, and result metadata. Add logging to track benchmark execution.
@@ -396,6 +396,20 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - Metrics collection (Article Hit@K, Chunk Hit@K, MRR, ROUGE, BERTScore)
 - Evaluation harness (run_evaluation.py, benchmark runner)
 
+✅ **E1-F1-T1 – Benchmarking Config Schema**
+- `BenchmarkConfig` + 7 Pydantic v2 sub-models (DatasetConfig, EmbeddingConfig, ChunkingConfig, RetrievalConfig, RerankerConfig, GenerationConfig, EvaluationConfig)
+- SHA-256 config hashing (16-char, excludes name/description for cache stability)
+- YAML round-trip I/O, named presets (`phase1_vanilla`, `phase2_hybrid`)
+- Preset files: `config/benchmarks/phase1_vanilla.yaml`, `config/benchmarks/phase2_hybrid.yaml`
+
+✅ **E1-F1-T2 – Benchmark Runner Framework**
+- `ParameterizedBenchmarkRunner`: drives evaluation from a `BenchmarkConfig`
+- `BenchmarkResult` dataclass with `to_dict()`, `to_json()`, `print_summary()`
+- `run()`: initialises shared deps (QdrantManager, EmbeddingGenerator), builds RAG pipeline, delegates to legacy `BenchmarkRunner`, optional generation pass
+- `run_sweep()`: batches multiple configs, skips `NotImplementedError` by default, saves per-result JSON
+- `_RAG_REGISTRY`: lazy-import dispatch (vanilla implemented; hybrid/temporal raise `NotImplementedError` until E2-F3)
+- **Unit tests**: `tests/unit/benchmarks/` — 39 tests, 98% coverage on `config.py`, 90% on `runner.py`
+
 ---
 
 ## Summary
@@ -403,25 +417,48 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Ready (no blockers)** | 5 (E1-F1-T1, E1-F1-T2, E1-F2-T1, E2-F1-T1, E2-F4-T1) |
-| **In Progress** | 3 (E1-F1-T3, E1-F2-T2, misc.) |
-| **Pending** | 25 |
-| **Critical Path Length** | 14 sequential tasks |
+| **Done** | 2 (E1-F1-T1, E1-F1-T2) |
+| **Ready (no blockers)** | 4 (E1-F1-T3, E1-F2-T1, E2-F1-T1, E2-F4-T1) |
+| **In Progress** | 1 (E1-F2-T2) |
+| **Pending** | 26 |
+| **Critical Path Length** | 14 sequential tasks (12 remaining) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
-1. E1-F1-T1: Define benchmark config schema (foundation for all else)
-2. E1-F1-T2: Build BenchmarkRunner class (orchestrates everything)
-3. E1-F1-T3: Finalize result serialization (enables caching later)
-4. E1-F2-T1: Metric collection system (outputs all numbers)
-5. E1-F2-T2: RAGAS integration (last piece of core metrics)
+1. E1-F1-T3: Add result serialization & logging (unblocked by E1-F1-T2 ✅)
+2. E1-F2-T1: Implement metric collection system (unblocked, feeds RAGAS)
+3. E1-F2-T2: Finish RAGAS integration (in progress, blocked on E1-F2-T1)
 
 Then proceed to **Parallel Group A** (E2 parameters) while E1 is being finalized.
 
 ---
 
+## Architecture Decisions
+
+### E1-F1-T1 — BenchmarkConfig schema
+
+**Pydantic v2 with 7 nested sub-models** (not dataclasses or plain dicts).
+Rationale: validators run at construction time (`model_validator`), YAML round-trip is trivial via `model_dump()` / `model_validate()`, and Pydantic v2 is already a project dependency.
+
+**`config_hash` excludes `name` and `description`** (SHA-256 of remaining fields, first 16 hex chars).
+Rationale: renaming a benchmark run must not invalidate the E4 result cache — only parameter changes should bust the hash.
+
+### E1-F1-T2 — ParameterizedBenchmarkRunner
+
+**`_RAG_REGISTRY` with lazy dotted-class-path imports** (`importlib.import_module`).
+Rationale: avoids loading heavy model classes at module import time. Unimplemented techniques map to `None` → `NotImplementedError`, making the registry self-documenting about implementation status.
+
+**Constructor injection for `QdrantManager` / `EmbeddingGenerator`**.
+Rationale: `run_sweep()` can share a single model instance across all sweep configs (avoids reloading sentence-transformers per config). Also makes unit testing trivial — pass `MagicMock()` at construction, no module-level patching required.
+
+**Local imports inside `run()`** for `EmbeddingGenerator` and `QdrantManager`.
+Rationale: defers loading sentence-transformers and qdrant-client until `run()` is actually called; code paths that only inspect or hash configs pay no import cost.
+
+---
+
 ## Notes
 
+- Tasks marked ✅ are **done**
 - Tasks marked 🔵 are **ready** (no dependencies blocking them)
 - Tasks marked 🟡 are **in_progress** (partial completion, mergeable)
 - Tasks marked ⚪ are **pending** (waiting on dependencies)
