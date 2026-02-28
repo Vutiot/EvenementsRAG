@@ -4,7 +4,7 @@
 
 EvenementsRAG is a progressive RAG benchmarking system for historical events (WW2), designed to systematically evaluate and compare different RAG techniques, retrieval parameters, and generation configurations. The project has successfully implemented a hybrid RAG baseline with 10k Wikipedia articles and is expanding into comprehensive benchmarking infrastructure with parameterized evaluation and visualization.
 
-**Current State**: Phase 1 baseline (vanilla RAG) and Phase 2 (hybrid RAG + temporal) evaluated on 49 articles. Phase 3 infrastructure (parametrized benchmarking) in planning. Goal: Build a complete benchmarking framework with UI to test arbitrary configurations and visualize results.
+**Current State**: Phase 1 baseline (vanilla RAG) and Phase 2 (hybrid RAG + temporal) evaluated on 49 articles. Benchmarking config schema (E1-F1-T1) and runner framework (E1-F1-T2) implemented and unit-tested. Next: result serialization (E1-F1-T3) and metric collection (E1-F2-T1). Goal: Build a complete benchmarking framework with UI to test arbitrary configurations and visualize results.
 
 ---
 
@@ -12,9 +12,9 @@ EvenementsRAG is a progressive RAG benchmarking system for historical events (WW
 
 ```mermaid
 graph TD
-  E1F1T1["🔵 E1-F1-T1: Setup benchmarking config schema"]
-  E1F1T2["🔵 E1-F1-T2: Create benchmark runner framework"]
-  E1F1T3["🟡 E1-F1-T3: Add result serialization & logging"]
+  E1F1T1["✅ E1-F1-T1: Setup benchmarking config schema"]
+  E1F1T2["✅ E1-F1-T2: Create benchmark runner framework"]
+  E1F1T3["🔵 E1-F1-T3: Add result serialization & logging"]
 
   E1F2T1["🔵 E1-F2-T1: Implement metric collection system"]
   E1F2T2["🟡 E1-F2-T2: Add RAGAS metrics integration"]
