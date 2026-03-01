@@ -29,13 +29,22 @@ def _map_rag_chunk_to_api(chunk: RAGChunk) -> RetrievedChunk:
 
 @router.post("/query", response_model=QueryResult)
 async def execute_query(request: QueryRequest):
-    """Execute a query against the RAG system."""
+    """Execute a query against the RAG system.
+
+    For the 'default.yaml' preset, also checks for user overrides in 'user-config.yaml'
+    and merges them if the file exists.
+    """
     # Validate that the preset exists
     preset_path = PRESETS_DIR / request.preset
     if not preset_path.exists():
         raise HTTPException(status_code=404, detail=f"Preset '{request.preset}' not found")
 
-    cfg = BenchmarkConfig.from_yaml(preset_path)
+    # For default preset, also check for user overrides
+    if request.preset == "default.yaml":
+        user_config_path = PRESETS_DIR / "user-config.yaml"
+        cfg = BenchmarkConfig.load_with_user_overrides(preset_path, user_config_path)
+    else:
+        cfg = BenchmarkConfig.from_yaml(preset_path)
 
     try:
         result = await asyncio.to_thread(
