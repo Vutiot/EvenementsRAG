@@ -110,7 +110,7 @@ class BenchmarkResult:
 class ParameterizedBenchmarkRunner:
     """Drives evaluation from a BenchmarkConfig.
 
-    Shared QdrantManager and EmbeddingGenerator instances are reused between
+    Shared vector store and EmbeddingGenerator instances are reused between
     the RAG pipeline and the legacy BenchmarkRunner to avoid double model
     loading during parameter sweeps.
     """
@@ -118,11 +118,14 @@ class ParameterizedBenchmarkRunner:
     def __init__(
         self,
         config: BenchmarkConfig,
-        qdrant_manager=None,
+        vector_store=None,
         embedding_generator=None,
+        # Backward compatibility alias
+        qdrant_manager=None,
     ):
         self.config = config
-        self._qdrant = qdrant_manager        # injected or lazy-initialised in run()
+        # Accept either name; vector_store takes precedence
+        self._vector_store = vector_store or qdrant_manager
         self._embedding_gen = embedding_generator
         self._rag_pipeline = None
 
@@ -150,17 +153,17 @@ class ParameterizedBenchmarkRunner:
             BenchmarkResult with retrieval metrics and optional generated answers.
         """
         from src.embeddings.embedding_generator import EmbeddingGenerator
-        from src.vector_store.qdrant_manager import QdrantManager
+        from src.vector_store.factory import VectorStoreFactory
 
         wall_start = time.time()
 
         questions_path = Path(questions_file or self.config.dataset.questions_file)
 
         # Initialise shared deps once (avoids double model loading in sweeps)
-        if self._qdrant is None:
-            self._qdrant = QdrantManager()
+        if self._vector_store is None:
+            self._vector_store = VectorStoreFactory.from_config(self.config.vector_db)
         if self._embedding_gen is None:
-            self._embedding_gen = EmbeddingGenerator()
+            self._embedding_gen = EmbeddingGenerator(model_name=self.config.embedding.model_name)
 
         # Build RAG pipeline (raises NotImplementedError for unimplemented techniques)
         self._build_rag_pipeline()
@@ -168,7 +171,7 @@ class ParameterizedBenchmarkRunner:
         # Delegate retrieval evaluation to the existing BenchmarkRunner
         legacy_runner = BenchmarkRunner(
             questions_file=questions_path,
-            qdrant_manager=self._qdrant,
+            qdrant_manager=self._vector_store,
             embedding_generator=self._embedding_gen,
             k_values=self.config.evaluation.k_values,
         )
@@ -268,7 +271,7 @@ class ParameterizedBenchmarkRunner:
 
         self._rag_pipeline = cls(
             collection_name=self.config.dataset.collection_name,
-            qdrant_manager=self._qdrant,
+            qdrant_manager=self._vector_store,
             embedding_generator=self._embedding_gen,
         )
         logger.debug(f"Built RAG pipeline: {class_name} for technique='{technique}'")
