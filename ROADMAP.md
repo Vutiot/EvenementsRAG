@@ -703,6 +703,20 @@ Rationale: each store instance can be configured with a different default at con
 **Manhattan excluded from `distance_metric_sweep()`**.
 Rationale: no backend supports it natively — Qdrant has no mapping, FAISS has no flat Manhattan index, pgvector has no `<#>` operator for it. Including it would only produce errors.
 
+### E3-F1-T1 — Query Tester UI
+
+**FastAPI + React (not Streamlit)**.
+Rationale: Streamlit is quick for prototyping but has limited control over layout, navigation, and component state. FastAPI serves Pydantic models directly as JSON (zero serialization boilerplate), and React with TypeScript gives full control over the UI. The existing `BenchmarkConfig` Pydantic models serialize via `model_dump()` → JSON natively through FastAPI.
+
+**Two-process dev workflow** (uvicorn + vite dev with proxy).
+Rationale: Vite's HMR provides instant frontend updates without restarting the backend. The proxy (`/api` → `localhost:8000`) avoids CORS issues in development while keeping the frontend and backend codebases separate. Production builds can be served statically by FastAPI.
+
+**Query endpoint stub with mock data** (real implementation deferred to E3-F1-T2).
+Rationale: allows full frontend development and testing without requiring a running Qdrant instance or loaded embeddings. The mock data matches the real `RetrievedChunk` / `RAGResponse` shapes, ensuring the UI handles real data without changes.
+
+**Preset scanning from filesystem** (`config/benchmarks/*.yaml`).
+Rationale: presets are already YAML files on disk. Loading via `BenchmarkConfig.from_yaml()` reuses existing Pydantic validation. No database or registry needed at this stage.
+
 ---
 
 ## Notes

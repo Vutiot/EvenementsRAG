@@ -47,6 +47,10 @@ rouge-score = "^0.1.2"
 bert-score = "^0.3.13"
 datasets = "^2.16.0"
 
+# Web API
+fastapi = ">=0.115.0"
+uvicorn = { version = ">=0.30.0", extras = ["standard"] }
+
 # Utilities
 pydantic = "^2.6.0"
 pydantic-settings = "^2.1.0"
