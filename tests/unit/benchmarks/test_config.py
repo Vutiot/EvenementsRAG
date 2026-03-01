@@ -407,3 +407,122 @@ class TestEvaluationConfigRagas:
             update={"evaluation": EvaluationConfig(compute_ragas=True)}
         )
         assert modified.config_hash() != h1
+
+
+# ---------------------------------------------------------------------------
+# User config merging (E3-F1-T3)
+# ---------------------------------------------------------------------------
+
+
+class TestLoadWithUserOverrides:
+    def test_load_with_empty_user_config(self, tmp_path):
+        """Loading with empty/non-existent user config returns base config."""
+        base_path = Path("config/benchmarks/default.yaml")
+        cfg = BenchmarkConfig.load_with_user_overrides(base_path)
+        assert cfg.name == "default"
+        assert cfg.generation.model == "mistralai/mistral-small-3.1-24b-instruct:free"
+
+    def test_load_with_empty_user_config_file(self, tmp_path):
+        """Loading with empty user config file (no content) returns base config."""
+        base_path = Path("config/benchmarks/default.yaml")
+        user_path = tmp_path / "empty.yaml"
+        user_path.write_text("")
+
+        cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
+        assert cfg.name == "default"
+        assert cfg.generation.model == "mistralai/mistral-small-3.1-24b-instruct:free"
+
+    def test_load_with_single_field_override(self, tmp_path):
+        """User config overrides a single field in base config."""
+        base_path = Path("config/benchmarks/default.yaml")
+        user_path = tmp_path / "user.yaml"
+        user_path.write_text("generation:\n  model: custom-model:free\n")
+
+        cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
+        assert cfg.generation.model == "custom-model:free"
+        # Other fields should remain unchanged
+        assert cfg.generation.temperature == 0.0
+        assert cfg.chunking.chunk_size == 512
+
+    def test_load_with_multiple_field_overrides(self, tmp_path):
+        """User config overrides multiple fields."""
+        base_path = Path("config/benchmarks/default.yaml")
+        user_path = tmp_path / "user.yaml"
+        user_path.write_text(
+            "generation:\n"
+            "  model: custom-model:free\n"
+            "  temperature: 0.5\n"
+            "  max_tokens: 1000\n"
+        )
+
+        cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
+        assert cfg.generation.model == "custom-model:free"
+        assert cfg.generation.temperature == 0.5
+        assert cfg.generation.max_tokens == 1000
+        # Other generation fields should remain unchanged
+        assert cfg.generation.top_k_chunks == 5
+
+    def test_load_with_nested_override(self, tmp_path):
+        """User config can override nested fields across different sections."""
+        base_path = Path("config/benchmarks/default.yaml")
+        user_path = tmp_path / "user.yaml"
+        user_path.write_text(
+            "generation:\n"
+            "  model: llama:free\n"
+            "chunking:\n"
+            "  chunk_size: 1024\n"
+        )
+
+        cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
+        assert cfg.generation.model == "llama:free"
+        assert cfg.chunking.chunk_size == 1024
+        assert cfg.chunking.chunk_overlap == 50  # Unchanged
+
+    def test_load_with_nonexistent_user_path(self, tmp_path):
+        """If user_config_path doesn't exist, returns base config."""
+        base_path = Path("config/benchmarks/default.yaml")
+        user_path = tmp_path / "nonexistent.yaml"
+
+        cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
+        assert cfg.name == "default"
+        assert cfg.generation.model == "mistralai/mistral-small-3.1-24b-instruct:free"
+
+    def test_load_with_none_user_path(self):
+        """If user_config_path is None, returns base config."""
+        base_path = Path("config/benchmarks/default.yaml")
+        cfg = BenchmarkConfig.load_with_user_overrides(base_path, None)
+        assert cfg.name == "default"
+        assert cfg.generation.model == "mistralai/mistral-small-3.1-24b-instruct:free"
+
+    def test_load_preserves_config_hash_on_no_override(self, tmp_path):
+        """Config hash should be the same if user config doesn't override anything."""
+        base_path = Path("config/benchmarks/default.yaml")
+        base_cfg = BenchmarkConfig.from_yaml(base_path)
+
+        user_path = tmp_path / "empty_override.yaml"
+        user_path.write_text("# Empty override file\n")
+
+        cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
+        assert cfg.config_hash() == base_cfg.config_hash()
+
+    def test_default_yaml_exists_and_loads(self):
+        """The default.yaml preset file exists and loads correctly."""
+        default_path = Path("config/benchmarks/default.yaml")
+        assert default_path.exists()
+
+        cfg = BenchmarkConfig.from_yaml(default_path)
+        assert cfg.name == "default"
+        assert cfg.description == "Default preset - base configuration for interactive queries"
+
+    def test_user_config_yaml_exists(self):
+        """The user-config.yaml template file exists."""
+        user_config_path = Path("config/benchmarks/user-config.yaml")
+        assert user_config_path.exists()
+
+    def test_root_symlinks_exist(self):
+        """Root-level symlinks exist and point to the correct files."""
+        default_link = Path("default.yaml")
+        user_config_link = Path("user-config.yaml")
+
+        assert default_link.exists() or default_link.is_symlink()
+        assert user_config_link.exists() or user_config_link.is_symlink()

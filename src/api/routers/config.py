@@ -1,5 +1,7 @@
 """Preset configuration endpoints."""
 
+from pathlib import Path
+
 from fastapi import APIRouter, HTTPException
 
 from src.api.dependencies import PRESETS_DIR
@@ -11,9 +13,16 @@ router = APIRouter()
 
 @router.get("/presets", response_model=list[PresetInfo])
 def list_presets():
-    """List all YAML preset files from config/benchmarks/."""
+    """List all YAML preset files from config/benchmarks/.
+
+    Excludes user-config.yaml (template for user overrides) from the list.
+    """
     presets = []
     for path in sorted(PRESETS_DIR.glob("*.yaml")):
+        # Skip user-config.yaml as it's a template, not a preset
+        if path.name == "user-config.yaml":
+            continue
+
         try:
             cfg = BenchmarkConfig.from_yaml(path)
             presets.append(PresetInfo(
@@ -32,12 +41,23 @@ def list_presets():
 
 @router.get("/presets/{filename}")
 def get_preset(filename: str):
-    """Return full config as JSON for a specific preset."""
+    """Return full config as JSON for a specific preset.
+
+    For the 'default.yaml' preset, also checks for user overrides in 'user-config.yaml'
+    and merges them if the file exists.
+    """
     path = PRESETS_DIR / filename
     if not path.exists() or not path.suffix == ".yaml":
         raise HTTPException(status_code=404, detail=f"Preset '{filename}' not found")
     # Prevent path traversal
     if not path.resolve().parent == PRESETS_DIR.resolve():
         raise HTTPException(status_code=400, detail="Invalid filename")
-    cfg = BenchmarkConfig.from_yaml(path)
+
+    # For default preset, also check for user overrides
+    if filename == "default.yaml":
+        user_config_path = PRESETS_DIR / "user-config.yaml"
+        cfg = BenchmarkConfig.load_with_user_overrides(path, user_config_path)
+    else:
+        cfg = BenchmarkConfig.from_yaml(path)
+
     return cfg.model_dump()

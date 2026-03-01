@@ -1,0 +1,18 @@
+# User configuration template for overriding default.yaml
+# This file allows you to change settings without modifying the base configuration.
+# Any fields you specify here will override the values in default.yaml
+#
+# To use a different model from your .env:
+#   1. Edit the generation.model line below (uncomment it)
+#   2. Set it to the model you want (e.g., from OPENROUTER_MODEL in .env)
+#   3. Restart the backend
+#
+# Example (uncomment to use):
+# generation:
+#   model: meta-llama/llama-3.3-70b-instruct:free
+#   temperature: 0.5
+#   max_tokens: 3000
+#
+# You can override any field from default.yaml here. Only include the fields you want to change.
+generation:
+  model: qwen/qwen3-vl-235b-a22b-thinking

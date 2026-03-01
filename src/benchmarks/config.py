@@ -25,6 +25,24 @@ from pydantic import BaseModel, Field, model_validator
 
 
 # ---------------------------------------------------------------------------
+# Utilities
+# ---------------------------------------------------------------------------
+
+
+def _deep_merge(base: dict, overrides: dict) -> None:
+    """Deep merge *overrides* into *base* dict in-place.
+
+    Recursively merges nested dicts. Non-dict values in overrides completely
+    replace values in base.
+    """
+    for key, value in overrides.items():
+        if key in base and isinstance(base[key], dict) and isinstance(value, dict):
+            _deep_merge(base[key], value)
+        else:
+            base[key] = value
+
+
+# ---------------------------------------------------------------------------
 # Sub-models
 # ---------------------------------------------------------------------------
 
@@ -280,6 +298,41 @@ class BenchmarkConfig(BaseModel):
         """Load from a YAML string (useful in tests)."""
         data = yaml.safe_load(content)
         return cls.model_validate(data)
+
+    @classmethod
+    def load_with_user_overrides(
+        cls,
+        preset_path: Path,
+        user_config_path: Optional[Path] = None,
+    ) -> "BenchmarkConfig":
+        """Load preset YAML and optionally merge user overrides.
+
+        Args:
+            preset_path: Path to the base preset YAML file.
+            user_config_path: Optional path to user overrides YAML. If provided and exists,
+                              its values are deep-merged on top of the preset.
+
+        Returns:
+            BenchmarkConfig with user overrides applied (if user_config_path exists).
+
+        Example:
+            # Load default.yaml and optionally merge user-config.yaml
+            cfg = BenchmarkConfig.load_with_user_overrides(
+                Path("config/benchmarks/default.yaml"),
+                Path("config/benchmarks/user-config.yaml")
+            )
+        """
+        base = cls.from_yaml(preset_path)
+
+        if user_config_path and Path(user_config_path).exists():
+            user_data = yaml.safe_load(Path(user_config_path).read_text(encoding="utf-8"))
+            if user_data:  # Only merge if user config is not empty
+                # Deep merge user config on top of base
+                merged = base.model_dump()
+                _deep_merge(merged, user_data)
+                return cls.model_validate(merged)
+
+        return base
 
     # ------------------------------------------------------------------
     # Named presets

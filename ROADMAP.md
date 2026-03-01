@@ -259,9 +259,9 @@ Web interface for testing individual queries and visualizing benchmark results.
 - agent_hint: Implement backend endpoint for single query execution with specific config. Return: retrieved chunks, reranked order, generation result, latency breakdown, all metrics.
 - description: Implement query execution API endpoint. Takes query + config, returns full trace of retrieval, ranking, and generation steps.
 
-##### 🔵 E3-F1-T3: Add config selector & preset management
+##### ✅ E3-F1-T3: Add config selector & preset management
 - blocked_by: [E3-F1-T2]
-- status: ready
+- status: done
 - effort: S
 - agent_hint: UI component for config selection (presets: Phase1, Phase2, Phase3+variants). Allow quick switching between common configs, display current settings, allow one-off parameter override.
 - description: Add UI for config management. Support preset configs (Phase1, Phase2, Phase3 variants) with quick switching and parameter overrides.
@@ -730,6 +730,23 @@ Rationale: importing `runner.py`'s `_RAG_REGISTRY` would pull in the full benchm
 
 **`asyncio.to_thread()`** for sync RAG code in async endpoint.
 Rationale: the RAG pipeline (embedding, vector search, LLM call) is synchronous. Wrapping in `to_thread()` prevents blocking FastAPI's event loop without requiring a task queue or background worker.
+
+### E3-F1-T3 — Root-Level Dynamic Preset for Model Switching
+
+**Two-file pattern: `default.yaml` + `user-config.yaml`** (with YAML merging in code).
+Rationale: Users want to change the LLM model (via `.env`'s `OPENROUTER_MODEL`) and test it in queries without modifying version-controlled preset files. The `default.yaml` preset provides a stable base (version-controlled), while `user-config.yaml` (gitignored) allows users to override specific fields. Deep-merge at load time means users only specify changed fields — no need to repeat all 100+ config lines.
+
+**Merge applied only to "default" preset at API load time** (`BenchmarkConfig.load_with_user_overrides()`).
+Rationale: other presets (phase1, phase2, sweeps) are experimental and fixed by design — they should not be affected by user overrides. Only the "default" preset is intended for interactive, user-facing queries.
+
+**Symlinks at project root** (`./default.yaml` → `config/benchmarks/default.yaml`).
+Rationale: Users starting the backend are at the project root and may want to edit presets without navigating to `config/benchmarks/`. Symlinks keep the source of truth in version control while providing convenience access. `.gitignore` excludes `user-config.yaml` so users can commit changes to `default.yaml` without accidentally exposing personal API keys or test overrides.
+
+**`user-config.yaml` excluded from API preset listing** (`list_presets()` filters it out).
+Rationale: it's a template/override file, not a preset in its own right. Excluding it keeps the preset UI clean and prevents confusion (e.g., showing "failed to parse" when it's intentionally empty).
+
+**Documentation in `.env`** explaining the pattern.
+Rationale: new users benefit from a clear example of how to use `user-config.yaml` to override the model and test different LLMs. The `.env` file is already read for API credentials, so it's a natural place for this explanation.
 
 ---
 

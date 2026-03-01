@@ -13,7 +13,9 @@ class TestListPresets:
         assert response.status_code == 200
         data = response.json()
         assert isinstance(data, list)
-        assert len(data) == 30
+        # Should have 31 presets (30 from before + default.yaml)
+        # user-config.yaml is excluded as it's a template, not a preset
+        assert len(data) == 31
 
     def test_preset_has_required_fields(self):
         response = client.get("/api/presets")
