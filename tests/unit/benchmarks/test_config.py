@@ -354,7 +354,7 @@ class TestGenerationSweeps:
 
     def test_model_sweep_returns_3_configs(self, vanilla_config):
         configs = vanilla_config.model_sweep()
-        assert len(configs) == 3
+        assert len(configs) == 4
 
     def test_model_sweep_uses_openrouter_free_models(self, vanilla_config):
         configs = vanilla_config.model_sweep()
@@ -374,7 +374,7 @@ class TestGenerationSweeps:
     def test_model_sweep_configs_have_different_hashes(self, vanilla_config):
         configs = vanilla_config.model_sweep()
         hashes = [c.config_hash() for c in configs]
-        assert len(set(hashes)) == 3  # all distinct
+        assert len(set(hashes)) == 4  # all distinct
 
 
 # ---------------------------------------------------------------------------
