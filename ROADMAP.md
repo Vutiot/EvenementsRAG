@@ -33,8 +33,8 @@ graph TD
   E2F4T1["✅ E2-F4-T1: Parametrize generation settings"]
 
   E3F1T1["✅ E3-F1-T1: Design query tester UI (web framework)"]
-  E3F1T2["🔵 E3-F1-T2: Implement single-query execution interface"]
-  E3F1T3["⚪ E3-F1-T3: Add config selector & preset management"]
+  E3F1T2["✅ E3-F1-T2: Implement single-query execution interface"]
+  E3F1T3["🔵 E3-F1-T3: Add config selector & preset management"]
 
   E3F2T1["🔵 E3-F2-T1: Design benchmark result viewer"]
   E3F2T2["⚪ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)"]
@@ -252,16 +252,16 @@ Web interface for testing individual queries and visualizing benchmark results.
 - agent_hint: Choose web framework (FastAPI + React, or Streamlit). Design single-page app with: config selector, query input, live execution, result display showing retrieval + generation steps. Reference benchmark.md UI spec.
 - description: Build interactive query testing UI. User can select config preset, enter query, execute, and see detailed retrieval and generation results with latency breakdown.
 
-##### 🔵 E3-F1-T2: Implement single-query execution interface
+##### ✅ E3-F1-T2: Implement single-query execution interface
 - blocked_by: [E3-F1-T1]
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Implement backend endpoint for single query execution with specific config. Return: retrieved chunks, reranked order, generation result, latency breakdown, all metrics.
 - description: Implement query execution API endpoint. Takes query + config, returns full trace of retrieval, ranking, and generation steps.
 
-##### ⚪ E3-F1-T3: Add config selector & preset management
+##### 🔵 E3-F1-T3: Add config selector & preset management
 - blocked_by: [E3-F1-T2]
-- status: pending
+- status: ready
 - effort: S
 - agent_hint: UI component for config selection (presets: Phase1, Phase2, Phase3+variants). Allow quick switching between common configs, display current settings, allow one-off parameter override.
 - description: Add UI for config management. Support preset configs (Phase1, Phase2, Phase3 variants) with quick switching and parameter overrides.
@@ -492,19 +492,19 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Done** | 16 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1) |
-| **Ready (no blockers)** | 3 (E3-F1-T2, E3-F2-T1, E5-F1-T1) |
+| **Done** | 17 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2) |
+| **Ready (no blockers)** | 3 (E3-F1-T3, E3-F2-T1, E5-F1-T1) |
 | **In Progress** | 0 |
-| **Pending** | 14 |
+| **Pending** | 13 |
 | **Critical Path Length** | 14 sequential tasks (7 remaining) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
-1. E3-F1-T2: Implement single-query execution interface
+1. E3-F1-T3: Add config selector & preset management
 2. E3-F2-T1: Design benchmark result viewer
 3. E5-F1-T1: Implement LazyGraphRAG variant
 
-**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) in progress — E3-F1-T1 done, E3-F1-T2 and E3-F2-T1 ready.
+**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) in progress — E3-F1-T1 and E3-F1-T2 done, E3-F1-T3 and E3-F2-T1 ready.
 
 ---
 
@@ -716,6 +716,20 @@ Rationale: allows full frontend development and testing without requiring a runn
 
 **Preset scanning from filesystem** (`config/benchmarks/*.yaml`).
 Rationale: presets are already YAML files on disk. Loading via `BenchmarkConfig.from_yaml()` reuses existing Pydantic validation. No database or registry needed at this stage.
+
+### E3-F1-T2 — Single-Query Execution Interface
+
+**Pipeline caching via `QueryService`** (max 5 entries, FIFO eviction, keyed by `config_hash()`).
+Rationale: RAG pipelines load embedding models (~100-500 MB each). Caching avoids reloading on every request. Two presets with identical functional parameters share one pipeline since they produce the same `config_hash()`. FIFO eviction with a low cap (5) prevents unbounded memory growth. Thread-safe via `threading.Lock`.
+
+**Fast-fail on missing collection** (HTTP 409, not silent indexing).
+Rationale: indexing 10k articles takes minutes and should be an explicit user action, not a side-effect of a query. The API raises `CollectionNotIndexedError` immediately so the UI can display a clear message.
+
+**Local RAG registry** (2-entry dict in `query_service.py`).
+Rationale: importing `runner.py`'s `_RAG_REGISTRY` would pull in the full benchmark runner stack (BenchmarkRunner, MetricsCollector, etc.) into the API process. A local copy with just `vanilla` and `hybrid` keeps the API lightweight.
+
+**`asyncio.to_thread()`** for sync RAG code in async endpoint.
+Rationale: the RAG pipeline (embedding, vector search, LLM call) is synchronous. Wrapping in `to_thread()` prevents blocking FastAPI's event loop without requiring a task queue or background worker.
 
 ---
 
