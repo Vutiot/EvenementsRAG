@@ -101,12 +101,21 @@ class RerankerConfig(BaseModel):
         return self
 
 
+OPENROUTER_FREE_MODELS: list[str] = [
+    "mistralai/mistral-small-3.1-24b-instruct:free",
+    "meta-llama/llama-3.1-8b-instruct:free",
+    "google/gemma-2-9b-it:free",
+]
+
+
 class GenerationConfig(BaseModel):
     llm_provider: Literal["anthropic", "openai", "openrouter"] = "openrouter"
     model: str = "mistralai/mistral-small-3.1-24b-instruct:free"
     temperature: float = Field(0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(2000, ge=1, le=8000)
     top_k_chunks: int = Field(5, ge=1, le=20)
+    top_k_articles: Optional[int] = Field(None, ge=1, le=20)
+    prompt_template: Optional[str] = None
     enabled: bool = True
 
 
@@ -228,3 +237,43 @@ class BenchmarkConfig(BaseModel):
             ),
             evaluation=EvaluationConfig(k_values=[1, 3, 5, 10]),
         )
+
+    # ------------------------------------------------------------------
+    # Generation parameter sweeps
+    # ------------------------------------------------------------------
+
+    def temperature_sweep(self) -> list["BenchmarkConfig"]:
+        """Return 3 configs varying temperature: 0.0, 0.3, 0.7."""
+        configs = []
+        for t in [0.0, 0.3, 0.7]:
+            gen = self.generation.model_copy(update={"temperature": t})
+            configs.append(self.model_copy(update={
+                "name": f"{self.name}_temp{t}",
+                "generation": gen,
+            }))
+        return configs
+
+    def top_k_chunks_sweep(self) -> list["BenchmarkConfig"]:
+        """Return 3 configs varying top_k_chunks: 3, 5, 10."""
+        configs = []
+        for k in [3, 5, 10]:
+            gen = self.generation.model_copy(update={"top_k_chunks": k})
+            configs.append(self.model_copy(update={
+                "name": f"{self.name}_topk{k}",
+                "generation": gen,
+            }))
+        return configs
+
+    def model_sweep(self) -> list["BenchmarkConfig"]:
+        """Return 3 configs, one per OPENROUTER_FREE_MODELS."""
+        configs = []
+        for model in OPENROUTER_FREE_MODELS:
+            sanitized = model.replace("/", "_").replace(":", "_").replace(".", "_").replace("-", "_")
+            gen = self.generation.model_copy(
+                update={"model": model, "llm_provider": "openrouter"}
+            )
+            configs.append(self.model_copy(update={
+                "name": f"{self.name}_model_{sanitized}",
+                "generation": gen,
+            }))
+        return configs
