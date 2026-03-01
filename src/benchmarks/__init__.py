@@ -17,6 +17,7 @@ from src.benchmarks.config import (
     RerankerConfig,
     RetrievalConfig,
 )
+from src.benchmarks.dataset_manager import DATASET_REGISTRY, DatasetManager
 from src.benchmarks.runner import BenchmarkResult, ParameterizedBenchmarkRunner
 
 __all__ = [
@@ -29,6 +30,9 @@ __all__ = [
     "RerankerConfig",
     "GenerationConfig",
     "EvaluationConfig",
+    # Dataset
+    "DatasetManager",
+    "DATASET_REGISTRY",
     # Runner
     "BenchmarkResult",
     "ParameterizedBenchmarkRunner",

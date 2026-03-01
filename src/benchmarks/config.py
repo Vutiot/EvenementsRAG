@@ -33,6 +33,19 @@ class DatasetConfig(BaseModel):
     dataset_name: str = "wiki_10k"
     collection_name: str = "ww2_events_10000"
     questions_file: str = "data/evaluation/eval_10k_200q.json"
+    articles_dir: Optional[str] = None  # override DATASET_REGISTRY path
+
+    @model_validator(mode="after")
+    def check_dataset_name_known(self) -> "DatasetConfig":
+        from src.benchmarks.dataset_manager import DATASET_REGISTRY
+        if self.dataset_name not in DATASET_REGISTRY:
+            warnings.warn(
+                f"DatasetConfig: unknown dataset_name '{self.dataset_name}'. "
+                f"Known datasets: {sorted(DATASET_REGISTRY)}. "
+                "Set articles_dir to override the path.",
+                stacklevel=2,
+            )
+        return self
 
 
 class EmbeddingConfig(BaseModel):
@@ -228,3 +241,69 @@ class BenchmarkConfig(BaseModel):
             ),
             evaluation=EvaluationConfig(k_values=[1, 3, 5, 10]),
         )
+
+    @classmethod
+    def chunk_size_sweep(
+        cls,
+        base: Optional["BenchmarkConfig"] = None,
+        sizes: list[int] = (256, 512, 1024),
+    ) -> list["BenchmarkConfig"]:
+        """Return configs varying chunk_size; one per entry in *sizes*.
+
+        Each config gets a unique collection_name ``{dataset_name}_cs{size}_co{overlap}``
+        so Qdrant stores each chunking variant in its own collection.
+
+        Args:
+            base: Template config. Defaults to ``phase1_vanilla()``.
+            sizes: Chunk sizes to sweep. Default (256, 512, 1024).
+        """
+        if base is None:
+            base = cls.phase1_vanilla()
+        configs = []
+        for size in sizes:
+            overlap = base.chunking.chunk_overlap
+            coll = f"{base.dataset.dataset_name}_cs{size}_co{overlap}"
+            cfg = base.model_copy(deep=True, update={
+                "name": f"chunk_size_cs{size}",
+                "description": f"Chunk size sweep: chunk_size={size}, chunk_overlap={overlap}",
+                "chunking": ChunkingConfig(chunk_size=size, chunk_overlap=overlap),
+                "dataset": base.dataset.model_copy(update={"collection_name": coll}),
+            })
+            configs.append(cfg)
+        return configs
+
+    @classmethod
+    def chunk_overlap_sweep(
+        cls,
+        base: Optional["BenchmarkConfig"] = None,
+        overlaps: list[int] = (0, 50, 128, 256),
+    ) -> list["BenchmarkConfig"]:
+        """Return configs varying chunk_overlap; one per entry in *overlaps*.
+
+        Overlap values >= chunk_size are skipped with a UserWarning.
+
+        Args:
+            base: Template config. Defaults to ``phase1_vanilla()``.
+            overlaps: Overlap values to sweep. Default (0, 50, 128, 256).
+        """
+        if base is None:
+            base = cls.phase1_vanilla()
+        configs = []
+        size = base.chunking.chunk_size
+        for overlap in overlaps:
+            if overlap >= size:
+                warnings.warn(
+                    f"chunk_overlap_sweep: skipping overlap={overlap} "
+                    f"(>= chunk_size={size})",
+                    stacklevel=2,
+                )
+                continue
+            coll = f"{base.dataset.dataset_name}_cs{size}_co{overlap}"
+            cfg = base.model_copy(deep=True, update={
+                "name": f"chunk_overlap_co{overlap}",
+                "description": f"Chunk overlap sweep: chunk_size={size}, chunk_overlap={overlap}",
+                "chunking": ChunkingConfig(chunk_size=size, chunk_overlap=overlap),
+                "dataset": base.dataset.model_copy(update={"collection_name": coll}),
+            })
+            configs.append(cfg)
+        return configs

@@ -162,6 +162,10 @@ class ParameterizedBenchmarkRunner:
         if self._embedding_gen is None:
             self._embedding_gen = EmbeddingGenerator()
 
+        # Ensure dataset is indexed before building pipeline
+        from src.benchmarks.dataset_manager import DatasetManager
+        DatasetManager().ensure_indexed(self.config, self._qdrant)
+
         # Build RAG pipeline (raises NotImplementedError for unimplemented techniques)
         self._build_rag_pipeline()
 

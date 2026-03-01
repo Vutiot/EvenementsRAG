@@ -150,3 +150,68 @@ class TestWarnings:
     def test_nonstandard_k_values_warns(self):
         with pytest.warns(UserWarning):
             EvaluationConfig(k_values=[2, 4])
+
+
+# ---------------------------------------------------------------------------
+# Sweep methods
+# ---------------------------------------------------------------------------
+
+
+class TestSweeps:
+    def test_chunk_size_sweep_default_length(self):
+        assert len(BenchmarkConfig.chunk_size_sweep()) == 3
+
+    def test_chunk_size_sweep_sizes(self):
+        cfgs = BenchmarkConfig.chunk_size_sweep()
+        assert [c.chunking.chunk_size for c in cfgs] == [256, 512, 1024]
+
+    def test_chunk_size_sweep_unique_collection_names(self):
+        names = [c.dataset.collection_name for c in BenchmarkConfig.chunk_size_sweep()]
+        assert len(names) == len(set(names))
+
+    def test_chunk_size_sweep_unique_benchmark_names(self):
+        names = [c.name for c in BenchmarkConfig.chunk_size_sweep()]
+        assert len(names) == len(set(names))
+
+    def test_chunk_size_sweep_overlap_unchanged(self):
+        base = BenchmarkConfig.phase1_vanilla()
+        for cfg in BenchmarkConfig.chunk_size_sweep(base=base):
+            assert cfg.chunking.chunk_overlap == base.chunking.chunk_overlap
+
+    def test_chunk_size_sweep_custom_sizes(self):
+        cfgs = BenchmarkConfig.chunk_size_sweep(sizes=[128, 256])
+        assert [c.chunking.chunk_size for c in cfgs] == [128, 256]
+
+    def test_chunk_size_sweep_preserves_retrieval_technique(self):
+        base = BenchmarkConfig.phase2_hybrid()
+        for cfg in BenchmarkConfig.chunk_size_sweep(base=base):
+            assert cfg.retrieval.technique == "hybrid"
+
+    def test_chunk_overlap_sweep_default_length(self):
+        assert len(BenchmarkConfig.chunk_overlap_sweep()) == 4
+
+    def test_chunk_overlap_sweep_overlaps(self):
+        cfgs = BenchmarkConfig.chunk_overlap_sweep()
+        assert [c.chunking.chunk_overlap for c in cfgs] == [0, 50, 128, 256]
+
+    def test_chunk_overlap_sweep_unique_collection_names(self):
+        names = [c.dataset.collection_name for c in BenchmarkConfig.chunk_overlap_sweep()]
+        assert len(names) == len(set(names))
+
+    def test_chunk_overlap_sweep_chunk_size_unchanged(self):
+        base = BenchmarkConfig.phase1_vanilla()
+        for cfg in BenchmarkConfig.chunk_overlap_sweep(base=base):
+            assert cfg.chunking.chunk_size == base.chunking.chunk_size
+
+    def test_chunk_overlap_sweep_skips_invalid_overlap(self):
+        base = BenchmarkConfig.phase1_vanilla()   # chunk_size=512
+        with pytest.warns(UserWarning):
+            cfgs = BenchmarkConfig.chunk_overlap_sweep(base=base, overlaps=[0, 512, 600])
+        assert len(cfgs) == 1  # only overlap=0 is valid
+
+    def test_sweep_yaml_files_loadable(self):
+        sweep_files = sorted(Path("config/benchmarks").glob("sweep_*.yaml"))
+        assert len(sweep_files) == 6
+        for f in sweep_files:
+            cfg = BenchmarkConfig.from_yaml(f)
+            assert cfg.chunking.chunk_size >= 64

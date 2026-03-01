@@ -19,9 +19,9 @@ graph TD
   E1F2T1["🔵 E1-F2-T1: Implement metric collection system"]
   E1F2T2["🟡 E1-F2-T2: Add RAGAS metrics integration"]
 
-  E2F1T1["⚪ E2-F1-T1: Add dataset switching (wiki vs octank)"]
-  E2F1T2["⚪ E2-F1-T2: Implement chunk size benchmarks"]
-  E2F1T3["⚪ E2-F1-T3: Implement chunk overlap benchmarks"]
+  E2F1T1["✅ E2-F1-T1: Add dataset switching (wiki vs octank)"]
+  E2F1T2["✅ E2-F1-T2: Implement chunk size benchmarks"]
+  E2F1T3["✅ E2-F1-T3: Implement chunk overlap benchmarks"]
 
   E2F2T1["⚪ E2-F2-T1: Add vector DB abstraction (pg_vector, faiss, qdrant)"]
   E2F2T2["⚪ E2-F2-T2: Benchmark similarity metrics (cosine, euclidean, etc)"]
@@ -82,9 +82,9 @@ graph TD
   style E1F1T3 fill:#3b82f6
   style E1F2T1 fill:#f59e0b
   style E1F2T2 fill:#f59e0b
-  style E2F1T1 fill:#6b7280
-  style E2F1T2 fill:#6b7280
-  style E2F1T3 fill:#6b7280
+  style E2F1T1 fill:#22c55e
+  style E2F1T2 fill:#22c55e
+  style E2F1T3 fill:#22c55e
   style E2F2T1 fill:#6b7280
   style E2F2T2 fill:#6b7280
   style E2F2T3 fill:#6b7280
@@ -159,23 +159,23 @@ Implements parameterized testing across all dimensions: datasets, vector DBs, ch
 
 #### E2-F1: Dataset & Preprocessing Parameters
 
-##### ⚪ E2-F1-T1: Add dataset switching (wiki vs octank)
+##### ✅ E2-F1-T1: Add dataset switching (wiki vs octank)
 - blocked_by: [E1-F2-T2]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Abstract dataset source via DatasetManager. Implement loaders for: (1) Wikipedia 10k articles, (2) OctankFinancial dataset. Support config-driven switching.
 - description: Implement dataset abstraction to benchmark against multiple sources (Wikipedia WW2 vs OctankFinancial). Must support loading, caching, and easy switching via config.
 
-##### ⚪ E2-F1-T2: Implement chunk size benchmarks
+##### ✅ E2-F1-T2: Implement chunk size benchmarks
 - blocked_by: [E2-F1-T1]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: Parametrize chunk_size in preprocessing. Re-chunk articles with sizes: 256, 512, 1024. Track chunking overhead and quality impact.
 - description: Enable benchmarking chunk sizes (256, 512, 1024 tokens). Must re-chunk datasets dynamically based on config and track impact on retrieval quality.
 
-##### ⚪ E2-F1-T3: Implement chunk overlap benchmarks
+##### ✅ E2-F1-T3: Implement chunk overlap benchmarks
 - blocked_by: [E2-F1-T2]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: Add chunk_overlap parameter to preprocessor. Test with overlap values: 0, 50, 128, 256. Track quality vs storage trade-off.
 - description: Benchmark chunk overlap values (0, 50, 128, 256). Must support dynamic re-chunking and measure impact on retrieval precision.
@@ -402,6 +402,13 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - YAML round-trip I/O, named presets (`phase1_vanilla`, `phase2_hybrid`)
 - Preset files: `config/benchmarks/phase1_vanilla.yaml`, `config/benchmarks/phase2_hybrid.yaml`
 
+✅ **E2-F1-T2 & E2-F1-T3 – Chunk Size & Overlap Sweep Methods**
+- `BenchmarkConfig.chunk_size_sweep(base, sizes)`: returns list of configs varying chunk_size (default 256/512/1024)
+- `BenchmarkConfig.chunk_overlap_sweep(base, overlaps)`: returns list of configs varying chunk_overlap (default 0/50/128/256); skips overlaps >= chunk_size with `UserWarning`
+- Collection name pattern: `{dataset_name}_cs{size}_co{overlap}` (e.g., `wiki_10k_cs256_co50`)
+- 6 YAML presets: `sweep_cs256_co50.yaml`, `sweep_cs512_co50.yaml`, `sweep_cs1024_co50.yaml`, `sweep_cs512_co0.yaml`, `sweep_cs512_co128.yaml`, `sweep_cs512_co256.yaml`
+- 13 new unit tests in `TestSweeps` (all passing)
+
 ✅ **E1-F1-T2 – Benchmark Runner Framework**
 - `ParameterizedBenchmarkRunner`: drives evaluation from a `BenchmarkConfig`
 - `BenchmarkResult` dataclass with `to_dict()`, `to_json()`, `print_summary()`
@@ -417,10 +424,10 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Done** | 2 (E1-F1-T1, E1-F1-T2) |
-| **Ready (no blockers)** | 4 (E1-F1-T3, E1-F2-T1, E2-F1-T1, E2-F4-T1) |
+| **Done** | 5 (E1-F1-T1, E1-F1-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3) |
+| **Ready (no blockers)** | 2 (E1-F1-T3, E1-F2-T1) |
 | **In Progress** | 1 (E1-F2-T2) |
-| **Pending** | 26 |
+| **Pending** | 25 |
 | **Critical Path Length** | 14 sequential tasks (12 remaining) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
@@ -442,6 +449,34 @@ Rationale: validators run at construction time (`model_validator`), YAML round-t
 
 **`config_hash` excludes `name` and `description`** (SHA-256 of remaining fields, first 16 hex chars).
 Rationale: renaming a benchmark run must not invalidate the E4 result cache — only parameter changes should bust the hash.
+
+### E2-F1-T1 — DatasetManager
+
+**`DATASET_REGISTRY` as a module-level dict** in `dataset_manager.py` (not config YAML).
+Rationale: datasets are code-level concerns (path conventions, loader logic), not user-level config. Keeping the registry in code allows validator and manager to import it at zero runtime cost.
+
+**`articles_dir: Optional[str]` on DatasetConfig** (not `Path`).
+Rationale: Pydantic serializes `str` to YAML cleanly; `Path` objects serialize as strings anyway but add a round-trip conversion concern. `DatasetManager.get_articles_dir()` converts to `Path` at use time.
+
+**`ensure_indexed` checks `collection_exists` before indexing**.
+Rationale: re-indexing 10k articles is expensive (~minutes). A simple existence check skips the work when a collection is already loaded, enabling fast iteration on sweep configs that share the same chunking params.
+
+**Lazy import of heavy modules inside `ensure_indexed`** (TextChunker, DocumentIndexer, QdrantManager).
+Rationale: same pattern as `runner.py` — code paths that only inspect configs (YAML I/O, hashing, registry lookups) pay zero import cost for sentence-transformers or qdrant-client.
+
+### E2-F1-T2 & E2-F1-T3 — Chunk sweep methods
+
+**`chunk_size_sweep()` and `chunk_overlap_sweep()` as `@classmethod` on `BenchmarkConfig`** (not standalone functions or a separate `SweepConfig` model).
+Rationale: callers already hold a `BenchmarkConfig` and want variations of it; classmethods allow using the default preset (`phase1_vanilla()`) with zero arguments while still accepting any base config.
+
+**Collection name pattern `{dataset_name}_cs{size}_co{overlap}`** (e.g., `wiki_10k_cs256_co50`).
+Rationale: each (chunk_size, chunk_overlap) pair produces a distinct set of chunks that must be stored in its own Qdrant collection. Encoding both dimensions in the name makes collections self-documenting and prevents accidental cross-contamination between sweep variants.
+
+**`chunk_overlap_sweep` skips overlaps >= chunk_size with `UserWarning`** (not `ValueError`).
+Rationale: a sweep call is a convenience method — silently skipping invalid combinations and warning the caller is more useful than crashing mid-sweep when a list of overlaps contains a boundary value.
+
+**6 YAML preset files** (`sweep_cs{size}_co{overlap}.yaml`) generated from the sweep methods.
+`sweep_cs512_co50.yaml` serves double duty as both the size-sweep baseline and the overlap-sweep 50-overlap entry, keeping the file count at 6 rather than 7.
 
 ### E1-F1-T2 — ParameterizedBenchmarkRunner
 
