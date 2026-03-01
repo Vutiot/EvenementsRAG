@@ -32,6 +32,37 @@ logger = get_logger(__name__)
 
 
 # ---------------------------------------------------------------------------
+# Module-level helpers
+# ---------------------------------------------------------------------------
+
+
+def _filter_top_k_articles(chunks, k: int):
+    """Keep only chunks belonging to the top-k highest-scored unique articles.
+
+    Articles are ranked by the best (highest) score among their chunks.
+    """
+    seen: list[str] = []
+    for chunk in sorted(chunks, key=lambda c: c.score, reverse=True):
+        title = chunk.article_title
+        if title not in seen:
+            seen.append(title)
+        if len(seen) >= k:
+            break
+    return [c for c in chunks if c.article_title in seen]
+
+
+def _save_result(result: "BenchmarkResult", output_dir: Path) -> Path:
+    """Save result to {output_dir}/{phase_name}/{config_hash}_{timestamp}.json."""
+    subdir = output_dir / result.phase_name
+    subdir.mkdir(parents=True, exist_ok=True)
+    ts = result.timestamp.replace(":", "").replace("-", "")  # 20260301T120000Z
+    path = subdir / f"{result.config_hash}_{ts}.json"
+    result.to_json(path)
+    logger.info(f"Result saved: {path}", extra={"config_hash": result.config_hash})
+    return path
+
+
+# ---------------------------------------------------------------------------
 # RAG technique registry  (lazy import — avoids errors from empty modules)
 # ---------------------------------------------------------------------------
 
@@ -142,12 +173,14 @@ class ParameterizedBenchmarkRunner:
         self,
         questions_file: Optional[Path] = None,
         max_questions: Optional[int] = None,
+        output_dir=None,
     ) -> BenchmarkResult:
         """Run a full benchmark and return a BenchmarkResult.
 
         Args:
             questions_file: Override the questions file from config.
             max_questions: Limit evaluation to the first N questions.
+            output_dir: Path | str | None; if set, auto-saves result JSON.
 
         Returns:
             BenchmarkResult with retrieval metrics and optional generated answers.
@@ -156,6 +189,14 @@ class ParameterizedBenchmarkRunner:
         from src.vector_store.factory import VectorStoreFactory
 
         wall_start = time.time()
+
+        logger.info(
+            f"Benchmark run started: {self.config.name}",
+            extra={
+                "config_hash": self.config.config_hash(),
+                "technique": self.config.retrieval.technique,
+            },
+        )
 
         questions_path = Path(questions_file or self.config.dataset.questions_file)
 
@@ -192,7 +233,7 @@ class ParameterizedBenchmarkRunner:
         if self.config.generation.enabled:
             self._run_generation_pass(questions_path, per_q, max_questions)
 
-        return BenchmarkResult(
+        result = BenchmarkResult(
             config=self.config,
             config_hash=self.config.config_hash(),
             phase_name=self.config.name,
@@ -201,6 +242,21 @@ class ParameterizedBenchmarkRunner:
             per_question_full=per_q,
             total_wall_time_s=time.time() - wall_start,
         )
+
+        if output_dir is not None:
+            _save_result(result, Path(output_dir))
+
+        logger.info(
+            f"Benchmark run complete: {self.config.name}",
+            extra={
+                "config_hash": result.config_hash,
+                "wall_time_s": result.total_wall_time_s,
+                "recall_at_5": result.evaluation.avg_recall_at_k.get(5, 0.0),
+                "mrr": result.evaluation.avg_mrr,
+            },
+        )
+
+        return result
 
     @staticmethod
     def run_sweep(
@@ -277,6 +333,7 @@ class ParameterizedBenchmarkRunner:
             collection_name=self.config.dataset.collection_name,
             qdrant_manager=self._vector_store,
             embedding_generator=self._embedding_gen,
+            prompt_template=self.config.generation.prompt_template,
         )
         logger.debug(f"Built RAG pipeline: {class_name} for technique='{technique}'")
 
@@ -288,7 +345,9 @@ class ParameterizedBenchmarkRunner:
     ) -> None:
         """Add generated_answer to each per-question result entry (in-place).
 
-        Failures are logged as warnings and don't abort the run.
+        Uses retrieve() → optional article filter → generate() so that
+        temperature, max_tokens, model, and top_k_articles from config are
+        all honoured. Failures are logged as warnings and don't abort the run.
         """
         with open(questions_path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -298,7 +357,13 @@ class ParameterizedBenchmarkRunner:
             questions = questions[:max_questions]
 
         q_by_id = {q.get("id"): q for q in questions}
-        top_k = self.config.generation.top_k_chunks
+        top_k_chunks = self.config.generation.top_k_chunks
+        top_k_articles = self.config.generation.top_k_articles
+        gen_kwargs = dict(
+            temperature=self.config.generation.temperature,
+            max_tokens=self.config.generation.max_tokens,
+            model=self.config.generation.model,
+        )
 
         for entry in per_q:
             q_id = entry.get("question_id")
@@ -311,9 +376,12 @@ class ParameterizedBenchmarkRunner:
                 continue
 
             try:
+                chunks = self._rag_pipeline.retrieve(q_text, top_k=top_k_chunks)
+                if top_k_articles is not None:
+                    chunks = _filter_top_k_articles(chunks, top_k_articles)
                 gen_start = time.time()
-                response = self._rag_pipeline.query(q_text, top_k=top_k)
-                entry["generated_answer"] = response.answer
+                answer = self._rag_pipeline.generate(q_text, chunks, **gen_kwargs)
+                entry["generated_answer"] = answer
                 entry["generation_time_ms"] = (time.time() - gen_start) * 1000
             except Exception as exc:
                 logger.warning(f"Generation failed for question_id={q_id}: {exc}")

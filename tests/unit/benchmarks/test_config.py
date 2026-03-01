@@ -14,6 +14,7 @@ import pytest
 from pydantic import ValidationError
 
 from src.benchmarks.config import (
+    OPENROUTER_FREE_MODELS,
     BenchmarkConfig,
     ChunkingConfig,
     DatasetConfig,
@@ -263,3 +264,114 @@ class TestDistanceMetricSweep:
             assert cfg.chunking.chunk_size == 512
             assert cfg.chunking.chunk_overlap == 50
             assert "all-MiniLM-L6-v2" in cfg.embedding.model_name
+
+
+# ---------------------------------------------------------------------------
+# GenerationConfig extensions (E2-F4-T1)
+# ---------------------------------------------------------------------------
+
+
+class TestGenerationConfigExtensions:
+    def test_top_k_articles_defaults_to_none(self):
+        cfg = GenerationConfig()
+        assert cfg.top_k_articles is None
+
+    def test_top_k_articles_accepts_valid_value(self):
+        cfg = GenerationConfig(top_k_articles=3)
+        assert cfg.top_k_articles == 3
+
+    def test_top_k_articles_ge1_raises(self):
+        with pytest.raises(Exception):
+            GenerationConfig(top_k_articles=0)
+
+    def test_top_k_articles_le20_raises(self):
+        with pytest.raises(Exception):
+            GenerationConfig(top_k_articles=21)
+
+    def test_prompt_template_defaults_to_none(self):
+        cfg = GenerationConfig()
+        assert cfg.prompt_template is None
+
+    def test_prompt_template_accepts_string(self):
+        tpl = "Answer: {context}\nQ: {query}"
+        cfg = GenerationConfig(prompt_template=tpl)
+        assert cfg.prompt_template == tpl
+
+    def test_config_hash_changes_on_top_k_articles(self, vanilla_config):
+        h1 = vanilla_config.config_hash()
+        modified = vanilla_config.model_copy(
+            update={"generation": GenerationConfig(top_k_articles=3)}
+        )
+        assert modified.config_hash() != h1
+
+    def test_config_hash_changes_on_prompt_template(self, vanilla_config):
+        h1 = vanilla_config.config_hash()
+        modified = vanilla_config.model_copy(
+            update={"generation": GenerationConfig(prompt_template="Custom: {query}")}
+        )
+        assert modified.config_hash() != h1
+
+
+# ---------------------------------------------------------------------------
+# Generation parameter sweeps (E2-F4-T1)
+# ---------------------------------------------------------------------------
+
+
+class TestGenerationSweeps:
+    def test_temperature_sweep_returns_3_configs(self, vanilla_config):
+        configs = vanilla_config.temperature_sweep()
+        assert len(configs) == 3
+
+    def test_temperature_sweep_values(self, vanilla_config):
+        configs = vanilla_config.temperature_sweep()
+        temps = [c.generation.temperature for c in configs]
+        assert temps == [0.0, 0.3, 0.7]
+
+    def test_temperature_sweep_names(self, vanilla_config):
+        configs = vanilla_config.temperature_sweep()
+        for cfg, expected_temp in zip(configs, [0.0, 0.3, 0.7]):
+            assert cfg.name == f"{vanilla_config.name}_temp{expected_temp}"
+
+    def test_temperature_sweep_preserves_other_params(self, vanilla_config):
+        configs = vanilla_config.temperature_sweep()
+        for cfg in configs:
+            assert cfg.generation.top_k_chunks == vanilla_config.generation.top_k_chunks
+            assert cfg.retrieval.technique == vanilla_config.retrieval.technique
+
+    def test_top_k_chunks_sweep_returns_3_configs(self, vanilla_config):
+        configs = vanilla_config.top_k_chunks_sweep()
+        assert len(configs) == 3
+
+    def test_top_k_chunks_sweep_values(self, vanilla_config):
+        configs = vanilla_config.top_k_chunks_sweep()
+        ks = [c.generation.top_k_chunks for c in configs]
+        assert ks == [3, 5, 10]
+
+    def test_top_k_chunks_sweep_names(self, vanilla_config):
+        configs = vanilla_config.top_k_chunks_sweep()
+        for cfg, expected_k in zip(configs, [3, 5, 10]):
+            assert cfg.name == f"{vanilla_config.name}_topk{expected_k}"
+
+    def test_model_sweep_returns_3_configs(self, vanilla_config):
+        configs = vanilla_config.model_sweep()
+        assert len(configs) == 3
+
+    def test_model_sweep_uses_openrouter_free_models(self, vanilla_config):
+        configs = vanilla_config.model_sweep()
+        models = [c.generation.model for c in configs]
+        assert models == OPENROUTER_FREE_MODELS
+
+    def test_model_sweep_forces_openrouter_provider(self, vanilla_config):
+        configs = vanilla_config.model_sweep()
+        for cfg in configs:
+            assert cfg.generation.llm_provider == "openrouter"
+
+    def test_model_sweep_names_contain_model_prefix(self, vanilla_config):
+        configs = vanilla_config.model_sweep()
+        for cfg in configs:
+            assert cfg.name.startswith(f"{vanilla_config.name}_model_")
+
+    def test_model_sweep_configs_have_different_hashes(self, vanilla_config):
+        configs = vanilla_config.model_sweep()
+        hashes = [c.config_hash() for c in configs]
+        assert len(set(hashes)) == 3  # all distinct

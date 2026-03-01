@@ -1,19 +1,25 @@
-"""Unit tests for src/benchmarks/runner.py (E1-F1-T2).
+"""Unit tests for src/benchmarks/runner.py (E1-F1-T2 + E2-F4-T1).
 
 Covers BenchmarkResult serialization, ParameterizedBenchmarkRunner instantiation,
 _build_rag_pipeline dispatch, run() orchestration, _run_generation_pass behaviour,
-and run_sweep() batching — all external I/O is mocked.
+run_sweep() batching, _filter_top_k_articles helper — all external I/O is mocked.
 """
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 import pytest
 
 from src.benchmarks.config import BenchmarkConfig, GenerationConfig, RetrievalConfig
-from src.benchmarks.runner import BenchmarkResult, ParameterizedBenchmarkRunner
+from src.benchmarks.runner import (
+    BenchmarkResult,
+    ParameterizedBenchmarkRunner,
+    _filter_top_k_articles,
+    _save_result,
+)
 from src.evaluation.metrics import RetrievalMetrics
+from src.rag.base_rag import RetrievedChunk
 
 
 # ---------------------------------------------------------------------------
@@ -126,6 +132,7 @@ class TestBuildRagPipeline:
             collection_name=vanilla_config.dataset.collection_name,
             qdrant_manager=runner._vector_store,
             embedding_generator=runner._embedding_gen,
+            prompt_template=vanilla_config.generation.prompt_template,
         )
         assert runner._rag_pipeline is mock_cls.return_value
 
@@ -234,10 +241,9 @@ class TestGenerationPass:
         self, vanilla_config, tmp_questions_file
     ):
         runner = ParameterizedBenchmarkRunner(config=vanilla_config)
-        mock_response = MagicMock()
-        mock_response.answer = "The Normandy landings on June 6, 1944."
         runner._rag_pipeline = MagicMock()
-        runner._rag_pipeline.query.return_value = mock_response
+        runner._rag_pipeline.retrieve.return_value = []
+        runner._rag_pipeline.generate.return_value = "The Normandy landings on June 6, 1944."
 
         per_q = [{"question_id": "q1", "question": "What was D-Day?"}]
         runner._run_generation_pass(tmp_questions_file, per_q, None)
@@ -249,7 +255,8 @@ class TestGenerationPass:
     ):
         runner = ParameterizedBenchmarkRunner(config=vanilla_config)
         runner._rag_pipeline = MagicMock()
-        runner._rag_pipeline.query.return_value = MagicMock(answer="Some answer")
+        runner._rag_pipeline.retrieve.return_value = []
+        runner._rag_pipeline.generate.return_value = "Some answer"
 
         per_q = [{"question_id": "q1", "question": "What was D-Day?"}]
         runner._run_generation_pass(tmp_questions_file, per_q, None)
@@ -262,13 +269,92 @@ class TestGenerationPass:
     ):
         runner = ParameterizedBenchmarkRunner(config=vanilla_config)
         runner._rag_pipeline = MagicMock()
-        runner._rag_pipeline.query.side_effect = RuntimeError("model unavailable")
+        runner._rag_pipeline.retrieve.side_effect = RuntimeError("model unavailable")
 
         per_q = [{"question_id": "q1", "question": "What was D-Day?"}]
         runner._run_generation_pass(tmp_questions_file, per_q, None)  # must not raise
 
         assert per_q[0]["generated_answer"] is None
         assert per_q[0]["generation_time_ms"] == 0.0
+
+    def test_generation_pass_calls_generate_with_config_kwargs(
+        self, vanilla_config, tmp_questions_file
+    ):
+        runner = ParameterizedBenchmarkRunner(config=vanilla_config)
+        runner._rag_pipeline = MagicMock()
+        runner._rag_pipeline.retrieve.return_value = []
+        runner._rag_pipeline.generate.return_value = "answer"
+
+        per_q = [{"question_id": "q1", "question": "What was D-Day?"}]
+        runner._run_generation_pass(tmp_questions_file, per_q, None)
+
+        runner._rag_pipeline.generate.assert_called_once_with(
+            "What was D-Day?",
+            [],
+            temperature=vanilla_config.generation.temperature,
+            max_tokens=vanilla_config.generation.max_tokens,
+            model=vanilla_config.generation.model,
+        )
+
+    def test_generation_pass_applies_top_k_articles_filter(
+        self, tmp_questions_file
+    ):
+        """top_k_articles=1 should keep only chunks from the best article."""
+        gen = GenerationConfig(top_k_articles=1, top_k_chunks=5)
+        cfg = BenchmarkConfig(generation=gen)
+        runner = ParameterizedBenchmarkRunner(config=cfg)
+
+        def _make_chunk(title, score):
+            return RetrievedChunk(
+                chunk_id=f"{title}_c",
+                content="text",
+                score=score,
+                metadata={"article_title": title},
+            )
+
+        chunks = [
+            _make_chunk("ArticleA", 0.9),
+            _make_chunk("ArticleB", 0.8),
+            _make_chunk("ArticleA", 0.7),
+        ]
+        runner._rag_pipeline = MagicMock()
+        runner._rag_pipeline.retrieve.return_value = chunks
+        runner._rag_pipeline.generate.return_value = "filtered answer"
+
+        per_q = [{"question_id": "q1", "question": "What was D-Day?"}]
+        runner._run_generation_pass(tmp_questions_file, per_q, None)
+
+        # generate() should only receive ArticleA chunks (top-1 article)
+        passed_chunks = runner._rag_pipeline.generate.call_args[0][1]
+        titles = {c.article_title for c in passed_chunks}
+        assert titles == {"ArticleA"}
+        assert len(passed_chunks) == 2
+
+    def test_generation_pass_skips_top_k_articles_filter_when_none(
+        self, vanilla_config, tmp_questions_file
+    ):
+        """top_k_articles=None should pass all retrieved chunks to generate."""
+        # vanilla_config has top_k_articles=None by default
+        runner = ParameterizedBenchmarkRunner(config=vanilla_config)
+
+        def _make_chunk(title, score):
+            return RetrievedChunk(
+                chunk_id=f"{title}_c",
+                content="text",
+                score=score,
+                metadata={"article_title": title},
+            )
+
+        chunks = [_make_chunk("A", 0.9), _make_chunk("B", 0.8), _make_chunk("C", 0.7)]
+        runner._rag_pipeline = MagicMock()
+        runner._rag_pipeline.retrieve.return_value = chunks
+        runner._rag_pipeline.generate.return_value = "answer"
+
+        per_q = [{"question_id": "q1", "question": "What was D-Day?"}]
+        runner._run_generation_pass(tmp_questions_file, per_q, None)
+
+        passed_chunks = runner._rag_pipeline.generate.call_args[0][1]
+        assert len(passed_chunks) == 3
 
 
 # ---------------------------------------------------------------------------
@@ -323,3 +409,143 @@ class TestRunSweep:
         # Verify the file is valid JSON
         parsed = json.loads(json_files[0].read_text())
         assert isinstance(parsed, dict)
+
+
+# ---------------------------------------------------------------------------
+# _filter_top_k_articles (E2-F4-T1)
+# ---------------------------------------------------------------------------
+
+
+def _make_chunk(title: str, score: float, chunk_id: str = "") -> RetrievedChunk:
+    return RetrievedChunk(
+        chunk_id=chunk_id or f"{title}_chunk",
+        content="text",
+        score=score,
+        metadata={"article_title": title},
+    )
+
+
+class TestFilterTopKArticles:
+    def test_keeps_chunks_from_top_k_articles(self):
+        chunks = [
+            _make_chunk("A", 0.9),
+            _make_chunk("B", 0.8),
+            _make_chunk("C", 0.7),
+            _make_chunk("A", 0.6),
+        ]
+        result = _filter_top_k_articles(chunks, k=2)
+        titles = {c.article_title for c in result}
+        assert titles == {"A", "B"}
+
+    def test_selects_by_score_order(self):
+        chunks = [
+            _make_chunk("Low", 0.3),
+            _make_chunk("High", 0.95),
+            _make_chunk("Mid", 0.6),
+        ]
+        result = _filter_top_k_articles(chunks, k=1)
+        titles = {c.article_title for c in result}
+        assert titles == {"High"}
+
+    def test_returns_all_chunks_of_selected_articles(self):
+        chunks = [
+            _make_chunk("A", 0.9, "A1"),
+            _make_chunk("B", 0.8, "B1"),
+            _make_chunk("A", 0.5, "A2"),
+            _make_chunk("C", 0.4, "C1"),
+        ]
+        result = _filter_top_k_articles(chunks, k=1)
+        ids = {c.chunk_id for c in result}
+        assert ids == {"A1", "A2"}
+
+    def test_k_larger_than_articles_returns_all(self):
+        chunks = [_make_chunk("A", 0.9), _make_chunk("B", 0.8)]
+        result = _filter_top_k_articles(chunks, k=10)
+        assert len(result) == 2
+
+    def test_empty_chunks_returns_empty(self):
+        assert _filter_top_k_articles([], k=3) == []
+
+
+# ---------------------------------------------------------------------------
+# _build_rag_pipeline — prompt_template forwarding (E2-F4-T1)
+# ---------------------------------------------------------------------------
+
+
+class TestBuildRagPipelinePromptTemplate:
+    def test_build_pipeline_passes_prompt_template_from_config(self):
+        custom_tpl = "Custom: {context}\nQ: {query}"
+        cfg = BenchmarkConfig(
+            generation=GenerationConfig(prompt_template=custom_tpl)
+        )
+        mock_cls = MagicMock()
+        mock_module = MagicMock()
+        mock_module.VanillaRetriever = mock_cls
+
+        runner = ParameterizedBenchmarkRunner(
+            config=cfg,
+            qdrant_manager=MagicMock(),
+            embedding_generator=MagicMock(),
+        )
+        with patch(
+            "src.benchmarks.runner.importlib.import_module",
+            return_value=mock_module,
+        ):
+            runner._build_rag_pipeline()
+
+        _, kwargs = mock_cls.call_args
+        assert kwargs["prompt_template"] == custom_tpl
+
+    def test_build_pipeline_passes_none_prompt_template_by_default(self, vanilla_config):
+        mock_cls = MagicMock()
+        mock_module = MagicMock()
+        mock_module.VanillaRetriever = mock_cls
+
+        runner = ParameterizedBenchmarkRunner(
+            config=vanilla_config,
+            qdrant_manager=MagicMock(),
+            embedding_generator=MagicMock(),
+        )
+        with patch(
+            "src.benchmarks.runner.importlib.import_module",
+            return_value=mock_module,
+        ):
+            runner._build_rag_pipeline()
+
+        _, kwargs = mock_cls.call_args
+        assert kwargs["prompt_template"] is None
+
+
+# ---------------------------------------------------------------------------
+# Result saving (E1-F1-T3)
+# ---------------------------------------------------------------------------
+
+
+class TestResultSaving:
+    def test_run_saves_json_when_output_dir_given(
+        self, run_ctx, tmp_path
+    ):
+        result = run_ctx["runner"].run(output_dir=tmp_path)
+        phase = result.phase_name
+        files = list((tmp_path / phase).glob("*.json"))
+        assert len(files) == 1
+        parsed = json.loads(files[0].read_text())
+        assert parsed["config_hash"] == result.config_hash
+
+    def test_run_does_not_save_when_output_dir_none(self, run_ctx, tmp_path):
+        run_ctx["runner"].run()
+        assert list(tmp_path.rglob("*.json")) == []
+
+    def test_save_result_creates_correct_subdir(
+        self, fake_benchmark_result, tmp_path
+    ):
+        _save_result(fake_benchmark_result, tmp_path)
+        subdir = tmp_path / fake_benchmark_result.phase_name
+        assert subdir.is_dir()
+
+    def test_save_result_filename_contains_hash_and_timestamp(
+        self, fake_benchmark_result, tmp_path
+    ):
+        saved_path = _save_result(fake_benchmark_result, tmp_path)
+        assert fake_benchmark_result.config_hash in saved_path.name
+        assert saved_path.suffix == ".json"

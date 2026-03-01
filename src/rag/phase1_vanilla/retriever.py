@@ -172,12 +172,14 @@ class VanillaRetriever(BaseRAG):
             query=query,
         )
 
+        llm_model = kwargs.pop("model", None) or settings.CURRENT_LLM_MODEL
+
         logger.debug(f"Generating answer with {len(context_chunks)} context chunks")
 
         try:
             # Call LLM
             response = self.llm_client.chat.completions.create(
-                model=settings.CURRENT_LLM_MODEL,
+                model=llm_model,
                 messages=[
                     {"role": "system", "content": "You are a knowledgeable historian assistant."},
                     {"role": "user", "content": prompt},

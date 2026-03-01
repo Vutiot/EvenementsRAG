@@ -14,7 +14,7 @@ EvenementsRAG is a progressive RAG benchmarking system for historical events (WW
 graph TD
   E1F1T1["✅ E1-F1-T1: Setup benchmarking config schema"]
   E1F1T2["✅ E1-F1-T2: Create benchmark runner framework"]
-  E1F1T3["🔵 E1-F1-T3: Add result serialization & logging"]
+  E1F1T3["✅ E1-F1-T3: Add result serialization & logging"]
 
   E1F2T1["🔵 E1-F2-T1: Implement metric collection system"]
   E1F2T2["🟡 E1-F2-T2: Add RAGAS metrics integration"]
@@ -30,6 +30,7 @@ graph TD
   E2F3T1["⚪ E2-F3-T1: Implement sparse search (BM25, TF-IDF)"]
   E2F3T2["⚪ E2-F3-T2: Implement reranker abstraction (cohere, bge, cross-encoder)"]
   E2F3T3["⚪ E2-F3-T3: Benchmark hybrid retrieval weights"]
+  E2F4T1["✅ E2-F4-T1: Parametrize generation settings"]
 
   E3F1T1["⚪ E3-F1-T1: Design query tester UI (web framework)"]
   E3F1T2["⚪ E3-F1-T2: Implement single-query execution interface"]
@@ -79,7 +80,7 @@ graph TD
 
   style E1F1T1 fill:#22c55e
   style E1F1T2 fill:#22c55e
-  style E1F1T3 fill:#3b82f6
+  style E1F1T3 fill:#22c55e
   style E1F2T1 fill:#f59e0b
   style E1F2T2 fill:#f59e0b
   style E2F1T1 fill:#22c55e
@@ -91,6 +92,7 @@ graph TD
   style E2F3T1 fill:#6b7280
   style E2F3T2 fill:#6b7280
   style E2F3T3 fill:#6b7280
+  style E2F4T1 fill:#22c55e
   style E3F1T1 fill:#6b7280
   style E3F1T2 fill:#6b7280
   style E3F1T3 fill:#6b7280
@@ -128,9 +130,9 @@ The foundation for parameterized evaluation. Establishes config management, metr
 - agent_hint: Implement BenchmarkRunner class that takes a config, initializes the RAG pipeline, runs queries, collects results in standardized format. Should be composable and support batching.
 - description: Build the main benchmarking orchestrator. Takes a config, sets up the RAG system, executes evaluation questions, and returns structured results (retrieval metrics, generation metrics, latency). Must be reusable across different phases.
 
-##### 🔵 E1-F1-T3: Add result serialization & logging
+##### ✅ E1-F1-T3: Add result serialization & logging
 - blocked_by: [E1-F1-T2]
-- status: ready
+- status: done
 - effort: S
 - agent_hint: Save benchmark results to JSON with timestamp, config, all metrics. Add structured logging with timestamps and config hashing for traceability.
 - description: Implement JSON serialization for benchmark results with config, timestamps, and result metadata. Add logging to track benchmark execution.
@@ -228,9 +230,9 @@ Implements parameterized testing across all dimensions: datasets, vector DBs, ch
 
 #### E2-F4: Generation Parameters
 
-##### ⚪ E2-F4-T1: Parametrize generation settings
+##### ✅ E2-F4-T1: Parametrize generation settings
 - blocked_by: [E1-F2-T2]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Add top_k_chunks, top_k_articles, llm_model, prompt_template to config. Support LLM model switching (free OpenRouter models). Benchmark generation quality & latency.
 - description: Make generation configurable: top_k_chunks, top_k_articles, LLM model selection, prompt templates. Measure impact on answer quality and latency.
@@ -452,8 +454,8 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Done** | 8 (E1-F1-T1, E1-F1-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3) |
-| **Ready (no blockers)** | 2 (E1-F1-T3, E1-F2-T1) |
+| **Done** | 9 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F4-T1) |
+| **Ready (no blockers)** | 2 (E1-F2-T1, E2-F3-T1) |
 | **In Progress** | 1 (E1-F2-T2) |
 | **Pending** | 25 |
 | **Critical Path Length** | 14 sequential tasks (12 remaining) |
@@ -505,6 +507,34 @@ Rationale: a sweep call is a convenience method — silently skipping invalid co
 
 **6 YAML preset files** (`sweep_cs{size}_co{overlap}.yaml`) generated from the sweep methods.
 `sweep_cs512_co50.yaml` serves double duty as both the size-sweep baseline and the overlap-sweep 50-overlap entry, keeping the file count at 6 rather than 7.
+
+### E2-F4-T1 — Generation parameter sweeps
+
+**`retrieve()` + `generate()` instead of `query()`** in `_run_generation_pass()`.
+Rationale: `query()` bundles retrieval + generation into one call with no way to inject per-call `temperature`, `max_tokens`, or `model`. Splitting the call allows all `GenerationConfig` fields to flow through as kwargs and enables the `top_k_articles` article-level filter to be applied between the two steps.
+
+**`_filter_top_k_articles()` module-level helper** (not a method).
+Rationale: Pure function that can be unit-tested in isolation without instantiating a runner. Ranks articles by their highest-scored chunk, then keeps all chunks belonging to the top-k articles — preserves multi-chunk context per article rather than naively truncating by rank.
+
+**`OPENROUTER_FREE_MODELS` constant** at module level in `config.py`.
+Rationale: Centralises the list of free models for `model_sweep()` and makes it trivially importable in tests and scripts without constructing a config object.
+
+### E1-F1-T3 — Result serialization & auto-save
+
+**`_save_result()` as a module-level function** (not a `BenchmarkResult` method).
+Rationale: keeps I/O concerns out of the data class, makes it independently testable without constructing a runner, and matches the pattern used by `_filter_top_k_articles`.
+
+**`output_dir` param on `run()` — opt-in, not a setting default**.
+Rationale: callers who don't want auto-saving pay zero cost. `run_sweep()` already has its own `output_dir` that saves flat `{name}_{hash}.json` files; `run()` saves under `{output_dir}/{phase_name}/` to support phase-level organisation without changing the sweep API.
+
+**`BENCHMARK_RESULTS_DIR` in `settings.py`** — config-level default for scripts/CLI.
+Rationale: allows environment/dotenv override (`BENCHMARK_RESULTS_DIR=/mnt/results`) without touching code. Runner does not auto-read this setting — callers pass `output_dir=Path(settings.BENCHMARK_RESULTS_DIR)` explicitly, keeping the runner independent from global config.
+
+**Structured log extras on run start/complete**: `config_hash`, `technique`, `wall_time_s`, `recall_at_5`, `mrr`.
+Rationale: enables log aggregation pipelines (e.g. ELK, Datadog) to query benchmark runs by hash or metric without parsing message strings.
+
+**`prompt_template` forwarded through `_build_rag_pipeline()`** instead of a setter.
+Rationale: The retriever is constructed once per config run, so passing the template at construction time is simpler and safer than adding a mutation path. `None` → retriever uses its own `DEFAULT_PROMPT_TEMPLATE`, preserving backward compatibility.
 
 ### E1-F1-T2 — ParameterizedBenchmarkRunner
 
