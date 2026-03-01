@@ -18,7 +18,7 @@ import hashlib
 import json
 import warnings
 from pathlib import Path
-from typing import Literal, Optional
+from typing import List, Literal, Optional
 
 import yaml
 from pydantic import BaseModel, Field, model_validator
@@ -56,7 +56,10 @@ class EmbeddingConfig(BaseModel):
     def check_model_dimension(self) -> "EmbeddingConfig":
         known = {
             "sentence-transformers/all-MiniLM-L6-v2": 384,
+            "sentence-transformers/all-MiniLM-L12-v2": 384,
             "sentence-transformers/all-mpnet-base-v2": 768,
+            "BAAI/bge-small-en-v1.5": 384,
+            "BAAI/bge-base-en-v1.5": 768,
         }
         expected = known.get(self.model_name)
         if expected is not None and self.dimension != expected:
@@ -142,6 +145,24 @@ class EvaluationConfig(BaseModel):
         return self
 
 
+class VectorDBConfig(BaseModel):
+    backend: Literal["qdrant", "faiss", "pgvector"] = "qdrant"
+    distance_metric: Literal["cosine", "euclidean", "dot_product", "manhattan"] = "cosine"
+    connection_params: Optional[dict] = None
+
+
+# ---------------------------------------------------------------------------
+# Embedding model sweep registry
+# ---------------------------------------------------------------------------
+
+_EMBEDDING_SWEEP_MODELS: dict[str, tuple[str, int]] = {
+    "sentence-transformers/all-MiniLM-L6-v2": ("minilm_l6", 384),
+    "sentence-transformers/all-MiniLM-L12-v2": ("minilm_l12", 384),
+    "BAAI/bge-small-en-v1.5": ("bge_small", 384),
+    "BAAI/bge-base-en-v1.5": ("bge_base", 768),
+}
+
+
 # ---------------------------------------------------------------------------
 # Root model
 # ---------------------------------------------------------------------------
@@ -158,6 +179,7 @@ class BenchmarkConfig(BaseModel):
     reranker: RerankerConfig = Field(default_factory=RerankerConfig)
     generation: GenerationConfig = Field(default_factory=GenerationConfig)
     evaluation: EvaluationConfig = Field(default_factory=EvaluationConfig)
+    vector_db: VectorDBConfig = Field(default_factory=VectorDBConfig)
 
     # ------------------------------------------------------------------
     # Hashing
@@ -242,6 +264,10 @@ class BenchmarkConfig(BaseModel):
             evaluation=EvaluationConfig(k_values=[1, 3, 5, 10]),
         )
 
+    # ------------------------------------------------------------------
+    # Parameter sweeps
+    # ------------------------------------------------------------------
+
     @classmethod
     def chunk_size_sweep(
         cls,
@@ -306,4 +332,60 @@ class BenchmarkConfig(BaseModel):
                 "dataset": base.dataset.model_copy(update={"collection_name": coll}),
             })
             configs.append(cfg)
+        return configs
+
+    @classmethod
+    def distance_metric_sweep(cls) -> List["BenchmarkConfig"]:
+        """Return 3 configs sweeping cosine / euclidean / dot_product.
+
+        Manhattan is excluded — no backend supports it natively.
+        Collection naming: ``ww2_dm_{metric}`` (e.g. ``ww2_dm_cosine``).
+        """
+        metrics = ["cosine", "euclidean", "dot_product"]
+        configs = []
+        for metric in metrics:
+            configs.append(
+                cls(
+                    name=f"wiki_dm_{metric}",
+                    description=f"Distance-metric sweep: {metric}",
+                    dataset=DatasetConfig(
+                        collection_name=f"ww2_dm_{metric}",
+                    ),
+                    embedding=EmbeddingConfig(
+                        model_name="sentence-transformers/all-MiniLM-L6-v2",
+                        dimension=384,
+                    ),
+                    chunking=ChunkingConfig(chunk_size=512, chunk_overlap=50),
+                    retrieval=RetrievalConfig(technique="vanilla"),
+                    evaluation=EvaluationConfig(k_values=[1, 3, 5, 10]),
+                    vector_db=VectorDBConfig(distance_metric=metric),
+                )
+            )
+        return configs
+
+    @classmethod
+    def embedding_model_sweep(cls) -> List["BenchmarkConfig"]:
+        """Return 4 configs sweeping embedding models.
+
+        Models: all-MiniLM-L6-v2, all-MiniLM-L12-v2, bge-small-en-v1.5,
+        bge-base-en-v1.5.  Collection naming: ``ww2_em_{short_name}``.
+        """
+        configs = []
+        for model_name, (short_name, dim) in _EMBEDDING_SWEEP_MODELS.items():
+            configs.append(
+                cls(
+                    name=f"wiki_em_{short_name}",
+                    description=f"Embedding-model sweep: {model_name}",
+                    dataset=DatasetConfig(
+                        collection_name=f"ww2_em_{short_name}",
+                    ),
+                    embedding=EmbeddingConfig(
+                        model_name=model_name,
+                        dimension=dim,
+                    ),
+                    chunking=ChunkingConfig(chunk_size=512, chunk_overlap=50),
+                    retrieval=RetrievalConfig(technique="vanilla"),
+                    evaluation=EvaluationConfig(k_values=[1, 3, 5, 10]),
+                )
+            )
         return configs

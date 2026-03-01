@@ -215,3 +215,51 @@ class TestSweeps:
         for f in sweep_files:
             cfg = BenchmarkConfig.from_yaml(f)
             assert cfg.chunking.chunk_size >= 64
+
+
+# ---------------------------------------------------------------------------
+# Distance Metric Sweep (E2-F2-T2)
+# ---------------------------------------------------------------------------
+
+
+class TestDistanceMetricSweep:
+    def test_returns_three_configs(self):
+        configs = BenchmarkConfig.distance_metric_sweep()
+        assert len(configs) == 3
+
+    def test_metrics_covered(self):
+        configs = BenchmarkConfig.distance_metric_sweep()
+        metrics = {c.vector_db.distance_metric for c in configs}
+        assert metrics == {"cosine", "euclidean", "dot_product"}
+
+    def test_collection_names(self):
+        configs = BenchmarkConfig.distance_metric_sweep()
+        names = {c.dataset.collection_name for c in configs}
+        assert names == {"ww2_dm_cosine", "ww2_dm_euclidean", "ww2_dm_dot_product"}
+
+    def test_hashes_differ(self):
+        configs = BenchmarkConfig.distance_metric_sweep()
+        hashes = {c.config_hash() for c in configs}
+        assert len(hashes) == 3
+
+    def test_manhattan_excluded(self):
+        configs = BenchmarkConfig.distance_metric_sweep()
+        metrics = [c.vector_db.distance_metric for c in configs]
+        assert "manhattan" not in metrics
+
+    def test_yaml_presets_load(self):
+        from pathlib import Path
+
+        for metric in ("cosine", "euclidean", "dot_product"):
+            path = Path(f"config/benchmarks/wiki_dm_{metric}.yaml")
+            cfg = BenchmarkConfig.from_yaml(path)
+            assert cfg.vector_db.distance_metric == metric
+            assert cfg.dataset.collection_name == f"ww2_dm_{metric}"
+
+    def test_all_use_vanilla_baseline(self):
+        configs = BenchmarkConfig.distance_metric_sweep()
+        for cfg in configs:
+            assert cfg.retrieval.technique == "vanilla"
+            assert cfg.chunking.chunk_size == 512
+            assert cfg.chunking.chunk_overlap == 50
+            assert "all-MiniLM-L6-v2" in cfg.embedding.model_name

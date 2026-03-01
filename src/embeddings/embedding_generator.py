@@ -74,7 +74,8 @@ class EmbeddingGenerator:
 
     def _hash_text(self, text: str) -> str:
         """Generate hash for text to use as cache key."""
-        return hashlib.md5(text.encode()).hexdigest()
+        key = f"{self.model_name}::{text}"
+        return hashlib.md5(key.encode()).hexdigest()
 
     def _load_from_cache(self, text: str) -> Optional[np.ndarray]:
         """Load embedding from cache if exists."""

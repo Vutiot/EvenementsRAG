@@ -23,9 +23,9 @@ graph TD
   E2F1T2["✅ E2-F1-T2: Implement chunk size benchmarks"]
   E2F1T3["✅ E2-F1-T3: Implement chunk overlap benchmarks"]
 
-  E2F2T1["⚪ E2-F2-T1: Add vector DB abstraction (pg_vector, faiss, qdrant)"]
-  E2F2T2["⚪ E2-F2-T2: Benchmark similarity metrics (cosine, euclidean, etc)"]
-  E2F2T3["⚪ E2-F2-T3: Test embedding model variants (bge vs miniLM)"]
+  E2F2T1["✅ E2-F2-T1: Add vector DB abstraction (pg_vector, faiss, qdrant)"]
+  E2F2T2["✅ E2-F2-T2: Benchmark similarity metrics (cosine, euclidean, etc)"]
+  E2F2T3["✅ E2-F2-T3: Test embedding model variants (bge vs miniLM)"]
 
   E2F3T1["⚪ E2-F3-T1: Implement sparse search (BM25, TF-IDF)"]
   E2F3T2["⚪ E2-F3-T2: Implement reranker abstraction (cohere, bge, cross-encoder)"]
@@ -85,9 +85,9 @@ graph TD
   style E2F1T1 fill:#22c55e
   style E2F1T2 fill:#22c55e
   style E2F1T3 fill:#22c55e
-  style E2F2T1 fill:#6b7280
-  style E2F2T2 fill:#6b7280
-  style E2F2T3 fill:#6b7280
+  style E2F2T1 fill:#22c55e
+  style E2F2T2 fill:#22c55e
+  style E2F2T3 fill:#22c55e
   style E2F3T1 fill:#6b7280
   style E2F3T2 fill:#6b7280
   style E2F3T3 fill:#6b7280
@@ -182,23 +182,23 @@ Implements parameterized testing across all dimensions: datasets, vector DBs, ch
 
 #### E2-F2: Vector Database & Similarity Metrics
 
-##### ⚪ E2-F2-T1: Add vector DB abstraction (pg_vector, faiss, qdrant)
+##### ✅ E2-F2-T1: Add vector DB abstraction (pg_vector, faiss, qdrant)
 - blocked_by: [E1-F2-T2]
-- status: pending
+- status: done
 - effort: L
 - agent_hint: Create VectorStoreFactory with support for: (1) Qdrant (in-memory & server), (2) FAISS (file-based), (3) pgvector (PostgreSQL). Implement common interface for search, indexing, filtering.
 - description: Implement abstraction layer for vector databases (Qdrant, FAISS, pgvector). Must support indexing, search, filtering, and latency measurement per DB backend.
 
-##### ⚪ E2-F2-T2: Benchmark similarity metrics (cosine, euclidean, dot_product, manhattan, ANN)
+##### ✅ E2-F2-T2: Benchmark similarity metrics (cosine, euclidean, dot_product, manhattan, ANN)
 - blocked_by: [E2-F2-T1]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Add similarity_metric parameter to vector store. Benchmark: cosine, euclidean, dot_product, manhattan, and ANN variants. Measure retrieval quality and latency per metric.
 - description: Test different similarity metrics (cosine, euclidean, dot product, manhattan, ANN methods). Must collect both quality and latency metrics per similarity approach.
 
-##### ⚪ E2-F2-T3: Test embedding model variants (bge vs miniLM)
+##### ✅ E2-F2-T3: Test embedding model variants (bge vs miniLM)
 - blocked_by: [E2-F2-T2]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Create EmbeddingFactory supporting: (1) bge-base (BAAI), (2) all-MiniLM-L12 (current), others as expandable. Re-embed articles and benchmark retrieval quality.
 - description: Benchmark embedding models: bge-base, all-MiniLM-L6-v2, all-MiniLM-L12. Measure retrieval quality and embedding computation overhead per model.
@@ -409,6 +409,34 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - 6 YAML presets: `sweep_cs256_co50.yaml`, `sweep_cs512_co50.yaml`, `sweep_cs1024_co50.yaml`, `sweep_cs512_co0.yaml`, `sweep_cs512_co128.yaml`, `sweep_cs512_co256.yaml`
 - 13 new unit tests in `TestSweeps` (all passing)
 
+✅ **E2-F2-T1 – Vector DB Abstraction**
+- `BaseVectorStore` ABC + `DistanceMetric` enum (`src/vector_store/base.py`)
+- `QdrantAdapter` wrapping `QdrantManager` (`src/vector_store/qdrant_adapter.py`)
+- `FAISSStore` with sidecar metadata + persistence (`src/vector_store/faiss_store.py`)
+- `PgVectorStore` with JSONB payloads (`src/vector_store/pgvector_store.py`)
+- `VectorStoreFactory` with lazy-import registry (`src/vector_store/factory.py`)
+- `VectorDBConfig` Pydantic sub-model added to `BenchmarkConfig`
+- Runner uses `VectorStoreFactory.from_config()` instead of direct `QdrantManager()`
+- **Unit tests**: `tests/unit/vector_store/` — 67 tests passed (5 pgvector skipped), 100% coverage on base/factory
+
+✅ **E2-F2-T2 – Benchmark Similarity Metrics**
+- `default_distance` instance attribute on `BaseVectorStore` + all 3 implementations
+- `create_collection(distance=None)` resolves to `self._default_distance`
+- `VectorStoreFactory.from_config()` passes `default_distance=DistanceMetric(config.distance_metric)`
+- `BenchmarkConfig.distance_metric_sweep()` → 3 configs (cosine, euclidean, dot_product); manhattan excluded
+- YAML presets: `config/benchmarks/wiki_dm_{cosine,euclidean,dot_product}.yaml`
+- Collection naming: `ww2_dm_{metric}`
+- **Unit tests**: `tests/unit/vector_store/test_distance_metric_flow.py` + additions to `test_config.py`, `test_factory.py`
+
+✅ **E2-F2-T3 – Embedding Model Variants**
+- `_EMBEDDING_SWEEP_MODELS` registry + `BenchmarkConfig.embedding_model_sweep()` → 4 configs (minilm_l6, minilm_l12, bge_small, bge_base)
+- Known-model validator expanded with `all-MiniLM-L12-v2` (384), `BAAI/bge-small-en-v1.5` (384), `BAAI/bge-base-en-v1.5` (768)
+- Runner bug fix: passes `model_name=self.config.embedding.model_name` to `EmbeddingGenerator()`
+- Cache hash fix: `_hash_text` now includes `self.model_name` to prevent cross-model contamination
+- YAML presets: `config/benchmarks/wiki_em_{minilm_l6,minilm_l12,bge_small,bge_base}.yaml`
+- Collection naming: `ww2_em_{short_name}`
+- **Unit tests**: `tests/unit/benchmarks/test_embedding_sweep.py` — 18 tests (sweep, validator, runner plumbing, cache hash)
+
 ✅ **E1-F1-T2 – Benchmark Runner Framework**
 - `ParameterizedBenchmarkRunner`: drives evaluation from a `BenchmarkConfig`
 - `BenchmarkResult` dataclass with `to_dict()`, `to_json()`, `print_summary()`
@@ -424,7 +452,7 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Done** | 5 (E1-F1-T1, E1-F1-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3) |
+| **Done** | 8 (E1-F1-T1, E1-F1-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3) |
 | **Ready (no blockers)** | 2 (E1-F1-T3, E1-F2-T1) |
 | **In Progress** | 1 (E1-F2-T2) |
 | **Pending** | 25 |
@@ -488,6 +516,44 @@ Rationale: `run_sweep()` can share a single model instance across all sweep conf
 
 **Local imports inside `run()`** for `EmbeddingGenerator` and `QdrantManager`.
 Rationale: defers loading sentence-transformers and qdrant-client until `run()` is actually called; code paths that only inspect or hash configs pay no import cost.
+
+### E2-F2-T1 — Vector DB Abstraction
+
+**`BaseVectorStore` ABC + `DistanceMetric` enum** (`src/vector_store/base.py`).
+Rationale: mirrors QdrantManager's public API exactly so existing callers (retriever, indexer, benchmark runner) work via duck-typing with no modifications. Added `scroll()` method needed by QuestionGenerator and HybridSearcher.
+
+**`QdrantAdapter` wraps QdrantManager** (`src/vector_store/qdrant_adapter.py`).
+Rationale: avoids modifying `qdrant_manager.py` (stable code). Adapter overrides `search()` to use `client.query_points()` (qdrant-client >= 1.17 removed `client.search()`). Exposes `.client` and `.manager` properties for callers needing raw Qdrant access.
+
+**`FAISSStore` with sidecar metadata dict** (`src/vector_store/faiss_store.py`).
+Rationale: FAISS has no native payload support. `_FAISSCollection` dataclass holds index + `id↔position` mappings + payloads dict. Filtering: over-fetch 3x → post-filter. Persistence: `.faiss` + `.meta.pkl` sidecar per collection.
+
+**`VectorStoreFactory` with lazy imports** (`src/vector_store/factory.py`).
+Rationale: same registry pattern as `_RAG_REGISTRY` in runner.py — avoids loading FAISS/psycopg2 at import time.
+
+**`VectorDBConfig` Pydantic sub-model** in `config.py`.
+Rationale: backend + distance_metric + connection_params — minimal surface, backward-compatible default (qdrant/cosine/None).
+
+**Runner renamed `_qdrant` → `_vector_store`**, accepts both `vector_store` and `qdrant_manager` kwargs for backward compatibility. Uses `VectorStoreFactory.from_config()` for lazy initialization.
+
+### E2-F2-T3 — Embedding Model Variants
+
+**`_EMBEDDING_SWEEP_MODELS` registry + `embedding_model_sweep()` classmethod** on `BenchmarkConfig`.
+Rationale: same pattern as `distance_metric_sweep()` — a module-level dict maps model names to `(short_name, dimension)` tuples, and the classmethod generates 4 configs with distinct collection names (`ww2_em_{short_name}`).
+
+**Runner bug fix: pass `model_name` from config to `EmbeddingGenerator`**.
+Before: `EmbeddingGenerator()` (always used default model). After: `EmbeddingGenerator(model_name=self.config.embedding.model_name)`. Backward-compatible because `EmbeddingConfig.model_name` defaults to the same model as `settings.EMBEDDING_MODEL`.
+
+**Cache hash fix: include model name in `_hash_text`**.
+Before: `md5(text)`. After: `md5(f"{self.model_name}::{text}")`. Prevents cross-model cache contamination when switching embedding models. Intentionally invalidates existing cache entries.
+
+### E2-F2-T2 — Benchmark Similarity Metrics
+
+**`default_distance` instance attribute on `BaseVectorStore`** (not class-level).
+Rationale: each store instance can be configured with a different default at construction time. `create_collection(distance=None)` resolves to `self._default_distance`, so callers (indexer, runner) that don't pass an explicit metric automatically use the config-specified one.
+
+**Manhattan excluded from `distance_metric_sweep()`**.
+Rationale: no backend supports it natively — Qdrant has no mapping, FAISS has no flat Manhattan index, pgvector has no `<#>` operator for it. Including it would only produce errors.
 
 ---
 

@@ -2,12 +2,16 @@
 
 import json
 
+import numpy as np
 import pytest
 from unittest.mock import MagicMock
 
 from src.benchmarks.config import BenchmarkConfig, GenerationConfig
 from src.benchmarks.runner import BenchmarkResult
 from src.evaluation.metrics import EvaluationResults, RetrievalMetrics
+from src.vector_store.base import DistanceMetric
+from src.vector_store.qdrant_adapter import QdrantAdapter
+from src.vector_store.qdrant_manager import QdrantManager
 
 
 @pytest.fixture
@@ -92,3 +96,28 @@ def tmp_questions_file(tmp_path):
     path = tmp_path / "questions.json"
     path.write_text(json.dumps(data), encoding="utf-8")
     return path
+
+
+# ---------------------------------------------------------------------------
+# Vector store fixtures
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture
+def qdrant_memory_adapter():
+    """QdrantAdapter backed by in-memory QdrantManager."""
+    return QdrantAdapter(qdrant_manager=QdrantManager(use_memory=True))
+
+
+@pytest.fixture
+def faiss_store():
+    """In-memory FAISSStore (no persistence)."""
+    from src.vector_store.faiss_store import FAISSStore
+    return FAISSStore()
+
+
+@pytest.fixture
+def faiss_persisted_store(tmp_path):
+    """FAISSStore with tmp_path persistence."""
+    from src.vector_store.faiss_store import FAISSStore
+    return FAISSStore(persist_dir=str(tmp_path))

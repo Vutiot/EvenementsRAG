@@ -43,3 +43,8 @@ evaluation:
   - 3
   - 5
   - 10
+
+vector_db:
+  backend: qdrant
+  connection_params: null
+  distance_metric: cosine

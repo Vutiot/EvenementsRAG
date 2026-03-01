@@ -124,7 +124,7 @@ class TestBuildRagPipeline:
 
         mock_cls.assert_called_once_with(
             collection_name=vanilla_config.dataset.collection_name,
-            qdrant_manager=runner._qdrant,
+            qdrant_manager=runner._vector_store,
             embedding_generator=runner._embedding_gen,
         )
         assert runner._rag_pipeline is mock_cls.return_value
@@ -218,7 +218,7 @@ class TestRun:
 
         mock_br.assert_called_once_with(
             questions_file=override_path,
-            qdrant_manager=runner._qdrant,
+            qdrant_manager=runner._vector_store,
             embedding_generator=runner._embedding_gen,
             k_values=vanilla_config_no_gen.evaluation.k_values,
         )
