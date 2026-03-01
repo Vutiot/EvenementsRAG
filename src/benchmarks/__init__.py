@@ -20,6 +20,12 @@ from src.benchmarks.config import (
 )
 from src.benchmarks.dataset_manager import DATASET_REGISTRY, DatasetManager
 from src.benchmarks.runner import BenchmarkResult, ParameterizedBenchmarkRunner
+from src.evaluation.metrics_collector import (
+    GenerationMetrics,
+    LatencyMetrics,
+    MetricsCollector,
+)
+from src.evaluation.ragas_evaluator import RagasEvaluator, RagasResult
 
 __all__ = [
     # Config
@@ -38,4 +44,11 @@ __all__ = [
     # Runner
     "BenchmarkResult",
     "ParameterizedBenchmarkRunner",
+    # Metrics
+    "GenerationMetrics",
+    "LatencyMetrics",
+    "MetricsCollector",
+    # RAGAS
+    "RagasEvaluator",
+    "RagasResult",
 ]

@@ -89,6 +89,7 @@ class BenchmarkResult:
     evaluation: EvaluationResults
     per_question_full: list      # retrieval + optional generated_answer per question
     total_wall_time_s: float = 0.0
+    metrics_summary: dict = field(default_factory=dict)
 
     def to_dict(self) -> dict:
         """Serialize to a plain dictionary."""
@@ -100,6 +101,7 @@ class BenchmarkResult:
             "evaluation": self.evaluation.to_dict(),
             "per_question_full": self.per_question_full,
             "total_wall_time_s": self.total_wall_time_s,
+            "metrics_summary": self.metrics_summary,
         }
 
     def to_json(self, path=None) -> str:
@@ -130,6 +132,43 @@ class BenchmarkResult:
             for entry in self.per_question_full
         )
         print(f"Generation  : {'enabled' if has_gen else 'disabled'}")
+
+        # Latency percentiles
+        latency = self.metrics_summary.get("latency")
+        if latency:
+            print("-" * 70)
+            print("Latency Percentiles:")
+            print(f"  Retrieval  p50={latency['retrieval_p50_ms']:.1f}ms  "
+                  f"p95={latency['retrieval_p95_ms']:.1f}ms  "
+                  f"p99={latency['retrieval_p99_ms']:.1f}ms")
+            if latency.get("generation_p50_ms", 0) > 0:
+                print(f"  Generation p50={latency['generation_p50_ms']:.1f}ms  "
+                      f"p95={latency['generation_p95_ms']:.1f}ms  "
+                      f"p99={latency['generation_p99_ms']:.1f}ms")
+
+        # Generation quality averages
+        gen_summary = self.metrics_summary.get("generation")
+        if gen_summary:
+            print("-" * 70)
+            print(f"Generation Quality ({gen_summary['num_questions_scored']} questions):")
+            if "avg_rouge_l_f1" in gen_summary:
+                print(f"  Avg ROUGE-L F1 : {gen_summary['avg_rouge_l_f1']:.3f}")
+            if "avg_bert_score_f1" in gen_summary:
+                print(f"  Avg BERTScore F1: {gen_summary['avg_bert_score_f1']:.3f}")
+
+        # RAGAS metrics
+        ragas_summary = self.metrics_summary.get("ragas")
+        if ragas_summary:
+            n = ragas_summary.get("num_questions_scored", 0)
+            print("-" * 70)
+            print(f"RAGAS Metrics ({n} questions):")
+            for key, value in sorted(ragas_summary.items()):
+                if key == "num_questions_scored":
+                    continue
+                if key.startswith("avg_") and isinstance(value, (int, float)):
+                    label = key[4:]  # strip "avg_"
+                    print(f"  {label:30s}: {value:.3f}")
+
         print("=" * 70)
 
 
@@ -208,7 +247,7 @@ class ParameterizedBenchmarkRunner:
 
         # Ensure dataset is indexed before building pipeline
         from src.benchmarks.dataset_manager import DatasetManager
-        DatasetManager().ensure_indexed(self.config, self._qdrant)
+        DatasetManager().ensure_indexed(self.config, self._vector_store)
 
         # Build RAG pipeline (raises NotImplementedError for unimplemented techniques)
         self._build_rag_pipeline()
@@ -233,6 +272,36 @@ class ParameterizedBenchmarkRunner:
         if self.config.generation.enabled:
             self._run_generation_pass(questions_path, per_q, max_questions)
 
+        # Metric collection (generation quality + latency)
+        from src.evaluation.metrics_collector import MetricsCollector
+
+        collector = MetricsCollector(self.config.evaluation)
+
+        questions_by_id = {}
+        needs_questions = (
+            self.config.generation.enabled and (
+                self.config.evaluation.compute_rouge
+                or self.config.evaluation.compute_bert_score
+                or self.config.evaluation.compute_ragas
+            )
+        )
+        if needs_questions:
+            with open(questions_path, "r", encoding="utf-8") as f:
+                q_data = json.load(f)
+            q_list = q_data.get("questions", [])
+            questions_by_id = {q.get("id"): q for q in q_list}
+
+        if (
+            self.config.generation.enabled
+            and (self.config.evaluation.compute_rouge or self.config.evaluation.compute_bert_score)
+        ):
+            collector.compute_generation_metrics(per_q, questions_by_id)
+
+        if self.config.generation.enabled and self.config.evaluation.compute_ragas:
+            collector.compute_ragas_metrics(per_q, questions_by_id)
+
+        collector.compute_latency_metrics(per_q)
+
         result = BenchmarkResult(
             config=self.config,
             config_hash=self.config.config_hash(),
@@ -241,6 +310,7 @@ class ParameterizedBenchmarkRunner:
             evaluation=eval_results,
             per_question_full=per_q,
             total_wall_time_s=time.time() - wall_start,
+            metrics_summary=collector.get_summary(),
         )
 
         if output_dir is not None:
@@ -379,6 +449,7 @@ class ParameterizedBenchmarkRunner:
                 chunks = self._rag_pipeline.retrieve(q_text, top_k=top_k_chunks)
                 if top_k_articles is not None:
                     chunks = _filter_top_k_articles(chunks, top_k_articles)
+                entry["retrieved_contexts"] = [c.content for c in chunks]
                 gen_start = time.time()
                 answer = self._rag_pipeline.generate(q_text, chunks, **gen_kwargs)
                 entry["generated_answer"] = answer
@@ -387,3 +458,4 @@ class ParameterizedBenchmarkRunner:
                 logger.warning(f"Generation failed for question_id={q_id}: {exc}")
                 entry["generated_answer"] = None
                 entry["generation_time_ms"] = 0.0
+                entry["retrieved_contexts"] = []

@@ -16,8 +16,10 @@ qdrant-client = "^1.7.0"
 sentence-transformers = "^2.3.0"
 anthropic = "^0.18.0"
 openai = "^1.12.0"
-langchain = "^0.1.6"
-langchain-community = "^0.0.19"
+langchain = ">=0.1.6"
+langchain-community = ">=0.0.19"
+langchain-openai = ">=1.0.0"
+langchain-huggingface = ">=1.0.0"
 
 # Wikipedia & Data Ingestion
 wikipedia = "^1.4.0"

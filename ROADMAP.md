@@ -16,8 +16,8 @@ graph TD
   E1F1T2["✅ E1-F1-T2: Create benchmark runner framework"]
   E1F1T3["✅ E1-F1-T3: Add result serialization & logging"]
 
-  E1F2T1["🔵 E1-F2-T1: Implement metric collection system"]
-  E1F2T2["🟡 E1-F2-T2: Add RAGAS metrics integration"]
+  E1F2T1["✅ E1-F2-T1: Implement metric collection system"]
+  E1F2T2["✅ E1-F2-T2: Add RAGAS metrics integration"]
 
   E2F1T1["✅ E2-F1-T1: Add dataset switching (wiki vs octank)"]
   E2F1T2["✅ E2-F1-T2: Implement chunk size benchmarks"]
@@ -81,8 +81,8 @@ graph TD
   style E1F1T1 fill:#22c55e
   style E1F1T2 fill:#22c55e
   style E1F1T3 fill:#22c55e
-  style E1F2T1 fill:#f59e0b
-  style E1F2T2 fill:#f59e0b
+  style E1F2T1 fill:#22c55e
+  style E1F2T2 fill:#22c55e
   style E2F1T1 fill:#22c55e
   style E2F1T2 fill:#22c55e
   style E2F1T3 fill:#22c55e
@@ -139,16 +139,16 @@ The foundation for parameterized evaluation. Establishes config management, metr
 
 #### E1-F2: Metric Collection & Evaluation
 
-##### 🔵 E1-F2-T1: Implement metric collection system
+##### ✅ E1-F2-T1: Implement metric collection system
 - blocked_by: [E1-F1-T2]
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Create MetricsCollector class that computes retrieval metrics (Hit@K, MRR, NDCG), generation metrics (ROUGE, BERTScore), and latency metrics. Should be modular per metric type.
 - description: Build a unified metrics collection system supporting all metrics from benchmark.md: retrieval (Article Hit@K, Chunk Hit@K, MRR), generation (ROUGE-L, BERTScore), and latency (p95, p99).
 
-##### 🟡 E1-F2-T2: Add RAGAS metrics integration
+##### ✅ E1-F2-T2: Add RAGAS metrics integration
 - blocked_by: [E1-F2-T1]
-- status: in_progress
+- status: done
 - effort: L
 - agent_hint: Integrate RAGAS library for faithfulness, answer_relevancy, context_precision, context_recall, context_entity_recall, answer_similarity, answer_correctness, harmfulness, maliciousness, coherence, correctness, conciseness. Handle LLM-based metrics with caching.
 - description: Integrate RAGAS metrics for generation quality. All 11+ RAGAS metrics from benchmark.md must be collected. Must handle API rate limiting and result caching.
@@ -439,6 +439,26 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - Collection naming: `ww2_em_{short_name}`
 - **Unit tests**: `tests/unit/benchmarks/test_embedding_sweep.py` — 18 tests (sweep, validator, runner plumbing, cache hash)
 
+✅ **E1-F2-T1 – Metric Collection System**
+- `MetricsCollector` class in `src/evaluation/metrics_collector.py` — computes ROUGE-L, BERTScore (lazy-imported), latency percentiles (p50/p95/p99)
+- `GenerationMetrics`, `LatencyMetrics`, `AggregatedGenerationMetrics` dataclasses
+- Wired into `ParameterizedBenchmarkRunner.run()` — `metrics_summary` field on `BenchmarkResult`
+- Fixed pre-existing `self._qdrant` → `self._vector_store` bug in runner.py
+- **Unit tests**: `tests/unit/evaluation/test_metrics_collector.py` — 31 tests (all mocked, no heavy deps)
+- **Total**: 233 tests pass, 5 pgvector skipped
+
+✅ **E1-F2-T2 – RAGAS Metrics Integration**
+- `RagasEvaluator` class in `src/evaluation/ragas_evaluator.py` — 12 RAGAS metrics via `ragas.evaluate()`
+- `RagasResult` dataclass with `to_dict()` (excludes None values)
+- Metric registry: 7 core metrics (faithfulness, answer_relevancy, context_precision/recall, entity_recall, answer_similarity/correctness) + 5 AspectCritic variants (harmfulness, maliciousness, coherence, correctness, conciseness)
+- `MetricsCollector.compute_ragas_metrics()` delegates to `RagasEvaluator`; `get_summary()` includes `"ragas"` section
+- `_run_generation_pass()` stores `retrieved_contexts` for RAGAS consumption
+- `EvaluationConfig` gains 4 fields: `ragas_metrics`, `ragas_evaluator_model`, `ragas_max_workers`, `ragas_timeout`
+- `print_summary()` displays per-metric RAGAS averages
+- **Dependencies**: ragas 0.4.3, langchain-openai, langchain-huggingface added to pyproject.toml
+- **Unit tests**: `tests/unit/evaluation/test_ragas_evaluator.py` — 16 tests (all mocked); updates to test_metrics_collector (6 tests), test_runner (2 tests), test_config (4 tests)
+- **Total**: 261 tests pass, 5 pgvector skipped
+
 ✅ **E1-F1-T2 – Benchmark Runner Framework**
 - `ParameterizedBenchmarkRunner`: drives evaluation from a `BenchmarkConfig`
 - `BenchmarkResult` dataclass with `to_dict()`, `to_json()`, `print_summary()`
@@ -454,19 +474,18 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Done** | 9 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F4-T1) |
-| **Ready (no blockers)** | 2 (E1-F2-T1, E2-F3-T1) |
-| **In Progress** | 1 (E1-F2-T2) |
-| **Pending** | 25 |
-| **Critical Path Length** | 14 sequential tasks (12 remaining) |
+| **Done** | 12 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F4-T1) |
+| **Ready (no blockers)** | 2 (E2-F3-T1, E3-F1-T1) |
+| **In Progress** | 0 |
+| **Pending** | 24 |
+| **Critical Path Length** | 14 sequential tasks (10 remaining) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
-1. E1-F1-T3: Add result serialization & logging (unblocked by E1-F1-T2 ✅)
-2. E1-F2-T1: Implement metric collection system (unblocked, feeds RAGAS)
-3. E1-F2-T2: Finish RAGAS integration (in progress, blocked on E1-F2-T1)
+1. E2-F3-T1: Implement sparse search (BM25, TF-IDF)
+2. E3-F1-T1: Design query tester UI (web framework)
 
-Then proceed to **Parallel Group A** (E2 parameters) while E1 is being finalized.
+**Parallel Group A** (E2 parameters) is mostly complete — only E2-F3 (sparse search + reranker + hybrid weights) remains.
 
 ---
 
@@ -576,6 +595,43 @@ Before: `EmbeddingGenerator()` (always used default model). After: `EmbeddingGen
 
 **Cache hash fix: include model name in `_hash_text`**.
 Before: `md5(text)`. After: `md5(f"{self.model_name}::{text}")`. Prevents cross-model cache contamination when switching embedding models. Intentionally invalidates existing cache entries.
+
+### E1-F2-T1 — MetricsCollector
+
+**`MetricsCollector` as a standalone class in `src/evaluation/`** (not inside the runner or BenchmarkResult).
+Rationale: keeps generation-quality and latency logic separate from retrieval metrics (which stay in the legacy `BenchmarkRunner`). The collector only adds new dimensions on top, making it an ideal extension point for RAGAS (E1-F2-T2) without modifying existing metric code.
+
+**Lazy import of `rouge_score` and `bert_score`** via `_ensure_rouge_scorer()` / `_ensure_bert_scorer()`.
+Rationale: both packages pull in large transitive deps (nltk, torch model downloads for BERTScore). By lazy-importing only when the corresponding `EvaluationConfig` flag is True, the benchmark runner stays fast for retrieval-only runs.
+
+**In-place mutation of `per_question` dicts** (adds `"generation_metrics"` key).
+Rationale: matches the pattern established by `_run_generation_pass()` which already mutates `per_q` entries in-place. Avoids creating a parallel data structure that would need joining later.
+
+**`metrics_summary` as a plain `dict` field on `BenchmarkResult`** (not a typed dataclass).
+Rationale: the summary shape evolves as new metric types are added (RAGAS in E1-F2-T2). A plain dict serializes to JSON without extra mapping and allows the collector to add sections freely.
+
+### E1-F2-T2 — RAGAS Metrics Integration
+
+**`RagasEvaluator` as a standalone class** (not merged into MetricsCollector).
+Rationale: RAGAS has complex setup (LLM, embeddings, RunConfig, EvaluationDataset construction) that would bloat MetricsCollector. MetricsCollector delegates via `compute_ragas_metrics()` → `_ensure_ragas_evaluator()` → `RagasEvaluator.evaluate()`.
+
+**`ragas_evaluator_model` separate from `generation.model`**.
+Rationale: the evaluator LLM should be at least as capable as the model being benchmarked. Defaulting to `mistral-small-3.1-24b-instruct:free` allows free-tier evaluation while the benchmarked model can be anything.
+
+**`ragas_max_workers=1` default**.
+Rationale: OpenRouter free tier ~16 req/min. Serial execution prevents rate limit errors. Users can increase to 8 with paid keys.
+
+**Local sentence-transformers for RAGAS embeddings** via `langchain-huggingface` wrapping `all-MiniLM-L6-v2`.
+Rationale: free, fast, no API key needed. Uses the same model as the project's default embeddings.
+
+**`ground_truths` fallback to generated answer** when `expected_answer_hint` is absent.
+Rationale: RAGAS requires all rows to have a `reference`. When the hint is absent, falling back to the answer itself is imperfect but prevents crashes. Metrics like `answer_similarity` will score 1.0 (self-similarity) which is clearly identifiable.
+
+**`retrieved_contexts` stored during generation pass** in `_run_generation_pass()`.
+Rationale: chunks are already retrieved there. Storing `[c.content for c in chunks]` adds negligible overhead vs a redundant retrieval call, and RAGAS needs these contexts for faithfulness/context_precision/recall metrics.
+
+**Adapted to RAGAS 0.4.x API** (installed 0.4.3, not 0.1.x).
+Rationale: 0.4.x uses `EvaluationDataset` + `SingleTurnSample` instead of HuggingFace `Dataset`. Metrics are class instances (e.g. `Faithfulness()`) rather than module-level objects. `AspectCritic` replaces the old `ragas.metrics.critique` module for harmfulness/coherence/etc.
 
 ### E2-F2-T2 — Benchmark Similarity Metrics
 

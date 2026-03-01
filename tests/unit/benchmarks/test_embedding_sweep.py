@@ -142,6 +142,7 @@ class TestRunnerEmbeddingModelPlumbing:
             ) as mock_eg,
             patch("src.benchmarks.runner.BenchmarkRunner") as mock_br,
             patch.object(ParameterizedBenchmarkRunner, "_build_rag_pipeline"),
+            patch("src.benchmarks.dataset_manager.DatasetManager"),
         ):
             mock_br.return_value.run_benchmark.return_value = mock_eval_results
             runner.run()
@@ -172,6 +173,7 @@ class TestRunnerEmbeddingModelPlumbing:
             ) as eg_cls,
             patch("src.benchmarks.runner.BenchmarkRunner") as mock_br,
             patch.object(ParameterizedBenchmarkRunner, "_build_rag_pipeline"),
+            patch("src.benchmarks.dataset_manager.DatasetManager"),
         ):
             mock_br.return_value.run_benchmark.return_value = mock_eval_results
             runner.run()

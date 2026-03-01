@@ -375,3 +375,35 @@ class TestGenerationSweeps:
         configs = vanilla_config.model_sweep()
         hashes = [c.config_hash() for c in configs]
         assert len(set(hashes)) == 3  # all distinct
+
+
+# ---------------------------------------------------------------------------
+# EvaluationConfig RAGAS fields (E1-F2-T2)
+# ---------------------------------------------------------------------------
+
+
+class TestEvaluationConfigRagas:
+    def test_ragas_defaults(self):
+        cfg = EvaluationConfig()
+        assert cfg.compute_ragas is False
+        assert len(cfg.ragas_metrics) == 12
+        assert "faithfulness" in cfg.ragas_metrics
+        assert "answer_relevancy" in cfg.ragas_metrics
+        assert cfg.ragas_evaluator_model == "mistralai/mistral-small-3.1-24b-instruct:free"
+        assert cfg.ragas_max_workers == 1
+        assert cfg.ragas_timeout == 180
+
+    def test_ragas_custom_metrics(self):
+        cfg = EvaluationConfig(ragas_metrics=["faithfulness", "coherence"])
+        assert cfg.ragas_metrics == ["faithfulness", "coherence"]
+
+    def test_ragas_unknown_metric_warns(self):
+        with pytest.warns(UserWarning, match="unknown ragas_metrics"):
+            EvaluationConfig(ragas_metrics=["faithfulness", "nonexistent_metric"])
+
+    def test_ragas_config_hash_changes(self, vanilla_config):
+        h1 = vanilla_config.config_hash()
+        modified = vanilla_config.model_copy(
+            update={"evaluation": EvaluationConfig(compute_ragas=True)}
+        )
+        assert modified.config_hash() != h1

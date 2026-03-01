@@ -43,8 +43,10 @@ def run_ctx(vanilla_config_no_gen, fake_evaluation_results):
     )
     runner._rag_pipeline = MagicMock()
 
-    with patch("src.benchmarks.runner.BenchmarkRunner") as mock_br, patch.object(
-        ParameterizedBenchmarkRunner, "_build_rag_pipeline"
+    with (
+        patch("src.benchmarks.runner.BenchmarkRunner") as mock_br,
+        patch.object(ParameterizedBenchmarkRunner, "_build_rag_pipeline"),
+        patch("src.benchmarks.dataset_manager.DatasetManager"),
     ):
         mock_br.return_value.run_benchmark.return_value = fake_evaluation_results
         yield {
@@ -70,6 +72,7 @@ class TestBenchmarkResult:
             "evaluation",
             "per_question_full",
             "total_wall_time_s",
+            "metrics_summary",
         ):
             assert key in d, f"missing key: {key}"
 
@@ -217,8 +220,10 @@ class TestRun:
         )
         runner._rag_pipeline = MagicMock()
 
-        with patch("src.benchmarks.runner.BenchmarkRunner") as mock_br, patch.object(
-            ParameterizedBenchmarkRunner, "_build_rag_pipeline"
+        with (
+            patch("src.benchmarks.runner.BenchmarkRunner") as mock_br,
+            patch.object(ParameterizedBenchmarkRunner, "_build_rag_pipeline"),
+            patch("src.benchmarks.dataset_manager.DatasetManager"),
         ):
             mock_br.return_value.run_benchmark.return_value = fake_evaluation_results
             runner.run(questions_file=override_path)
@@ -249,6 +254,40 @@ class TestGenerationPass:
         runner._run_generation_pass(tmp_questions_file, per_q, None)
 
         assert per_q[0]["generated_answer"] == "The Normandy landings on June 6, 1944."
+
+    def test_generation_pass_stores_retrieved_contexts(
+        self, vanilla_config, tmp_questions_file
+    ):
+        runner = ParameterizedBenchmarkRunner(config=vanilla_config)
+        runner._rag_pipeline = MagicMock()
+
+        chunk1 = RetrievedChunk(
+            chunk_id="c1", content="Context A", score=0.9,
+            metadata={"article_title": "Art"},
+        )
+        chunk2 = RetrievedChunk(
+            chunk_id="c2", content="Context B", score=0.8,
+            metadata={"article_title": "Art"},
+        )
+        runner._rag_pipeline.retrieve.return_value = [chunk1, chunk2]
+        runner._rag_pipeline.generate.return_value = "answer"
+
+        per_q = [{"question_id": "q1", "question": "What was D-Day?"}]
+        runner._run_generation_pass(tmp_questions_file, per_q, None)
+
+        assert per_q[0]["retrieved_contexts"] == ["Context A", "Context B"]
+
+    def test_generation_pass_stores_empty_contexts_on_failure(
+        self, vanilla_config, tmp_questions_file
+    ):
+        runner = ParameterizedBenchmarkRunner(config=vanilla_config)
+        runner._rag_pipeline = MagicMock()
+        runner._rag_pipeline.retrieve.side_effect = RuntimeError("fail")
+
+        per_q = [{"question_id": "q1", "question": "What was D-Day?"}]
+        runner._run_generation_pass(tmp_questions_file, per_q, None)
+
+        assert per_q[0]["retrieved_contexts"] == []
 
     def test_generation_pass_adds_generation_time(
         self, vanilla_config, tmp_questions_file
@@ -549,3 +588,24 @@ class TestResultSaving:
         saved_path = _save_result(fake_benchmark_result, tmp_path)
         assert fake_benchmark_result.config_hash in saved_path.name
         assert saved_path.suffix == ".json"
+
+
+# ---------------------------------------------------------------------------
+# MetricsCollector integration (E1-F2-T1)
+# ---------------------------------------------------------------------------
+
+
+class TestMetricsCollectorIntegration:
+    def test_run_result_has_metrics_summary(self, run_ctx):
+        result = run_ctx["runner"].run()
+        assert isinstance(result.metrics_summary, dict)
+
+    def test_run_result_metrics_summary_has_latency(self, run_ctx):
+        result = run_ctx["runner"].run()
+        assert "latency" in result.metrics_summary
+
+    def test_metrics_summary_serialized_in_to_dict(self, run_ctx):
+        result = run_ctx["runner"].run()
+        d = result.to_dict()
+        assert "metrics_summary" in d
+        assert "latency" in d["metrics_summary"]

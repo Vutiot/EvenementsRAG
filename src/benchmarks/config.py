@@ -135,11 +135,37 @@ class GenerationConfig(BaseModel):
     enabled: bool = True
 
 
+_KNOWN_RAGAS_METRICS: set[str] = {
+    "faithfulness",
+    "answer_relevancy",
+    "context_precision",
+    "context_recall",
+    "context_entity_recall",
+    "answer_similarity",
+    "answer_correctness",
+    "harmfulness",
+    "maliciousness",
+    "coherence",
+    "correctness",
+    "conciseness",
+}
+
+
 class EvaluationConfig(BaseModel):
     k_values: list[int] = [1, 3, 5, 10]
     compute_ragas: bool = False
     compute_bert_score: bool = False
     compute_rouge: bool = True
+
+    ragas_metrics: list[str] = Field(default_factory=lambda: [
+        "faithfulness", "answer_relevancy", "context_precision",
+        "context_recall", "context_entity_recall", "answer_similarity",
+        "answer_correctness", "harmfulness", "maliciousness",
+        "coherence", "correctness", "conciseness",
+    ])
+    ragas_evaluator_model: str = "mistralai/mistral-small-3.1-24b-instruct:free"
+    ragas_max_workers: int = Field(1, ge=1, le=8)
+    ragas_timeout: int = Field(180, ge=30, le=600)
 
     @model_validator(mode="after")
     def warn_nonstandard_k_values(self) -> "EvaluationConfig":
@@ -149,6 +175,17 @@ class EvaluationConfig(BaseModel):
             warnings.warn(
                 f"EvaluationConfig: k_values {unsupported} are outside the supported set "
                 f"{supported}. BenchmarkRunner aggregation only supports {sorted(supported)}.",
+                stacklevel=2,
+            )
+        return self
+
+    @model_validator(mode="after")
+    def check_ragas_metrics_known(self) -> "EvaluationConfig":
+        unknown = [m for m in self.ragas_metrics if m not in _KNOWN_RAGAS_METRICS]
+        if unknown:
+            warnings.warn(
+                f"EvaluationConfig: unknown ragas_metrics {unknown}. "
+                f"Known metrics: {sorted(_KNOWN_RAGAS_METRICS)}.",
                 stacklevel=2,
             )
         return self
