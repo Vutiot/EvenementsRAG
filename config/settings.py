@@ -370,6 +370,11 @@ class Settings(BaseSettings):
         description="Log file path",
     )
 
+    BENCHMARK_RESULTS_DIR: str = Field(
+        default="results/benchmarks",
+        description="Root directory for auto-saved benchmark result JSON files.",
+    )
+
     # ========================================================================
     # Cache
     # ========================================================================
