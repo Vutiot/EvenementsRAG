@@ -119,7 +119,6 @@ class RerankerConfig(BaseModel):
 
 
 OPENROUTER_FREE_MODELS: list[str] = [
-    "google/gemma-3-27b-it:free",
     "mistralai/mistral-small-3.1-24b-instruct:free",
     "meta-llama/llama-3.1-8b-instruct:free",
     "google/gemma-2-9b-it:free",
@@ -128,7 +127,7 @@ OPENROUTER_FREE_MODELS: list[str] = [
 
 class GenerationConfig(BaseModel):
     llm_provider: Literal["anthropic", "openai", "openrouter"] = "openrouter"
-    model: str = "google/gemma-3-27b-it:free"
+    model: str = "mistralai/mistral-small-3.1-24b-instruct:free"
     temperature: float = Field(0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(2000, ge=1, le=8000)
     top_k_chunks: int = Field(5, ge=1, le=20)

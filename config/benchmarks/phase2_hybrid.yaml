@@ -30,7 +30,7 @@ generation:
   enabled: true
   llm_provider: openrouter
   max_tokens: 2000
-  model: google/gemma-3-27b-it:free
+  model: mistralai/mistral-small-3.1-24b-instruct:free
   temperature: 0.0
   top_k_chunks: 5
 
