@@ -5,6 +5,7 @@ Exposes:
     BenchmarkConfig + sub-models  (E1-F1-T1, E2-F2-T1)
     BenchmarkResult               (E1-F1-T2)
     ParameterizedBenchmarkRunner  (E1-F1-T2)
+    BaseReranker, RerankerFactory (E2-F3-T2)
 """
 
 from src.benchmarks.config import (
@@ -20,6 +21,8 @@ from src.benchmarks.config import (
 )
 from src.benchmarks.dataset_manager import DATASET_REGISTRY, DatasetManager
 from src.benchmarks.runner import BenchmarkResult, ParameterizedBenchmarkRunner
+from src.retrieval.reranker import BaseReranker
+from src.retrieval.reranker_factory import RerankerFactory
 
 __all__ = [
     # Config
@@ -38,4 +41,7 @@ __all__ = [
     # Runner
     "BenchmarkResult",
     "ParameterizedBenchmarkRunner",
+    # Reranker (E2-F3-T2)
+    "BaseReranker",
+    "RerankerFactory",
 ]

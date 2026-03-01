@@ -91,6 +91,7 @@ class RetrievalConfig(BaseModel):
     sparse_weight: float = Field(0.3, ge=0.0, le=1.0)
     dense_weight: float = Field(0.7, ge=0.0, le=1.0)
     fusion_method: Literal["rrf", "weighted_sum"] = "rrf"
+    sparse_type: Literal["bm25", "tfidf"] = "bm25"
 
     @model_validator(mode="after")
     def check_hybrid_weights(self) -> "RetrievalConfig":
@@ -163,6 +164,15 @@ class VectorDBConfig(BaseModel):
 # ---------------------------------------------------------------------------
 # Embedding model sweep registry
 # ---------------------------------------------------------------------------
+
+_HYBRID_WEIGHT_SWEEP: list[tuple[float, float]] = [
+    (0.0, 1.0),
+    (0.1, 0.9),
+    (0.15, 0.85),
+    (0.2, 0.8),
+    (0.3, 0.7),
+    (0.5, 0.5),
+]
 
 _EMBEDDING_SWEEP_MODELS: dict[str, tuple[str, int]] = {
     "sentence-transformers/all-MiniLM-L6-v2": ("minilm_l6", 384),
@@ -437,4 +447,43 @@ class BenchmarkConfig(BaseModel):
                 "name": f"{self.name}_model_{sanitized}",
                 "generation": gen,
             }))
+        return configs
+
+    @classmethod
+    def hybrid_weight_sweep(
+        cls,
+        base: Optional["BenchmarkConfig"] = None,
+        weights: Optional[list[tuple[float, float]]] = None,
+    ) -> list["BenchmarkConfig"]:
+        """Return 6 configs sweeping sparse_weight ∈ {0%, 10%, 15%, 20%, 30%, 50%}.
+
+        Collection names: ``ww2_hybrid_w{pct}`` (e.g. ``ww2_hybrid_w0``).
+        Default base: ``phase2_hybrid()`` (already sets technique=hybrid).
+
+        Args:
+            base: Template config. Defaults to ``phase2_hybrid()``.
+            weights: List of (sparse_weight, dense_weight) tuples.
+                     Defaults to ``_HYBRID_WEIGHT_SWEEP``.
+        """
+        if base is None:
+            base = cls.phase2_hybrid()
+        if weights is None:
+            weights = _HYBRID_WEIGHT_SWEEP
+        configs = []
+        for sparse_w, dense_w in weights:
+            pct = int(round(sparse_w * 100))
+            coll = f"ww2_hybrid_w{pct}"
+            retrieval = base.retrieval.model_copy(
+                update={"sparse_weight": sparse_w, "dense_weight": dense_w}
+            )
+            cfg = base.model_copy(deep=True, update={
+                "name": f"wiki_hybrid_w{pct}",
+                "description": (
+                    f"Hybrid weight sweep: sparse_weight={sparse_w}, "
+                    f"dense_weight={dense_w}"
+                ),
+                "retrieval": retrieval,
+                "dataset": base.dataset.model_copy(update={"collection_name": coll}),
+            })
+            configs.append(cfg)
         return configs

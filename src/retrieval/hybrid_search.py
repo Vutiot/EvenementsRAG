@@ -1,11 +1,11 @@
 """
 Hybrid Search Implementation
 
-Combines semantic (vector) search with BM25 (keyword) search using
+Combines semantic (vector) search with BM25 or TF-IDF (keyword) search using
 Reciprocal Rank Fusion (RRF) to merge results.
 """
 
-from typing import List, Dict, Optional, Tuple
+from typing import List, Dict, Literal, Optional, Tuple
 from dataclasses import dataclass
 import math
 from collections import defaultdict
@@ -127,6 +127,7 @@ class HybridSearcher:
         embedding_generator,
         bm25_weight: float = 0.5,
         rrf_k: int = 60,
+        sparse_type: Literal["bm25", "tfidf"] = "bm25",
     ):
         """
         Initialize hybrid searcher.
@@ -134,19 +135,29 @@ class HybridSearcher:
         Args:
             qdrant_manager: QdrantManager instance for vector search
             embedding_generator: EmbeddingGenerator for query embeddings
-            bm25_weight: Weight for BM25 vs semantic (0.0 = all semantic, 1.0 = all BM25)
+            bm25_weight: Weight for sparse vs semantic (0.0 = all semantic, 1.0 = all sparse)
             rrf_k: RRF constant (default 60, standard value from literature)
+            sparse_type: Sparse index type, either "bm25" or "tfidf"
         """
         self.qdrant = qdrant_manager
         self.embedding_gen = embedding_generator
         self.bm25_weight = bm25_weight
         self.rrf_k = rrf_k
-        self.bm25 = BM25()
-        self.chunk_ids = []  # Map BM25 doc index to chunk UUID
+        self.sparse_type = sparse_type
+
+        if sparse_type == "tfidf":
+            from src.retrieval.tfidf_search import TFIDFIndex
+            self._sparse_index = TFIDFIndex()
+        else:
+            self._sparse_index = BM25()
+
+        # Keep self.bm25 as alias for backward compatibility
+        self.bm25 = self._sparse_index
+        self.chunk_ids = []  # Map sparse doc index to chunk UUID
 
         logger.info(
             f"HybridSearcher initialized: "
-            f"bm25_weight={bm25_weight}, rrf_k={rrf_k}"
+            f"bm25_weight={bm25_weight}, rrf_k={rrf_k}, sparse_type={sparse_type}"
         )
 
     def index_collection(self, collection_name: str):
@@ -183,11 +194,13 @@ class HybridSearcher:
             if offset is None:
                 break
 
-        # Build BM25 index
-        self.bm25.fit(chunks)
+        # Build sparse index (BM25 or TF-IDF)
+        self._sparse_index.fit(chunks)
         self.chunk_ids = chunk_ids
 
-        logger.info(f"BM25 index ready: {len(chunks)} chunks indexed")
+        logger.info(
+            f"{self.sparse_type.upper()} index ready: {len(chunks)} chunks indexed"
+        )
 
     def search(
         self,
@@ -218,8 +231,8 @@ class HybridSearcher:
             filter_conditions=filter_conditions,
         )
 
-        # 2. BM25 (keyword) search
-        bm25_results = self.bm25.search(query, top_k=top_k * 2)
+        # 2. Sparse (keyword) search — BM25 or TF-IDF
+        bm25_results = self._sparse_index.search(query, top_k=top_k * 2)
 
         # 3. Apply RRF to merge results
         merged = self._reciprocal_rank_fusion(

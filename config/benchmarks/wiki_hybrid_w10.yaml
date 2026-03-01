@@ -1,0 +1,46 @@
+chunking:
+  chunk_overlap: 50
+  chunk_size: 512
+dataset:
+  articles_dir: null
+  collection_name: ww2_hybrid_w10
+  dataset_name: wiki_10k
+  questions_file: data/evaluation/eval_10k_200q.json
+description: 'Hybrid weight sweep: sparse_weight=0.1, dense_weight=0.9'
+embedding:
+  dimension: 384
+  model_name: sentence-transformers/all-MiniLM-L6-v2
+evaluation:
+  compute_bert_score: false
+  compute_ragas: false
+  compute_rouge: true
+  k_values:
+  - 1
+  - 3
+  - 5
+  - 10
+generation:
+  enabled: true
+  llm_provider: openrouter
+  max_tokens: 2000
+  model: mistralai/mistral-small-3.1-24b-instruct:free
+  prompt_template: null
+  temperature: 0.0
+  top_k_articles: null
+  top_k_chunks: 5
+name: wiki_hybrid_w10
+reranker:
+  model_name: null
+  type: none
+retrieval:
+  dense_weight: 0.9
+  fusion_method: rrf
+  rerank_k: 20
+  sparse_type: bm25
+  sparse_weight: 0.1
+  technique: hybrid
+  top_k: 10
+vector_db:
+  backend: qdrant
+  connection_params: null
+  distance_metric: cosine

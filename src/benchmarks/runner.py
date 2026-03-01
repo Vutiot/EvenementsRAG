@@ -68,7 +68,7 @@ def _save_result(result: "BenchmarkResult", output_dir: Path) -> Path:
 
 _RAG_REGISTRY = {
     "vanilla": "src.rag.phase1_vanilla.retriever.VanillaRetriever",
-    "hybrid": None,   # NotImplementedError until E2-F3 (see ROADMAP.md)
+    "hybrid": "src.rag.phase3_hybrid.retriever.HybridRetriever",
     "temporal": None, # NotImplementedError until E2-F1 (see ROADMAP.md)
 }
 
@@ -208,7 +208,7 @@ class ParameterizedBenchmarkRunner:
 
         # Ensure dataset is indexed before building pipeline
         from src.benchmarks.dataset_manager import DatasetManager
-        DatasetManager().ensure_indexed(self.config, self._qdrant)
+        DatasetManager().ensure_indexed(self.config, self._vector_store)
 
         # Build RAG pipeline (raises NotImplementedError for unimplemented techniques)
         self._build_rag_pipeline()
@@ -329,11 +329,13 @@ class ParameterizedBenchmarkRunner:
         module = importlib.import_module(module_path)
         cls = getattr(module, class_name)
 
+        extra = {"config": self.config} if technique == "hybrid" else {}
         self._rag_pipeline = cls(
             collection_name=self.config.dataset.collection_name,
             qdrant_manager=self._vector_store,
             embedding_generator=self._embedding_gen,
             prompt_template=self.config.generation.prompt_template,
+            **extra,
         )
         logger.debug(f"Built RAG pipeline: {class_name} for technique='{technique}'")
 
