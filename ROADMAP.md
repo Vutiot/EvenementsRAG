@@ -32,11 +32,11 @@ graph TD
   E2F3T3["⚪ E2-F3-T3: Benchmark hybrid retrieval weights"]
   E2F4T1["✅ E2-F4-T1: Parametrize generation settings"]
 
-  E3F1T1["⚪ E3-F1-T1: Design query tester UI (web framework)"]
-  E3F1T2["⚪ E3-F1-T2: Implement single-query execution interface"]
+  E3F1T1["✅ E3-F1-T1: Design query tester UI (web framework)"]
+  E3F1T2["🔵 E3-F1-T2: Implement single-query execution interface"]
   E3F1T3["⚪ E3-F1-T3: Add config selector & preset management"]
 
-  E3F2T1["⚪ E3-F2-T1: Design benchmark result viewer"]
+  E3F2T1["🔵 E3-F2-T1: Design benchmark result viewer"]
   E3F2T2["⚪ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)"]
   E3F2T3["⚪ E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)"]
 
@@ -93,10 +93,10 @@ graph TD
   style E2F3T2 fill:#6b7280
   style E2F3T3 fill:#6b7280
   style E2F4T1 fill:#22c55e
-  style E3F1T1 fill:#6b7280
-  style E3F1T2 fill:#6b7280
+  style E3F1T1 fill:#22c55e
+  style E3F1T2 fill:#3b82f6
   style E3F1T3 fill:#6b7280
-  style E3F2T1 fill:#6b7280
+  style E3F2T1 fill:#3b82f6
   style E3F2T2 fill:#6b7280
   style E3F2T3 fill:#6b7280
   style E4F1T1 fill:#6b7280
@@ -245,16 +245,16 @@ Web interface for testing individual queries and visualizing benchmark results.
 
 #### E3-F1: Query Tester Interface
 
-##### ⚪ E3-F1-T1: Design query tester UI (web framework)
+##### ✅ E3-F1-T1: Design query tester UI (web framework)
 - blocked_by: [E1-F1-T3, E1-F2-T2]
-- status: pending
+- status: done
 - effort: L
 - agent_hint: Choose web framework (FastAPI + React, or Streamlit). Design single-page app with: config selector, query input, live execution, result display showing retrieval + generation steps. Reference benchmark.md UI spec.
 - description: Build interactive query testing UI. User can select config preset, enter query, execute, and see detailed retrieval and generation results with latency breakdown.
 
-##### ⚪ E3-F1-T2: Implement single-query execution interface
+##### 🔵 E3-F1-T2: Implement single-query execution interface
 - blocked_by: [E3-F1-T1]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: Implement backend endpoint for single query execution with specific config. Return: retrieved chunks, reranked order, generation result, latency breakdown, all metrics.
 - description: Implement query execution API endpoint. Takes query + config, returns full trace of retrieval, ranking, and generation steps.
@@ -268,9 +268,9 @@ Web interface for testing individual queries and visualizing benchmark results.
 
 #### E3-F2: Benchmark Results Viewer
 
-##### ⚪ E3-F2-T1: Design benchmark result viewer
+##### 🔵 E3-F2-T1: Design benchmark result viewer
 - blocked_by: [E3-F1-T1]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: Design dashboard showing: config used, all retrieval metrics (Hit@K, MRR), all generation metrics (ROUGE, BERTScore, RAGAS), latency percentiles. Support filtering/searching results.
 - description: Build results dashboard showing all computed metrics for a benchmark run, with filters for config parameters and result sorting.
@@ -459,6 +459,15 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - **Unit tests**: `tests/unit/evaluation/test_ragas_evaluator.py` — 16 tests (all mocked); updates to test_metrics_collector (6 tests), test_runner (2 tests), test_config (4 tests)
 - **Total**: 261 tests pass, 5 pgvector skipped
 
+✅ **E3-F1-T1 – Query Tester UI (FastAPI + React)**
+- **Architecture**: FastAPI backend (`src/api/`) + Vite/React/TypeScript/Tailwind frontend (`frontend/`)
+- **Backend endpoints**: `GET /api/health`, `GET /api/presets`, `GET /api/presets/{filename}`, `POST /api/query` (stub with mock data)
+- **Frontend**: Sidebar navigation, QueryTester page with PresetSelector, ConfigSummary, ChunkList, GeneratedAnswer, LatencyBreakdown, ChunkScoresChart (Plotly.js)
+- **Placeholder pages**: BenchmarkViewer (E3-F2-T1), MetricDashboards (E3-F2-T2), SweepVisualizer (E3-F2-T3)
+- **Dev workflow**: `uvicorn src.api.main:app --reload --port 8000` + `cd frontend && npm run dev` (Vite proxies `/api` to backend)
+- **Dependencies**: fastapi>=0.115.0, uvicorn[standard]>=0.30.0 (Python); react, react-router-dom, tailwindcss, plotly.js, react-plotly.js (npm)
+- **Unit tests**: `tests/unit/api/` — 18 tests (health, presets, query stub)
+
 ✅ **E1-F1-T2 – Benchmark Runner Framework**
 - `ParameterizedBenchmarkRunner`: drives evaluation from a `BenchmarkConfig`
 - `BenchmarkResult` dataclass with `to_dict()`, `to_json()`, `print_summary()`
@@ -474,16 +483,17 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Done** | 12 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F4-T1) |
-| **Ready (no blockers)** | 2 (E2-F3-T1, E3-F1-T1) |
+| **Done** | 13 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F4-T1, E3-F1-T1) |
+| **Ready (no blockers)** | 3 (E2-F3-T1, E3-F1-T2, E3-F2-T1) |
 | **In Progress** | 0 |
-| **Pending** | 24 |
+| **Pending** | 17 |
 | **Critical Path Length** | 14 sequential tasks (10 remaining) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
 1. E2-F3-T1: Implement sparse search (BM25, TF-IDF)
-2. E3-F1-T1: Design query tester UI (web framework)
+2. E3-F1-T2: Implement single-query execution interface
+3. E3-F2-T1: Design benchmark result viewer
 
 **Parallel Group A** (E2 parameters) is mostly complete — only E2-F3 (sparse search + reranker + hybrid weights) remains.
 
@@ -640,6 +650,20 @@ Rationale: each store instance can be configured with a different default at con
 
 **Manhattan excluded from `distance_metric_sweep()`**.
 Rationale: no backend supports it natively — Qdrant has no mapping, FAISS has no flat Manhattan index, pgvector has no `<#>` operator for it. Including it would only produce errors.
+
+### E3-F1-T1 — Query Tester UI
+
+**FastAPI + React (not Streamlit)**.
+Rationale: Streamlit is quick for prototyping but has limited control over layout, navigation, and component state. FastAPI serves Pydantic models directly as JSON (zero serialization boilerplate), and React with TypeScript gives full control over the UI. The existing `BenchmarkConfig` Pydantic models serialize via `model_dump()` → JSON natively through FastAPI.
+
+**Two-process dev workflow** (uvicorn + vite dev with proxy).
+Rationale: Vite's HMR provides instant frontend updates without restarting the backend. The proxy (`/api` → `localhost:8000`) avoids CORS issues in development while keeping the frontend and backend codebases separate. Production builds can be served statically by FastAPI.
+
+**Query endpoint stub with mock data** (real implementation deferred to E3-F1-T2).
+Rationale: allows full frontend development and testing without requiring a running Qdrant instance or loaded embeddings. The mock data matches the real `RetrievedChunk` / `RAGResponse` shapes, ensuring the UI handles real data without changes.
+
+**Preset scanning from filesystem** (`config/benchmarks/*.yaml`).
+Rationale: presets are already YAML files on disk. Loading via `BenchmarkConfig.from_yaml()` reuses existing Pydantic validation. No database or registry needed at this stage.
 
 ---
 
