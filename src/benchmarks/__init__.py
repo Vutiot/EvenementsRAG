@@ -5,6 +5,7 @@ Exposes:
     BenchmarkConfig + sub-models  (E1-F1-T1, E2-F2-T1)
     BenchmarkResult               (E1-F1-T2)
     ParameterizedBenchmarkRunner  (E1-F1-T2)
+    BaseReranker, RerankerFactory (E2-F3-T2)
 """
 
 from src.benchmarks.config import (
@@ -26,6 +27,8 @@ from src.evaluation.metrics_collector import (
     MetricsCollector,
 )
 from src.evaluation.ragas_evaluator import RagasEvaluator, RagasResult
+from src.retrieval.reranker import BaseReranker
+from src.retrieval.reranker_factory import RerankerFactory
 
 __all__ = [
     # Config
@@ -51,4 +54,7 @@ __all__ = [
     # RAGAS
     "RagasEvaluator",
     "RagasResult",
+    # Reranker (E2-F3-T2)
+    "BaseReranker",
+    "RerankerFactory",
 ]

@@ -293,3 +293,6 @@ docs/_templates/
 *.tar.gz
 *.tgz
 *.rar
+
+# Claude Code worktrees
+.claude/worktrees/

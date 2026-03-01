@@ -139,14 +139,32 @@ class TestBuildRagPipeline:
         )
         assert runner._rag_pipeline is mock_cls.return_value
 
-    def test_build_pipeline_hybrid_raises_not_implemented(self, hybrid_config):
+    def test_build_pipeline_hybrid_imports_correctly(self, hybrid_config):
+        mock_cls = MagicMock()
+        mock_module = MagicMock()
+        mock_module.HybridRetriever = mock_cls
+
         runner = ParameterizedBenchmarkRunner(
             config=hybrid_config,
             qdrant_manager=MagicMock(),
             embedding_generator=MagicMock(),
         )
-        with pytest.raises(NotImplementedError):
+
+        with patch(
+            "src.benchmarks.runner.importlib.import_module",
+            return_value=mock_module,
+        ) as mock_import:
             runner._build_rag_pipeline()
+            mock_import.assert_called_once_with("src.rag.phase3_hybrid.retriever")
+
+        mock_cls.assert_called_once_with(
+            collection_name=hybrid_config.dataset.collection_name,
+            qdrant_manager=runner._vector_store,
+            embedding_generator=runner._embedding_gen,
+            prompt_template=hybrid_config.generation.prompt_template,
+            config=runner.config,
+        )
+        assert runner._rag_pipeline is mock_cls.return_value
 
     def test_build_pipeline_temporal_raises_not_implemented(self):
         cfg = BenchmarkConfig(retrieval=RetrievalConfig(technique="temporal"))

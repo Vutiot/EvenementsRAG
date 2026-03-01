@@ -27,16 +27,16 @@ graph TD
   E2F2T2["✅ E2-F2-T2: Benchmark similarity metrics (cosine, euclidean, etc)"]
   E2F2T3["✅ E2-F2-T3: Test embedding model variants (bge vs miniLM)"]
 
-  E2F3T1["⚪ E2-F3-T1: Implement sparse search (BM25, TF-IDF)"]
-  E2F3T2["⚪ E2-F3-T2: Implement reranker abstraction (cohere, bge, cross-encoder)"]
-  E2F3T3["⚪ E2-F3-T3: Benchmark hybrid retrieval weights"]
+  E2F3T1["✅ E2-F3-T1: Implement sparse search (BM25, TF-IDF)"]
+  E2F3T2["✅ E2-F3-T2: Implement reranker abstraction (cohere, bge, cross-encoder)"]
+  E2F3T3["✅ E2-F3-T3: Benchmark hybrid retrieval weights"]
   E2F4T1["✅ E2-F4-T1: Parametrize generation settings"]
 
-  E3F1T1["⚪ E3-F1-T1: Design query tester UI (web framework)"]
-  E3F1T2["⚪ E3-F1-T2: Implement single-query execution interface"]
+  E3F1T1["✅ E3-F1-T1: Design query tester UI (web framework)"]
+  E3F1T2["🔵 E3-F1-T2: Implement single-query execution interface"]
   E3F1T3["⚪ E3-F1-T3: Add config selector & preset management"]
 
-  E3F2T1["⚪ E3-F2-T1: Design benchmark result viewer"]
+  E3F2T1["🔵 E3-F2-T1: Design benchmark result viewer"]
   E3F2T2["⚪ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)"]
   E3F2T3["⚪ E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)"]
 
@@ -89,20 +89,20 @@ graph TD
   style E2F2T1 fill:#22c55e
   style E2F2T2 fill:#22c55e
   style E2F2T3 fill:#22c55e
-  style E2F3T1 fill:#6b7280
-  style E2F3T2 fill:#6b7280
-  style E2F3T3 fill:#6b7280
+  style E2F3T1 fill:#22c55e
+  style E2F3T2 fill:#22c55e
+  style E2F3T3 fill:#22c55e
   style E2F4T1 fill:#22c55e
-  style E3F1T1 fill:#6b7280
-  style E3F1T2 fill:#6b7280
+  style E3F1T1 fill:#22c55e
+  style E3F1T2 fill:#3b82f6
   style E3F1T3 fill:#6b7280
-  style E3F2T1 fill:#6b7280
+  style E3F2T1 fill:#3b82f6
   style E3F2T2 fill:#6b7280
   style E3F2T3 fill:#6b7280
   style E4F1T1 fill:#6b7280
   style E4F1T2 fill:#6b7280
   style E4F1T3 fill:#6b7280
-  style E5F1T1 fill:#6b7280
+  style E5F1T1 fill:#f59e0b
   style E5F1T2 fill:#6b7280
 ```
 
@@ -207,23 +207,23 @@ Implements parameterized testing across all dimensions: datasets, vector DBs, ch
 
 #### E2-F3: Retrieval Techniques & Reranking
 
-##### ⚪ E2-F3-T1: Implement sparse search (BM25, TF-IDF)
+##### ✅ E2-F3-T1: Implement sparse search (BM25, TF-IDF)
 - blocked_by: [E1-F2-T2]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Extend retriever to support: (1) Pure BM25, (2) Pure TF-IDF, (3) Combined w/ dense. Support configurable parameters (k1, b for BM25). Benchmark vs dense retrieval.
 - description: Implement sparse retrieval methods (BM25, TF-IDF) as alternatives/supplements to dense retrieval. Must support standalone and hybrid configurations.
 
-##### ⚪ E2-F3-T2: Implement reranker abstraction (cohere, bge, cross-encoder)
+##### ✅ E2-F3-T2: Implement reranker abstraction (cohere, bge, cross-encoder)
 - blocked_by: [E2-F3-T1]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Create RerankerFactory with: (1) No reranker, (2) Cohere v3, (3) bge-reranker-v2, (4) cross-encoder. Measure reranking latency and quality impact.
 - description: Implement reranker abstraction supporting multiple backends (none, Cohere, BGE, cross-encoder). Measure quality improvement and latency cost.
 
-##### ⚪ E2-F3-T3: Benchmark hybrid retrieval weights
+##### ✅ E2-F3-T3: Benchmark hybrid retrieval weights
 - blocked_by: [E2-F3-T2]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Add hybrid_weight parameter. Test BM25 weights: 0% (pure dense), 10%, 15%, 20%, 30%, 50%. Track quality impact of hybrid fusion method (RRF, weighted sum, etc).
 - description: Benchmark hybrid retrieval with different BM25/dense weight combinations (0%, 10%, 15%, 20%, 30%, 50%). Test RRF, weighted sum, and other fusion methods.
@@ -245,16 +245,16 @@ Web interface for testing individual queries and visualizing benchmark results.
 
 #### E3-F1: Query Tester Interface
 
-##### ⚪ E3-F1-T1: Design query tester UI (web framework)
+##### ✅ E3-F1-T1: Design query tester UI (web framework)
 - blocked_by: [E1-F1-T3, E1-F2-T2]
-- status: pending
+- status: done
 - effort: L
 - agent_hint: Choose web framework (FastAPI + React, or Streamlit). Design single-page app with: config selector, query input, live execution, result display showing retrieval + generation steps. Reference benchmark.md UI spec.
 - description: Build interactive query testing UI. User can select config preset, enter query, execute, and see detailed retrieval and generation results with latency breakdown.
 
-##### ⚪ E3-F1-T2: Implement single-query execution interface
+##### 🔵 E3-F1-T2: Implement single-query execution interface
 - blocked_by: [E3-F1-T1]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: Implement backend endpoint for single query execution with specific config. Return: retrieved chunks, reranked order, generation result, latency breakdown, all metrics.
 - description: Implement query execution API endpoint. Takes query + config, returns full trace of retrieval, ranking, and generation steps.
@@ -268,9 +268,9 @@ Web interface for testing individual queries and visualizing benchmark results.
 
 #### E3-F2: Benchmark Results Viewer
 
-##### ⚪ E3-F2-T1: Design benchmark result viewer
+##### 🔵 E3-F2-T1: Design benchmark result viewer
 - blocked_by: [E3-F1-T1]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: Design dashboard showing: config used, all retrieval metrics (Hit@K, MRR), all generation metrics (ROUGE, BERTScore, RAGAS), latency percentiles. Support filtering/searching results.
 - description: Build results dashboard showing all computed metrics for a benchmark run, with filters for config parameters and result sorting.
@@ -326,9 +326,9 @@ Later-phase implementations for advanced retrieval methods.
 
 #### E5-F1: Advanced RAG Methods
 
-##### ⚪ E5-F1-T1: Implement LazyGraphRAG variant
+##### 🔵 E5-F1-T1: Implement LazyGraphRAG variant
 - blocked_by: [E2-F3-T3]
-- status: pending
+- status: ready
 - effort: L
 - agent_hint: Implement lightweight graph-based retrieval without full Neo4j. Extract entities/relationships from chunks, build lightweight graph, support path-based retrieval. Benchmark vs hybrid.
 - description: Implement a simplified graph RAG approach using entity/relationship extraction without full knowledge graph infrastructure. Benchmark against hybrid retrieval.
@@ -459,6 +459,24 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - **Unit tests**: `tests/unit/evaluation/test_ragas_evaluator.py` — 16 tests (all mocked); updates to test_metrics_collector (6 tests), test_runner (2 tests), test_config (4 tests)
 - **Total**: 261 tests pass, 5 pgvector skipped
 
+✅ **E2-F3-T1/T2/T3 – Sparse Search, Reranker Abstraction, Hybrid Weight Sweep**
+- **Sparse search**: `TFIDFIndex` in `src/retrieval/tfidf_search.py`; `HybridSearcher` gains `sparse_type` param dispatching to BM25 or TF-IDF
+- **Reranker**: `BaseReranker` ABC + `NoOpReranker`, `CohereReranker`, `BGEReranker`, `CrossEncoderReranker` in `src/retrieval/reranker.py`; `RerankerFactory` in `src/retrieval/reranker_factory.py`
+- **Hybrid retriever**: `HybridRetriever(BaseRAG)` in `src/rag/phase3_hybrid/retriever.py`; wired into `_RAG_REGISTRY["hybrid"]`
+- **Weight sweep**: `hybrid_weight_sweep()` classmethod; 6 YAML presets (`wiki_hybrid_w{0,10,15,20,30,50}.yaml`)
+- **Collection naming**: `ww2_hybrid_w{pct}`
+- **Unit tests**: `test_tfidf_search.py`, `test_reranker_factory.py`, `test_hybrid_retriever.py`, `test_hybrid_sweep.py`
+- **Total**: 242 tests pass, 5 pgvector skipped
+
+✅ **E3-F1-T1 – Query Tester UI (FastAPI + React)**
+- **Architecture**: FastAPI backend (`src/api/`) + Vite/React/TypeScript/Tailwind frontend (`frontend/`)
+- **Backend endpoints**: `GET /api/health`, `GET /api/presets`, `GET /api/presets/{filename}`, `POST /api/query` (stub with mock data)
+- **Frontend**: Sidebar navigation, QueryTester page with PresetSelector, ConfigSummary, ChunkList, GeneratedAnswer, LatencyBreakdown, ChunkScoresChart (Plotly.js)
+- **Placeholder pages**: BenchmarkViewer (E3-F2-T1), MetricDashboards (E3-F2-T2), SweepVisualizer (E3-F2-T3)
+- **Dev workflow**: `uvicorn src.api.main:app --reload --port 8000` + `cd frontend && npm run dev` (Vite proxies `/api` to backend)
+- **Dependencies**: fastapi>=0.115.0, uvicorn[standard]>=0.30.0 (Python); react, react-router-dom, tailwindcss, plotly.js, react-plotly.js (npm)
+- **Unit tests**: `tests/unit/api/` — 18 tests (health, presets, query stub)
+
 ✅ **E1-F1-T2 – Benchmark Runner Framework**
 - `ParameterizedBenchmarkRunner`: drives evaluation from a `BenchmarkConfig`
 - `BenchmarkResult` dataclass with `to_dict()`, `to_json()`, `print_summary()`
@@ -474,18 +492,19 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Done** | 12 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F4-T1) |
-| **Ready (no blockers)** | 2 (E2-F3-T1, E3-F1-T1) |
+| **Done** | 16 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1) |
+| **Ready (no blockers)** | 3 (E3-F1-T2, E3-F2-T1, E5-F1-T1) |
 | **In Progress** | 0 |
-| **Pending** | 24 |
-| **Critical Path Length** | 14 sequential tasks (10 remaining) |
+| **Pending** | 14 |
+| **Critical Path Length** | 14 sequential tasks (7 remaining) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
-1. E2-F3-T1: Implement sparse search (BM25, TF-IDF)
-2. E3-F1-T1: Design query tester UI (web framework)
+1. E3-F1-T2: Implement single-query execution interface
+2. E3-F2-T1: Design benchmark result viewer
+3. E5-F1-T1: Implement LazyGraphRAG variant
 
-**Parallel Group A** (E2 parameters) is mostly complete — only E2-F3 (sparse search + reranker + hybrid weights) remains.
+**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) in progress — E3-F1-T1 done, E3-F1-T2 and E3-F2-T1 ready.
 
 ---
 
@@ -632,6 +651,49 @@ Rationale: chunks are already retrieved there. Storing `[c.content for c in chun
 
 **Adapted to RAGAS 0.4.x API** (installed 0.4.3, not 0.1.x).
 Rationale: 0.4.x uses `EvaluationDataset` + `SingleTurnSample` instead of HuggingFace `Dataset`. Metrics are class instances (e.g. `Faithfulness()`) rather than module-level objects. `AspectCritic` replaces the old `ragas.metrics.critique` module for harmfulness/coherence/etc.
+
+### E2-F3-T1 — Sparse Search (BM25 + TF-IDF)
+
+**`TFIDFIndex` mirrors `BM25` interface exactly** (`fit(corpus)`, `search(query, top_k)`).
+Rationale: `HybridSearcher` can dispatch between them with a single `sparse_type` flag and
+no other code changes. The `self.bm25` alias is preserved on `HybridSearcher` for backward
+compatibility with callers that access it directly.
+
+**Smoothed IDF formula: `log((1+N)/(1+df)) + 1`** (sklearn default, avoids zero IDF for universal terms).
+L2-normalisation of score vectors ensures scores are in `[0, 1]` and comparable across document lengths.
+
+**`sparse_type: Literal["bm25", "tfidf"] = "bm25"` on `RetrievalConfig`** (not a separate config model).
+Rationale: it's a retrieval-layer detail, sits naturally with other sparse/dense params.
+
+### E2-F3-T2 — Reranker Abstraction
+
+**`BaseReranker` ABC + 4 implementations** in `src/retrieval/reranker.py`, factory in `src/retrieval/reranker_factory.py`.
+Rationale: same lazy-import registry pattern as `VectorStoreFactory` — avoids loading
+`cohere` or `sentence-transformers` at import time; only loaded when `_get_model()` / `_get_client()` is called.
+
+**`NoOpReranker` as default** (type="none").
+Rationale: zero-overhead passthrough allows the hybrid pipeline to run without a reranker
+installed while keeping the code path identical. `RerankerFactory.from_config()` produces it
+from the default `RerankerConfig(type="none")`.
+
+**Lazy cross-encoder init** (model loaded on first `rerank()` call, not at `__init__`).
+Rationale: constructing a BGE/CrossEncoder model downloads ~hundreds of MB; deferring to
+the first call avoids this cost in unit tests and config-only code paths.
+
+### E2-F3-T3 — Hybrid Weight Sweep
+
+**`_HYBRID_WEIGHT_SWEEP` constant + `hybrid_weight_sweep()` classmethod on `BenchmarkConfig`**.
+Rationale: same pattern as `distance_metric_sweep()` and `embedding_model_sweep()`.
+Default base is `phase2_hybrid()` (already `technique="hybrid"`), so callers get correct
+configs with zero arguments.
+
+**Collection naming: `ww2_hybrid_w{pct}`** (e.g. `ww2_hybrid_w0` = pure dense, `ww2_hybrid_w50` = 50/50).
+Rationale: encodes the sparse weight percentage as an integer, keeping names short and sortable.
+
+**`HybridRetriever` receives `config=` only for technique="hybrid"** in runner `_build_rag_pipeline()`.
+Rationale: `VanillaRetriever` and `TemporalRetriever` don't need `BenchmarkConfig`; adding
+`config=None` to their signatures would be dead code. A `{"config": self.config}` extra-kwargs
+dict achieves the same with zero interface pollution on other retrievers.
 
 ### E2-F2-T2 — Benchmark Similarity Metrics
 
