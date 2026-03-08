@@ -36,11 +36,11 @@ graph TD
   E3F1T2["✅ E3-F1-T2: Implement single-query execution interface"]
   E3F1T3["✅ E3-F1-T3: Add config selector & preset management"]
 
-  E3F2T1["🔵 E3-F2-T1: Design benchmark result viewer"]
-  E3F2T2["⚪ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)"]
-  E3F2T3["⚪ E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)"]
+  E3F2T1["✅ E3-F2-T1: Design benchmark result viewer"]
+  E3F2T2["✅ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)"]
+  E3F2T3["🔵 E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)"]
 
-  E4F1T1["⚪ E4-F1-T1: Design results database schema"]
+  E4F1T1["🔵 E4-F1-T1: Design results database schema"]
   E4F1T2["⚪ E4-F1-T2: Implement benchmark result caching"]
   E4F1T3["⚪ E4-F1-T3: Add cache invalidation & versioning"]
 
@@ -268,23 +268,23 @@ Web interface for testing individual queries and visualizing benchmark results.
 
 #### E3-F2: Benchmark Results Viewer
 
-##### 🔵 E3-F2-T1: Design benchmark result viewer
+##### ✅ E3-F2-T1: Design benchmark result viewer
 - blocked_by: [E3-F1-T1]
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Design dashboard showing: config used, all retrieval metrics (Hit@K, MRR), all generation metrics (ROUGE, BERTScore, RAGAS), latency percentiles. Support filtering/searching results.
 - description: Build results dashboard showing all computed metrics for a benchmark run, with filters for config parameters and result sorting.
 
-##### ⚪ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)
+##### ✅ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)
 - blocked_by: [E3-F2-T1]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Create tab-based view: (1) Retrieval metrics table, (2) Generation metrics table, (3) Latency distribution (box plot p95/p99). Support export to CSV.
 - description: Implement detailed metric views by category (retrieval, generation, latency) with tabular display and basic visualizations.
 
-##### ⚪ E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)
+##### 🔵 E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)
 - blocked_by: [E3-F2-T2]
-- status: pending
+- status: ready
 - effort: L
 - agent_hint: Create multi-result analyzer. User fixes all params except one (e.g., chunk_size), view quality change as line chart. Support 2D heatmaps for two varying params. Use Plotly for interactivity.
 - description: Visualization for parameter sensitivity analysis. Line charts for single-param sweeps, heatmaps for two-param comparisons. Show how metrics vary with parameter changes.
@@ -297,9 +297,9 @@ Persistent storage for benchmark results with intelligent caching.
 
 #### E4-F1: Result Storage & Caching
 
-##### ⚪ E4-F1-T1: Design results database schema
+##### 🔵 E4-F1-T1: Design results database schema
 - blocked_by: [E3-F1-T2, E3-F2-T1]
-- status: pending
+- status: ready
 - effort: S
 - agent_hint: Design normalized schema: (1) Benchmark runs table (config hash, timestamp, status), (2) Metric results (run_id, metric_name, value), (3) Query results (run_id, query, chunks_retrieved, generation_result). Support versioning.
 - description: Design database schema for storing benchmark runs, metrics, and query results with versioning and traceability.
@@ -492,18 +492,19 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Done** | 18 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3) |
-| **Ready (no blockers)** | 2 (E3-F2-T1, E5-F1-T1) |
+| **Done** | 20 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2) |
+| **Ready (no blockers)** | 3 (E3-F2-T3, E4-F1-T1, E5-F1-T1) |
 | **In Progress** | 0 |
-| **Pending** | 13 |
-| **Critical Path Length** | 14 sequential tasks (6 remaining) |
+| **Pending** | 10 |
+| **Critical Path Length** | 14 sequential tasks (5 remaining) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
-1. E3-F2-T1: Design benchmark result viewer
-2. E5-F1-T1: Implement LazyGraphRAG variant
+1. E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)
+2. E4-F1-T1: Design results database schema
+3. E5-F1-T1: Implement LazyGraphRAG variant
 
-**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) in progress — E3-F1 feature complete (T1–T3 done), E3-F2-T1 ready.
+**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) in progress — E3-F1 feature complete (T1–T3 done), E3-F2-T1 done.
 
 ---
 
@@ -765,6 +766,17 @@ Rationale: keeping overrides as a separate object (not mutating `baseConfig`) al
 Rationale: showing irrelevant parameters would confuse users. Conditionally hiding/disabling them matches the backend validation rules (e.g. `chunk_overlap < chunk_size`, hybrid-only fields).
 
 ---
+
+### E3-F2-T1 — Benchmark Result Viewer
+
+**Format-agnostic normalizer** (`_normalize_result()`) handles both legacy `EvaluationResults` JSON and new `BenchmarkResult` (with config, generation, RAGAS metrics) into a single `NormalizedBenchmarkResult` shape.
+Rationale: the frontend gets one consistent schema regardless of when the result was produced; legacy results gracefully degrade (no contexts, no generation, no RAGAS) with fallback UI messages instead of errors.
+
+**mtime-based file info cache** on the results listing endpoint.
+Rationale: re-parsing every JSON file on each `GET /api/results` call is wasteful; caching by mtime avoids re-reading files that haven't changed while still picking up new results immediately.
+
+**"War Room Intelligence Dashboard" aesthetic**: DM Mono for metric values, DM Sans for body, amber-500 accent for selection, slate base, staggered fade-in animations, and 3px left-border accent cards for metric category signaling.
+Rationale: aligns with the data-dense, utilitarian feel of the project (WW2 RAG benchmark analysis) while keeping the existing Tailwind dark sidebar + white cards pattern.
 
 ## Notes
 
