@@ -52,11 +52,13 @@ def _filter_top_k_articles(chunks, k: int):
 
 
 def _save_result(result: "BenchmarkResult", output_dir: Path) -> Path:
-    """Save result to {output_dir}/{phase_name}/{config_hash}_{timestamp}.json."""
-    subdir = output_dir / result.phase_name
+    """Save result to {output_dir}/{technique}/{name}_{hash8}_{timestamp}.json."""
+    technique = result.config.retrieval.technique
+    subdir = output_dir / technique
     subdir.mkdir(parents=True, exist_ok=True)
     ts = result.timestamp.replace(":", "").replace("-", "")  # 20260301T120000Z
-    path = subdir / f"{result.config_hash}_{ts}.json"
+    hash8 = result.config_hash[:8]
+    path = subdir / f"{result.phase_name}_{hash8}_{ts}.json"
     result.to_json(path)
     logger.info(f"Result saved: {path}", extra={"config_hash": result.config_hash})
     return path
@@ -379,10 +381,7 @@ class ParameterizedBenchmarkRunner:
             results.append(result)
 
             if output_dir is not None:
-                output_dir = Path(output_dir)
-                filename = f"{cfg.name}_{result.config_hash}.json"
-                result.to_json(output_dir / filename)
-                logger.info(f"Saved sweep result to {output_dir / filename}")
+                _save_result(result, Path(output_dir))
 
         return results
 

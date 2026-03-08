@@ -461,7 +461,8 @@ class TestRunSweep:
         ParameterizedBenchmarkRunner.run_sweep(
             [vanilla_config], output_dir=tmp_path
         )
-        json_files = list(tmp_path.glob("*.json"))
+        # Files are now saved in technique subdirectories
+        json_files = list(tmp_path.rglob("*.json"))
         assert len(json_files) == 1
         # Verify the file is valid JSON
         parsed = json.loads(json_files[0].read_text())
@@ -583,8 +584,8 @@ class TestResultSaving:
         self, run_ctx, tmp_path
     ):
         result = run_ctx["runner"].run(output_dir=tmp_path)
-        phase = result.phase_name
-        files = list((tmp_path / phase).glob("*.json"))
+        technique = result.config.retrieval.technique
+        files = list((tmp_path / technique).glob("*.json"))
         assert len(files) == 1
         parsed = json.loads(files[0].read_text())
         assert parsed["config_hash"] == result.config_hash
@@ -597,14 +598,17 @@ class TestResultSaving:
         self, fake_benchmark_result, tmp_path
     ):
         _save_result(fake_benchmark_result, tmp_path)
-        subdir = tmp_path / fake_benchmark_result.phase_name
+        technique = fake_benchmark_result.config.retrieval.technique
+        subdir = tmp_path / technique
         assert subdir.is_dir()
 
-    def test_save_result_filename_contains_hash_and_timestamp(
+    def test_save_result_filename_contains_hash8_and_timestamp(
         self, fake_benchmark_result, tmp_path
     ):
         saved_path = _save_result(fake_benchmark_result, tmp_path)
-        assert fake_benchmark_result.config_hash in saved_path.name
+        hash8 = fake_benchmark_result.config_hash[:8]
+        assert hash8 in saved_path.name
+        assert fake_benchmark_result.phase_name in saved_path.name
         assert saved_path.suffix == ".json"
 
 
