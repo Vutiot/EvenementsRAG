@@ -25,6 +25,11 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 
+def _hit_from_rank(rank: Optional[int], k: int) -> float:
+    """Derive a binary hit value from a 1-indexed rank."""
+    return 1.0 if rank is not None and rank <= k else 0.0
+
+
 @dataclass
 class RetrievalMetrics:
     """Aggregated retrieval metrics for a single question."""
@@ -35,25 +40,60 @@ class RetrievalMetrics:
     recall_at_5: float = 0.0
     recall_at_10: float = 0.0
 
-    # Binary article-level: Did we retrieve ANY chunk from source article? (0 or 1)
-    article_hit_at_1: float = 0.0
-    article_hit_at_3: float = 0.0
-    article_hit_at_5: float = 0.0
-    article_hit_at_10: float = 0.0
-
-    # Binary chunk-level: Did we retrieve THE EXACT chunk? (0 or 1)
-    chunk_hit_at_1: float = 0.0
-    chunk_hit_at_3: float = 0.0
-    chunk_hit_at_5: float = 0.0
-    chunk_hit_at_10: float = 0.0
+    # Ground truth rank: 1-indexed position (None = not found)
+    ground_truth_article_rank: Optional[int] = None
+    ground_truth_chunk_rank: Optional[int] = None
 
     mrr: float = 0.0
     ndcg_at_5: float = 0.0
     ndcg_at_10: float = 0.0
 
+    # -- Derived binary hit properties (backward-compatible) ----------------
+
+    @property
+    def article_hit_at_1(self) -> float:
+        return _hit_from_rank(self.ground_truth_article_rank, 1)
+
+    @property
+    def article_hit_at_3(self) -> float:
+        return _hit_from_rank(self.ground_truth_article_rank, 3)
+
+    @property
+    def article_hit_at_5(self) -> float:
+        return _hit_from_rank(self.ground_truth_article_rank, 5)
+
+    @property
+    def article_hit_at_10(self) -> float:
+        return _hit_from_rank(self.ground_truth_article_rank, 10)
+
+    @property
+    def chunk_hit_at_1(self) -> float:
+        return _hit_from_rank(self.ground_truth_chunk_rank, 1)
+
+    @property
+    def chunk_hit_at_3(self) -> float:
+        return _hit_from_rank(self.ground_truth_chunk_rank, 3)
+
+    @property
+    def chunk_hit_at_5(self) -> float:
+        return _hit_from_rank(self.ground_truth_chunk_rank, 5)
+
+    @property
+    def chunk_hit_at_10(self) -> float:
+        return _hit_from_rank(self.ground_truth_chunk_rank, 10)
+
     def to_dict(self) -> Dict:
-        """Convert to dictionary."""
-        return asdict(self)
+        """Convert to dictionary, including derived binary hit fields."""
+        d = asdict(self)
+        d["article_hit_at_1"] = self.article_hit_at_1
+        d["article_hit_at_3"] = self.article_hit_at_3
+        d["article_hit_at_5"] = self.article_hit_at_5
+        d["article_hit_at_10"] = self.article_hit_at_10
+        d["chunk_hit_at_1"] = self.chunk_hit_at_1
+        d["chunk_hit_at_3"] = self.chunk_hit_at_3
+        d["chunk_hit_at_5"] = self.chunk_hit_at_5
+        d["chunk_hit_at_10"] = self.chunk_hit_at_10
+        return d
 
     def __repr__(self) -> str:
         return (
@@ -89,11 +129,21 @@ class EvaluationResults:
     def to_dict(self) -> Dict:
         """Convert to dictionary for serialization."""
         result = asdict(self)
-        # Convert RetrievalMetrics objects to dicts
+        # Convert RetrievalMetrics objects to dicts (with derived hit fields)
         result["metrics_by_type"] = {
             k: v.to_dict() if isinstance(v, RetrievalMetrics) else v
             for k, v in self.metrics_by_type.items()
         }
+        # Ensure per_question_metrics uses RetrievalMetrics.to_dict() for
+        # proper inclusion of derived binary hit fields
+        serialized_pq = []
+        for r in self.per_question_metrics:
+            entry = dict(r)
+            m = r.get("metrics")
+            if isinstance(m, RetrievalMetrics):
+                entry["metrics"] = m.to_dict()
+            serialized_pq.append(entry)
+        result["per_question_metrics"] = serialized_pq
         return result
 
     def __repr__(self) -> str:
@@ -238,6 +288,58 @@ def precision_at_k(retrieved_chunks: List[str], ground_truth_chunks: List[str], 
     return precision
 
 
+def find_article_rank(
+    retrieved_chunks: List[str],
+    retrieved_payloads: List[Dict],
+    source_article_id: str,
+) -> Optional[int]:
+    """
+    Find the 1-indexed position of the first chunk from the source article.
+
+    Args:
+        retrieved_chunks: List of retrieved chunk UUIDs
+        retrieved_payloads: List of payload dicts with metadata
+        source_article_id: The source article ID (pageid or article title)
+
+    Returns:
+        1-indexed rank, or None if not found
+    """
+    if not source_article_id:
+        return None
+
+    for i, payload in enumerate(retrieved_payloads, 1):
+        if str(payload.get("pageid")) == str(source_article_id):
+            return i
+        if payload.get("article_title") == source_article_id:
+            return i
+
+    return None
+
+
+def find_chunk_rank(
+    retrieved_chunks: List[str],
+    source_chunk_id: str,
+) -> Optional[int]:
+    """
+    Find the 1-indexed position of the exact source chunk.
+
+    Args:
+        retrieved_chunks: List of retrieved chunk UUIDs (ordered by relevance)
+        source_chunk_id: The exact source chunk UUID
+
+    Returns:
+        1-indexed rank, or None if not found
+    """
+    if not source_chunk_id:
+        return None
+
+    for i, chunk_id in enumerate(retrieved_chunks, 1):
+        if chunk_id == source_chunk_id:
+            return i
+
+    return None
+
+
 def article_hit_at_k(
     retrieved_chunks: List[str],
     retrieved_payloads: List[Dict],
@@ -247,26 +349,10 @@ def article_hit_at_k(
     """
     Binary metric: Did we retrieve ANY chunk from the source article in top-K?
 
-    Args:
-        retrieved_chunks: List of retrieved chunk UUIDs
-        retrieved_payloads: List of payload dicts with metadata
-        source_article_id: The source article ID (pageid or article title)
-        k: Number of top results to consider
-
-    Returns:
-        1.0 if at least one chunk from source article found, else 0.0
+    Delegates to find_article_rank for the actual search.
     """
-    if not source_article_id:
-        return 0.0
-
-    for payload in retrieved_payloads[:k]:
-        # Try matching by pageid first, then by article_title
-        if str(payload.get("pageid")) == str(source_article_id):
-            return 1.0
-        if payload.get("article_title") == source_article_id:
-            return 1.0
-
-    return 0.0
+    rank = find_article_rank(retrieved_chunks, retrieved_payloads, source_article_id)
+    return 1.0 if rank is not None and rank <= k else 0.0
 
 
 def chunk_hit_at_k(
@@ -277,18 +363,10 @@ def chunk_hit_at_k(
     """
     Binary metric: Did we retrieve THE EXACT source chunk in top-K?
 
-    Args:
-        retrieved_chunks: List of retrieved chunk UUIDs (ordered by relevance)
-        source_chunk_id: The exact source chunk UUID
-        k: Number of top results to consider
-
-    Returns:
-        1.0 if exact chunk found in top-K, else 0.0
+    Delegates to find_chunk_rank for the actual search.
     """
-    if not source_chunk_id:
-        return 0.0
-
-    return 1.0 if source_chunk_id in retrieved_chunks[:k] else 0.0
+    rank = find_chunk_rank(retrieved_chunks, source_chunk_id)
+    return 1.0 if rank is not None and rank <= k else 0.0
 
 
 def compute_retrieval_metrics(
@@ -330,29 +408,16 @@ def compute_retrieval_metrics(
         elif k == 10:
             metrics.recall_at_10 = recall_k
 
-        # Compute article-level hit@K (binary: did we find ANY chunk from source article?)
-        if retrieved_payloads and source_article_id:
-            article_hit = article_hit_at_k(retrieved_chunks, retrieved_payloads, source_article_id, k)
-            if k == 1:
-                metrics.article_hit_at_1 = article_hit
-            elif k == 3:
-                metrics.article_hit_at_3 = article_hit
-            elif k == 5:
-                metrics.article_hit_at_5 = article_hit
-            elif k == 10:
-                metrics.article_hit_at_10 = article_hit
+    # Compute ground truth ranks (article_hit_at_K / chunk_hit_at_K are derived)
+    if retrieved_payloads and source_article_id:
+        metrics.ground_truth_article_rank = find_article_rank(
+            retrieved_chunks, retrieved_payloads, source_article_id
+        )
 
-        # Compute chunk-level hit@K (binary: did we find THE EXACT chunk?)
-        if source_chunk_id:
-            chunk_hit = chunk_hit_at_k(retrieved_chunks, source_chunk_id, k)
-            if k == 1:
-                metrics.chunk_hit_at_1 = chunk_hit
-            elif k == 3:
-                metrics.chunk_hit_at_3 = chunk_hit
-            elif k == 5:
-                metrics.chunk_hit_at_5 = chunk_hit
-            elif k == 10:
-                metrics.chunk_hit_at_10 = chunk_hit
+    if source_chunk_id:
+        metrics.ground_truth_chunk_rank = find_chunk_rank(
+            retrieved_chunks, source_chunk_id
+        )
 
     # Compute MRR
     metrics.mrr = mrr(retrieved_chunks, ground_truth_chunks)
@@ -389,6 +454,14 @@ def aggregate_metrics(all_metrics: List[RetrievalMetrics]) -> Dict[str, float]:
         "avg_ndcg_at_5": sum(m.ndcg_at_5 for m in all_metrics) / n,
         "avg_ndcg_at_10": sum(m.ndcg_at_10 for m in all_metrics) / n,
     }
+
+    # Average ranks (computed only over questions where the item was found)
+    chunk_ranks = [m.ground_truth_chunk_rank for m in all_metrics if m.ground_truth_chunk_rank is not None]
+    article_ranks = [m.ground_truth_article_rank for m in all_metrics if m.ground_truth_article_rank is not None]
+    if chunk_ranks:
+        aggregated["avg_ground_truth_chunk_rank"] = sum(chunk_ranks) / len(chunk_ranks)
+    if article_ranks:
+        aggregated["avg_ground_truth_article_rank"] = sum(article_ranks) / len(article_ranks)
 
     return aggregated
 

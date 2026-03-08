@@ -268,6 +268,12 @@ class ParameterizedBenchmarkRunner:
         # Work on a mutable copy of per-question results
         per_q = [dict(r) for r in eval_results.per_question_metrics]
 
+        # Convert RetrievalMetrics objects to dicts for proper JSON serialization
+        for entry in per_q:
+            m = entry.get("metrics")
+            if hasattr(m, "to_dict"):
+                entry["metrics"] = m.to_dict()
+
         # Optional generation pass
         if self.config.generation.enabled:
             self._run_generation_pass(questions_path, per_q, max_questions)

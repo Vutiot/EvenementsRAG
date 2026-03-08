@@ -778,6 +778,17 @@ Rationale: re-parsing every JSON file on each `GET /api/results` call is wastefu
 **"War Room Intelligence Dashboard" aesthetic**: DM Mono for metric values, DM Sans for body, amber-500 accent for selection, slate base, staggered fade-in animations, and 3px left-border accent cards for metric category signaling.
 Rationale: aligns with the data-dense, utilitarian feel of the project (WW2 RAG benchmark analysis) while keeping the existing Tailwind dark sidebar + white cards pattern.
 
+### Metrics Refactoring — Ground Truth Rank
+
+**Replaced 8 stored binary hit fields with 2 rank values** (`ground_truth_chunk_rank`, `ground_truth_article_rank`).
+Rationale: a single 1-indexed rank encodes the same information as all 4 `hit_at_{1,3,5,10}` fields — `rank=3` implies hit at K=3,5,10 but not K=1. Properties derive the binary values on access. `to_dict()` emits both rank and legacy hit fields for backward-compatible serialization.
+
+**`find_chunk_rank()` / `find_article_rank()` as standalone functions** (not methods).
+Rationale: pure functions that can be unit-tested in isolation. `chunk_hit_at_k()` and `article_hit_at_k()` delegate to them, preserving the existing public API.
+
+**Serialization fix in `ParameterizedBenchmarkRunner.run()`**: converts `RetrievalMetrics` to dict via `.to_dict()` before JSON serialization.
+Rationale: `json.dumps(default=str)` was rendering `RetrievalMetrics` as `__repr__` strings, losing all metric data.
+
 ## Notes
 
 - Tasks marked ✅ are **done**

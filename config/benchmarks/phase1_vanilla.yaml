@@ -4,7 +4,7 @@ description: "Phase 1: Vanilla semantic search baseline"
 dataset:
   collection_name: ww2_events_10000
   dataset_name: wiki_10k
-  questions_file: data/evaluation/eval_10k_200q.json
+  questions_file: data/evaluation/eval_10000_articles_50q.json
 
 embedding:
   dimension: 384
@@ -27,7 +27,7 @@ reranker:
   type: none
 
 generation:
-  enabled: true
+  enabled: false
   llm_provider: openrouter
   max_tokens: 2000
   model: mistralai/mistral-small-3.1-24b-instruct:free
