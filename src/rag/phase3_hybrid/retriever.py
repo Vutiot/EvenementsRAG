@@ -195,16 +195,26 @@ class HybridRetriever(BaseRAG):
 
         logger.debug(f"Generating answer with {len(context_chunks)} context chunks")
 
+        messages = [
+            {
+                "role": "system",
+                "content": "You are a knowledgeable historian assistant.",
+            },
+            {"role": "user", "content": prompt},
+        ]
+
+        # DEBUG: print exact payload sent to OpenRouter
+        print("=" * 60)
+        print(f"[DEBUG LLM CALL] model={llm_model}")
+        print(f"[DEBUG LLM CALL] temperature={temperature}, max_tokens={max_tokens}")
+        for i, msg in enumerate(messages):
+            print(f"[DEBUG LLM CALL] messages[{i}] role={msg['role']} content={msg['content'][:200]}...")
+        print("=" * 60)
+
         try:
             response = self.llm_client.chat.completions.create(
                 model=llm_model,
-                messages=[
-                    {
-                        "role": "system",
-                        "content": "You are a knowledgeable historian assistant.",
-                    },
-                    {"role": "user", "content": prompt},
-                ],
+                messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
                 **kwargs,
