@@ -14,5 +14,6 @@
 #   max_tokens: 3000
 #
 # You can override any field from default.yaml here. Only include the fields you want to change.
+# Example - uncomment to override the model:
 generation:
-  model: qwen/qwen3-vl-235b-a22b-thinking
+  model: mistralai/mistral-small-3.1-24b-instruct:free
