@@ -1,7 +1,8 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useMemo } from "react";
 import PageHeader from "../components/layout/PageHeader";
 import PresetSelector from "../components/config/PresetSelector";
 import ConfigSummary from "../components/config/ConfigSummary";
+import ParameterModal from "../components/config/ParameterModal";
 import ChunkList from "../components/results/ChunkList";
 import GeneratedAnswer from "../components/results/GeneratedAnswer";
 import LatencyBreakdown from "../components/results/LatencyBreakdown";
@@ -9,28 +10,119 @@ import ChunkScoresChart from "../components/results/ChunkScoresChart";
 import { getPresetConfig, executeQuery } from "../api/client";
 import type { BenchmarkConfig, QueryResult } from "../api/types";
 
+// ── Helpers ──────────────────────────────────────────────────────────
+
+/** Deep merge overrides into base (immutable — returns new object). */
+function deepMerge(
+  base: Record<string, unknown>,
+  overrides: Record<string, unknown>,
+): Record<string, unknown> {
+  const result = { ...base };
+  for (const key of Object.keys(overrides)) {
+    const bv = base[key];
+    const ov = overrides[key];
+    if (
+      bv != null &&
+      ov != null &&
+      typeof bv === "object" &&
+      !Array.isArray(bv) &&
+      typeof ov === "object" &&
+      !Array.isArray(ov)
+    ) {
+      result[key] = deepMerge(
+        bv as Record<string, unknown>,
+        ov as Record<string, unknown>,
+      );
+    } else {
+      result[key] = ov;
+    }
+  }
+  return result;
+}
+
+/** Set a dotted path in a nested override object. Removes path if value is undefined. */
+function setOverridePath(
+  overrides: Record<string, unknown>,
+  path: string,
+  value: unknown,
+): Record<string, unknown> {
+  const parts = path.split(".");
+  const head = parts[0] as string;
+  if (parts.length === 1) {
+    const next = { ...overrides };
+    if (value === undefined) {
+      delete next[head];
+    } else {
+      next[head] = value;
+    }
+    return next;
+  }
+
+  const rest = parts.slice(1).join(".");
+  const child = (overrides[head] ?? {}) as Record<string, unknown>;
+  const updated = setOverridePath(child, rest, value);
+
+  const next = { ...overrides };
+  // Remove empty sub-objects
+  if (Object.keys(updated).length === 0) {
+    delete next[head];
+  } else {
+    next[head] = updated;
+  }
+  return next;
+}
+
+/** Count leaf values in a nested override object. */
+function countOverrides(obj: Record<string, unknown>): number {
+  let count = 0;
+  for (const v of Object.values(obj)) {
+    if (v != null && typeof v === "object" && !Array.isArray(v)) {
+      count += countOverrides(v as Record<string, unknown>);
+    } else {
+      count += 1;
+    }
+  }
+  return count;
+}
+
+// ── Component ────────────────────────────────────────────────────────
+
 export default function QueryTester() {
   const [preset, setPreset] = useState("");
-  const [config, setConfig] = useState<BenchmarkConfig | null>(null);
+  const [baseConfig, setBaseConfig] = useState<BenchmarkConfig | null>(null);
+  const [overrides, setOverrides] = useState<Record<string, unknown>>({});
+  const [paramsOpen, setParamsOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  const overrideCount = useMemo(() => countOverrides(overrides), [overrides]);
+
+  const effectiveConfig = useMemo(() => {
+    if (!baseConfig) return null;
+    if (overrideCount === 0) return baseConfig;
+    return deepMerge(
+      baseConfig as unknown as Record<string, unknown>,
+      overrides,
+    ) as unknown as BenchmarkConfig;
+  }, [baseConfig, overrides, overrideCount]);
+
   const handlePresetChange = useCallback(async (filename: string) => {
     setPreset(filename);
     setResult(null);
     setError(null);
+    setOverrides({});
     if (!filename) {
-      setConfig(null);
+      setBaseConfig(null);
       return;
     }
     try {
       const cfg = await getPresetConfig(filename);
-      setConfig(cfg);
+      setBaseConfig(cfg);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
-      setConfig(null);
+      setBaseConfig(null);
     }
   }, []);
 
@@ -40,14 +132,26 @@ export default function QueryTester() {
     setError(null);
     setResult(null);
     try {
-      const res = await executeQuery(query, preset);
+      const res = await executeQuery(
+        query,
+        preset,
+        overrideCount > 0 ? overrides : undefined,
+      );
       setResult(res);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setLoading(false);
     }
-  }, [query, preset]);
+  }, [query, preset, overrides, overrideCount]);
+
+  const handleOverrideChange = useCallback((path: string, value: unknown) => {
+    setOverrides((prev) => setOverridePath(prev, path, value));
+  }, []);
+
+  const handleResetOverrides = useCallback(() => {
+    setOverrides({});
+  }, []);
 
   return (
     <div className="p-6 max-w-7xl mx-auto">
@@ -60,7 +164,36 @@ export default function QueryTester() {
         {/* Left: Config panel */}
         <div className="col-span-4 space-y-4">
           <PresetSelector selected={preset} onSelect={handlePresetChange} />
-          <ConfigSummary config={config} />
+
+          {/* Parameters button + reset */}
+          {baseConfig && (
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => setParamsOpen(true)}
+                className="flex items-center gap-1.5 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+              >
+                <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
+                </svg>
+                Parameters
+                {overrideCount > 0 && (
+                  <span className="bg-amber-100 text-amber-700 rounded-full text-xs px-1.5 py-0.5 font-medium">
+                    {overrideCount}
+                  </span>
+                )}
+              </button>
+              {overrideCount > 0 && (
+                <button
+                  onClick={handleResetOverrides}
+                  className="text-xs text-amber-600 hover:text-amber-800 transition"
+                >
+                  Reset ({overrideCount})
+                </button>
+              )}
+            </div>
+          )}
+
+          <ConfigSummary config={effectiveConfig} />
         </div>
 
         {/* Right: Query + Results */}
@@ -124,6 +257,18 @@ export default function QueryTester() {
           )}
         </div>
       </div>
+
+      {/* Parameter tuning modal */}
+      {baseConfig && (
+        <ParameterModal
+          open={paramsOpen}
+          onClose={() => setParamsOpen(false)}
+          baseConfig={baseConfig}
+          overrides={overrides}
+          onOverrideChange={handleOverrideChange}
+          onReset={handleResetOverrides}
+        />
+      )}
     </div>
   );
 }

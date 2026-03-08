@@ -46,6 +46,13 @@ async def execute_query(request: QueryRequest):
     else:
         cfg = BenchmarkConfig.from_yaml(preset_path)
 
+    # Apply frontend config overrides (from parameter modal)
+    if request.config_overrides:
+        from src.benchmarks.config import _deep_merge
+        merged = cfg.model_dump()
+        _deep_merge(merged, request.config_overrides)
+        cfg = BenchmarkConfig.model_validate(merged)
+
     try:
         result = await asyncio.to_thread(
             _query_service.execute_query, request.query, cfg

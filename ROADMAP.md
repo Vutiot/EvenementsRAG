@@ -34,7 +34,7 @@ graph TD
 
   E3F1T1["✅ E3-F1-T1: Design query tester UI (web framework)"]
   E3F1T2["✅ E3-F1-T2: Implement single-query execution interface"]
-  E3F1T3["🔵 E3-F1-T3: Add config selector & preset management"]
+  E3F1T3["✅ E3-F1-T3: Add config selector & preset management"]
 
   E3F2T1["🔵 E3-F2-T1: Design benchmark result viewer"]
   E3F2T2["⚪ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)"]
@@ -94,8 +94,8 @@ graph TD
   style E2F3T3 fill:#22c55e
   style E2F4T1 fill:#22c55e
   style E3F1T1 fill:#22c55e
-  style E3F1T2 fill:#3b82f6
-  style E3F1T3 fill:#6b7280
+  style E3F1T2 fill:#22c55e
+  style E3F1T3 fill:#22c55e
   style E3F2T1 fill:#3b82f6
   style E3F2T2 fill:#6b7280
   style E3F2T3 fill:#6b7280
@@ -492,19 +492,18 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 33 |
-| **Done** | 17 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2) |
-| **Ready (no blockers)** | 3 (E3-F1-T3, E3-F2-T1, E5-F1-T1) |
+| **Done** | 18 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3) |
+| **Ready (no blockers)** | 2 (E3-F2-T1, E5-F1-T1) |
 | **In Progress** | 0 |
 | **Pending** | 13 |
-| **Critical Path Length** | 14 sequential tasks (7 remaining) |
+| **Critical Path Length** | 14 sequential tasks (6 remaining) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
-1. E3-F1-T3: Add config selector & preset management
-2. E3-F2-T1: Design benchmark result viewer
-3. E5-F1-T1: Implement LazyGraphRAG variant
+1. E3-F2-T1: Design benchmark result viewer
+2. E5-F1-T1: Implement LazyGraphRAG variant
 
-**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) in progress — E3-F1-T1 and E3-F1-T2 done, E3-F1-T3 and E3-F2-T1 ready.
+**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) in progress — E3-F1 feature complete (T1–T3 done), E3-F2-T1 ready.
 
 ---
 
@@ -747,6 +746,23 @@ Rationale: it's a template/override file, not a preset in its own right. Excludi
 
 **Documentation in `.env`** explaining the pattern.
 Rationale: new users benefit from a clear example of how to use `user-config.yaml` to override the model and test different LLMs. The `.env` file is already read for API credentials, so it's a natural place for this explanation.
+
+### E3-F1-T3 — Parameter Tuning Modal + Config Overrides
+
+**Centered modal overlay** (not inline accordion) for parameter tuning.
+Rationale: the query page stays visible behind a blurred backdrop so the user keeps spatial context. A modal avoids cluttering the main layout and groups all tunable parameters in one place with clear "Apply"/"Reset" actions.
+
+**Chip-based pickers with blue/amber highlight** for override state.
+Rationale: chips provide quick one-click selection for discrete values (vs dropdowns that require two clicks). Blue = matches preset, amber = overridden from preset — this gives immediate visual feedback about which parameters were changed.
+
+**Frontend-driven overrides via `config_overrides` dict** (deep-merged server-side).
+Rationale: the frontend sends only changed fields as a partial dict (e.g. `{"chunking": {"chunk_size": 256}}`). The backend deep-merges onto the preset using the existing `_deep_merge()` utility. This avoids duplicating the full config in the request body and reuses the same merge logic as `user-config.yaml`.
+
+**Override state separate from base config** (`overrides` dict + `deepMerge` on render).
+Rationale: keeping overrides as a separate object (not mutating `baseConfig`) allows clean "Reset to Preset" (just clear overrides), accurate override counting (badge on Parameters button), and per-field amber highlighting in the modal.
+
+**Conditional parameter visibility** (sparse weight/fusion only when technique=hybrid; overlap grayed out when >= chunk_size).
+Rationale: showing irrelevant parameters would confuse users. Conditionally hiding/disabling them matches the backend validation rules (e.g. `chunk_overlap < chunk_size`, hybrid-only fields).
 
 ---
 

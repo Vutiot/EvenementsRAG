@@ -28,10 +28,15 @@ export function getPresetConfig(filename: string): Promise<BenchmarkConfig> {
 export function executeQuery(
   query: string,
   preset: string,
+  configOverrides?: Record<string, unknown>,
 ): Promise<QueryResult> {
   return fetchJSON(`${BASE}/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ query, preset }),
+    body: JSON.stringify({
+      query,
+      preset,
+      config_overrides: configOverrides ?? null,
+    }),
   });
 }

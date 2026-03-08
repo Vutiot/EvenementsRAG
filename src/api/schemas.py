@@ -25,6 +25,7 @@ class RetrievedChunk(BaseModel):
 class QueryRequest(BaseModel):
     query: str
     preset: str
+    config_overrides: dict | None = None
 
 
 class QueryResult(BaseModel):
