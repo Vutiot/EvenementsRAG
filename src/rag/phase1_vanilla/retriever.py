@@ -193,7 +193,8 @@ class VanillaRetriever(BaseRAG):
                 **kwargs,
             )
 
-            answer = response.choices[0].message.content.strip()
+            raw = response.choices[0].message.content
+            answer = raw.strip() if raw else "[Model returned empty response]"
 
             logger.debug(f"Generated answer: {len(answer)} chars")
 
