@@ -5,6 +5,7 @@ import BenchmarkViewer from "./pages/BenchmarkViewer";
 import MetricDashboards from "./pages/MetricDashboards";
 import SweepVisualizer from "./pages/SweepVisualizer";
 import CollectionManager from "./pages/CollectionManager";
+import DatasetManager from "./pages/DatasetManager";
 
 export default function App() {
   return (
@@ -15,6 +16,7 @@ export default function App() {
           <Route path="/" element={<Navigate to="/query" replace />} />
           <Route path="/query" element={<QueryTester />} />
           <Route path="/collections" element={<CollectionManager />} />
+          <Route path="/datasets" element={<DatasetManager />} />
           <Route path="/benchmarks" element={<BenchmarkViewer />} />
           <Route path="/metrics" element={<MetricDashboards />} />
           <Route path="/sweeps" element={<SweepVisualizer />} />

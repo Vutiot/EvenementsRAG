@@ -120,6 +120,49 @@ class CollectionCreateResponse(BaseModel):
     message: str
 
 
+# ---------------------------------------------------------------------------
+# Dataset management models
+# ---------------------------------------------------------------------------
+
+
+class DatasetCategoryConfig(BaseModel):
+    type: str
+    prompt: str
+    model: str
+    count: int
+
+
+class DatasetCreateRequest(BaseModel):
+    name: str
+    collection_name: str
+    categories: list[DatasetCategoryConfig]
+
+
+class DatasetInfo(BaseModel):
+    id: str
+    name: str
+    created_at: str
+    status: str
+    collection_name: str
+    total_questions: int
+    categories: list[dict]
+
+
+class DatasetListResponse(BaseModel):
+    datasets: list[DatasetInfo]
+
+
+class DatasetDetail(BaseModel):
+    id: str
+    name: str
+    created_at: str
+    status: str
+    collection_name: str
+    total_questions: int
+    categories: list[dict]
+    questions: list[dict]
+
+
 class NormalizedBenchmarkResult(BaseModel):
     filename: str
     format: str

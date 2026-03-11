@@ -64,6 +64,11 @@ class VectorStoreFactory:
         if vector_db_config.backend == "faiss" and "persist_dir" not in kwargs:
             from src.api.dependencies import FAISS_PERSIST_DIR
             kwargs["persist_dir"] = str(FAISS_PERSIST_DIR)
+        # Ensure Qdrant uses local file storage when no host/memory override
+        if vector_db_config.backend == "qdrant" and "path" not in kwargs:
+            if not kwargs.get("use_memory") and "host" not in kwargs:
+                from src.api.dependencies import QDRANT_PERSIST_DIR
+                kwargs["path"] = str(QDRANT_PERSIST_DIR)
         return VectorStoreFactory.create(vector_db_config.backend, **kwargs)
 
     @staticmethod

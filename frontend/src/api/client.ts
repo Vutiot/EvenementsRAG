@@ -5,6 +5,10 @@ import type {
   CollectionCreateRequest,
   CollectionCreateResponse,
   CollectionListResponse,
+  DatasetCreateRequest,
+  DatasetDetail,
+  DatasetInfo,
+  DatasetProgressEvent,
   EnsureCollectionRequest,
   EnsureCollectionResponse,
   NormalizedBenchmarkResult,
@@ -82,6 +86,96 @@ export function deleteCollection(
     `${BASE}/collections/${encodeURIComponent(backend)}/${encodeURIComponent(name)}`,
     { method: "DELETE" },
   );
+}
+
+// ---------------------------------------------------------------------------
+// Datasets
+// ---------------------------------------------------------------------------
+
+export function getDatasets(): Promise<{ datasets: DatasetInfo[] }> {
+  return fetchJSON(`${BASE}/datasets`);
+}
+
+export function getDataset(id: string): Promise<DatasetDetail> {
+  return fetchJSON(`${BASE}/datasets/${encodeURIComponent(id)}`);
+}
+
+export function deleteDataset(
+  id: string,
+): Promise<{ status: string; dataset_id: string }> {
+  return fetchJSON(`${BASE}/datasets/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+/**
+ * Start dataset generation via SSE streaming.
+ * Returns an AbortController to cancel the request.
+ */
+export function generateDataset(
+  request: DatasetCreateRequest,
+  callbacks: {
+    onProgress: (e: DatasetProgressEvent) => void;
+    onCategoryComplete: (e: { category: string; generated: number; total: number }) => void;
+    onComplete: (e: { dataset_id: string; total_generated: number }) => void;
+    onError: (msg: string) => void;
+  },
+): AbortController {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const res = await fetch(`${BASE}/datasets/generate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        callbacks.onError(`${res.status}: ${text}`);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        callbacks.onError("No response body");
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let currentEvent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            if (currentEvent === "progress") callbacks.onProgress(data);
+            else if (currentEvent === "category_complete") callbacks.onCategoryComplete(data);
+            else if (currentEvent === "complete") callbacks.onComplete(data);
+            else if (currentEvent === "error") callbacks.onError(data.message);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if ((err as Error).name !== "AbortError") {
+        callbacks.onError(err instanceof Error ? err.message : String(err));
+      }
+    }
+  })();
+
+  return controller;
 }
 
 export function executeQuery(

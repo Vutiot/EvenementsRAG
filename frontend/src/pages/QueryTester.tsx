@@ -1,4 +1,4 @@
-import { useState, useCallback, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo } from "react";
 import PageHeader from "../components/layout/PageHeader";
 import PresetSelector from "../components/config/PresetSelector";
 import ConfigSummary from "../components/config/ConfigSummary";
@@ -7,8 +7,8 @@ import ChunkList from "../components/results/ChunkList";
 import GeneratedAnswer from "../components/results/GeneratedAnswer";
 import LatencyBreakdown from "../components/results/LatencyBreakdown";
 import ChunkScoresChart from "../components/results/ChunkScoresChart";
-import { getPresetConfig, executeQuery, ensureCollection } from "../api/client";
-import type { BenchmarkConfig, EnsureCollectionRequest, QueryResult } from "../api/types";
+import { getPresetConfig, executeQuery, ensureCollection, getDatasets, getDataset } from "../api/client";
+import type { BenchmarkConfig, DatasetInfo, DatasetQuestion, EnsureCollectionRequest, QueryResult } from "../api/types";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -129,6 +129,11 @@ export default function QueryTester() {
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
+  // Dataset selector state
+  const [datasets, setDatasets] = useState<DatasetInfo[]>([]);
+  const [selectedDatasetId, setSelectedDatasetId] = useState("");
+  const [datasetQuestions, setDatasetQuestions] = useState<DatasetQuestion[]>([]);
+
   const overrideCount = useMemo(() => countOverrides(overrides), [overrides]);
 
   const effectiveConfig = useMemo(() => {
@@ -139,6 +144,30 @@ export default function QueryTester() {
       overrides,
     ) as unknown as BenchmarkConfig;
   }, [baseConfig, overrides, overrideCount]);
+
+  // Load datasets on mount
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    getDatasets()
+      .then((r) => setDatasets(r.datasets.filter((d) => d.status === "completed")))
+      .catch(() => {});
+  }, []);
+
+  const handleDatasetChange = useCallback(async (dsId: string) => {
+    setSelectedDatasetId(dsId);
+    setDatasetQuestions([]);
+    if (!dsId) return;
+    try {
+      const detail = await getDataset(dsId);
+      setDatasetQuestions(detail.questions);
+    } catch {
+      /* ignore */
+    }
+  }, []);
+
+  const handlePickQuestion = useCallback((q: DatasetQuestion) => {
+    setQuery(q.question);
+  }, []);
 
   const handlePresetChange = useCallback(async (filename: string) => {
     setPreset(filename);
@@ -250,6 +279,44 @@ export default function QueryTester() {
           )}
 
           <ConfigSummary config={effectiveConfig} />
+
+          {/* Dataset selector */}
+          <div className="rounded border border-gray-200 bg-white p-3">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              Dataset (optional)
+            </label>
+            <select
+              value={selectedDatasetId}
+              onChange={(e) => handleDatasetChange(e.target.value)}
+              className="w-full rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
+                         focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-2"
+            >
+              <option value="">No dataset</option>
+              {datasets.map((ds) => (
+                <option key={ds.id} value={ds.id}>
+                  {ds.name} ({ds.total_questions}q)
+                </option>
+              ))}
+            </select>
+            {datasetQuestions.length > 0 && (
+              <div className="max-h-48 overflow-y-auto space-y-1">
+                {datasetQuestions.map((q) => (
+                  <button
+                    key={q.id}
+                    onClick={() => handlePickQuestion(q)}
+                    className="w-full text-left px-2 py-1.5 rounded text-xs text-gray-700
+                               hover:bg-blue-50 hover:text-blue-700 transition-colors truncate"
+                    title={q.question}
+                  >
+                    <span className="inline-block rounded px-1 py-0.5 mr-1 text-xs font-medium bg-gray-100 text-gray-500">
+                      {q.type}
+                    </span>
+                    {q.question}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Right: Query + Results */}

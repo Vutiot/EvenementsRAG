@@ -1,5 +1,5 @@
 ## Roadmap
-Always read @ROADMAP.md before starting any task.
+Always read @ROADMAP.md before starting any task or plan.
 Use task IDs (E1-F1-T1 format) when referring to work items.
 
 **IMPORTANT** After completing any task:

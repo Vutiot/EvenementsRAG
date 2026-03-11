@@ -7,7 +7,7 @@ Run with:
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-from src.api.routers import collections, config, health, query, results
+from src.api.routers import collections, config, datasets, health, query, results
 
 app = FastAPI(
     title="EvenementsRAG API",
@@ -30,3 +30,4 @@ app.include_router(config.router, prefix="/api", tags=["config"])
 app.include_router(query.router, prefix="/api", tags=["query"])
 app.include_router(results.router, prefix="/api", tags=["results"])
 app.include_router(collections.router, prefix="/api", tags=["collections"])
+app.include_router(datasets.router, prefix="/api", tags=["datasets"])

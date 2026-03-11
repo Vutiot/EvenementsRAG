@@ -120,6 +120,60 @@ export interface CollectionCreateResponse {
   message: string;
 }
 
+/** Dataset management types */
+export interface DatasetCategoryConfig {
+  type: string;
+  prompt: string;
+  model: string;
+  count: number;
+  generated: number;
+}
+
+export interface DatasetCreateRequest {
+  name: string;
+  collection_name: string;
+  categories: { type: string; prompt: string; model: string; count: number }[];
+}
+
+export interface DatasetInfo {
+  id: string;
+  name: string;
+  created_at: string;
+  status: string;
+  collection_name: string;
+  total_questions: number;
+  categories: DatasetCategoryConfig[];
+}
+
+export interface DatasetDetail extends DatasetInfo {
+  questions: DatasetQuestion[];
+  metadata: {
+    total_generated: number;
+    unique_articles: number;
+    generation_time_s: number;
+  };
+}
+
+export interface DatasetQuestion {
+  id: string;
+  question: string;
+  type: string;
+  difficulty: string;
+  expected_answer_hint: string;
+  source_article: string;
+  source_article_id: string;
+  source_chunk_id: string;
+  model: string;
+  generated_at: string;
+}
+
+export interface DatasetProgressEvent {
+  category: string;
+  generated: number;
+  total: number;
+  question_id?: string;
+}
+
 /** Full config shape returned by GET /api/presets/{filename} */
 export interface BenchmarkConfig {
   name: string;

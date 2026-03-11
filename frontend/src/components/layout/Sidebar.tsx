@@ -7,7 +7,10 @@ const NAV_ITEMS = [
   },
   {
     group: "Data",
-    items: [{ to: "/collections", label: "Collections" }],
+    items: [
+      { to: "/collections", label: "Collections" },
+      { to: "/datasets", label: "Datasets" },
+    ],
   },
   {
     group: "Benchmark Results",

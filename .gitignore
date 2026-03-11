@@ -196,8 +196,8 @@ ehthumbs_vista.db
 # Project-Specific Data
 # ============================================================================
 
-# Qdrant storage
-data/vector_store/
+# Vector database storage (Qdrant, FAISS, etc.)
+data/vector_database/
 .qdrant/
 
 # Downloaded Wikipedia data
