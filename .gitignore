@@ -197,7 +197,7 @@ ehthumbs_vista.db
 # ============================================================================
 
 # Qdrant storage
-qdrant_storage/
+data/vector_store/
 .qdrant/
 
 # Downloaded Wikipedia data

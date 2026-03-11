@@ -7,8 +7,8 @@ import ChunkList from "../components/results/ChunkList";
 import GeneratedAnswer from "../components/results/GeneratedAnswer";
 import LatencyBreakdown from "../components/results/LatencyBreakdown";
 import ChunkScoresChart from "../components/results/ChunkScoresChart";
-import { getPresetConfig, executeQuery } from "../api/client";
-import type { BenchmarkConfig, QueryResult } from "../api/types";
+import { getPresetConfig, executeQuery, ensureCollection } from "../api/client";
+import type { BenchmarkConfig, EnsureCollectionRequest, QueryResult } from "../api/types";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -85,6 +85,38 @@ function countOverrides(obj: Record<string, unknown>): number {
   return count;
 }
 
+// ── Collection-affecting override detection ──────────────────────────
+
+const COLLECTION_AFFECTING_PATHS = [
+  "dataset.dataset_name",
+  "chunking.chunk_size",
+  "chunking.chunk_overlap",
+  "embedding.model_name",
+  "vector_db.distance_metric",
+  "vector_db.backend",
+];
+
+/** Resolve a dotted path in a nested object. */
+function getPath(obj: Record<string, unknown>, path: string): unknown {
+  const parts = path.split(".");
+  let cur: unknown = obj;
+  for (const p of parts) {
+    if (cur == null || typeof cur !== "object") return undefined;
+    cur = (cur as Record<string, unknown>)[p];
+  }
+  return cur;
+}
+
+function hasCollectionAffectingOverrides(
+  overrides: Record<string, unknown>,
+): boolean {
+  return COLLECTION_AFFECTING_PATHS.some(
+    (p) => getPath(overrides, p) !== undefined,
+  );
+}
+
+type Phase = "idle" | "ensuring" | "querying";
+
 // ── Component ────────────────────────────────────────────────────────
 
 export default function QueryTester() {
@@ -93,7 +125,7 @@ export default function QueryTester() {
   const [overrides, setOverrides] = useState<Record<string, unknown>>({});
   const [paramsOpen, setParamsOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const [loading, setLoading] = useState(false);
+  const [phase, setPhase] = useState<Phase>("idle");
   const [result, setResult] = useState<QueryResult | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -127,23 +159,47 @@ export default function QueryTester() {
   }, []);
 
   const handleExecute = useCallback(async () => {
-    if (!query.trim() || !preset) return;
-    setLoading(true);
+    if (!query.trim() || !preset || !effectiveConfig) return;
+    setPhase("ensuring");
     setError(null);
     setResult(null);
+
+    let finalOverrides = overrideCount > 0 ? { ...overrides } : undefined;
+
     try {
-      const res = await executeQuery(
-        query,
-        preset,
-        overrideCount > 0 ? overrides : undefined,
-      );
+      // Phase 1: ensure collection exists if collection-affecting params changed
+      if (overrideCount > 0 && hasCollectionAffectingOverrides(overrides)) {
+        const ec = effectiveConfig;
+        const req: EnsureCollectionRequest = {
+          dataset_name: ec.dataset.dataset_name,
+          backend: ec.vector_db.backend,
+          chunk_size: ec.chunking.chunk_size,
+          chunk_overlap: ec.chunking.chunk_overlap,
+          embedding_model: ec.embedding.model_name,
+          embedding_dimension: ec.embedding.dimension,
+          distance_metric: ec.vector_db.distance_metric,
+        };
+        const ensureRes = await ensureCollection(req);
+        // Inject the derived collection_name into overrides
+        finalOverrides = {
+          ...(finalOverrides ?? {}),
+          dataset: {
+            ...((finalOverrides?.dataset as Record<string, unknown>) ?? {}),
+            collection_name: ensureRes.collection_name,
+          },
+        };
+      }
+
+      // Phase 2: execute query
+      setPhase("querying");
+      const res = await executeQuery(query, preset, finalOverrides);
       setResult(res);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setLoading(false);
+      setPhase("idle");
     }
-  }, [query, preset, overrides, overrideCount]);
+  }, [query, preset, overrides, overrideCount, effectiveConfig]);
 
   const handleOverrideChange = useCallback((path: string, value: unknown) => {
     setOverrides((prev) => setOverridePath(prev, path, value));
@@ -219,12 +275,16 @@ export default function QueryTester() {
               <span className="text-xs text-gray-400">Ctrl+Enter to execute</span>
               <button
                 onClick={handleExecute}
-                disabled={loading || !query.trim() || !preset}
+                disabled={phase !== "idle" || !query.trim() || !preset}
                 className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white
                            hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                            transition-colors"
               >
-                {loading ? "Executing..." : "Execute"}
+                {phase === "ensuring"
+                  ? "Preparing..."
+                  : phase === "querying"
+                    ? "Executing..."
+                    : "Execute"}
               </button>
             </div>
           </div>
@@ -237,14 +297,19 @@ export default function QueryTester() {
           )}
 
           {/* Loading spinner */}
-          {loading && (
-            <div className="flex items-center justify-center py-12">
+          {phase !== "idle" && (
+            <div className="flex flex-col items-center justify-center py-12 gap-3">
               <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+              <span className="text-sm text-gray-500">
+                {phase === "ensuring"
+                  ? "Preparing collection (indexing if needed)..."
+                  : "Executing query..."}
+              </span>
             </div>
           )}
 
           {/* Results */}
-          {result && !loading && (
+          {result && phase === "idle" && (
             <div className="space-y-4">
               <GeneratedAnswer answer={result.generated_answer} />
               <LatencyBreakdown

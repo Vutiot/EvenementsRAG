@@ -6,6 +6,10 @@ const NAV_ITEMS = [
     items: [{ to: "/query", label: "Query Tester" }],
   },
   {
+    group: "Data",
+    items: [{ to: "/collections", label: "Collections" }],
+  },
+  {
     group: "Benchmark Results",
     items: [
       { to: "/benchmarks", label: "Result Viewer" },

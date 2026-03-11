@@ -65,6 +65,15 @@ class BaseVectorStore(ABC):
         """Delete a collection.  Returns True on success."""
         ...
 
+    @abstractmethod
+    def list_collections(self) -> List[Dict]:
+        """List all collections with metadata.
+
+        Returns a list of dicts, each containing at least:
+        ``{"name", "vector_size", "distance", "points_count"}``.
+        """
+        ...
+
     # ------------------------------------------------------------------
     # Vector operations
     # ------------------------------------------------------------------

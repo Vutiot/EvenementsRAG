@@ -69,6 +69,57 @@ class NormalizedQuestion(BaseModel):
     ragas_metrics: dict[str, float] | None = None
 
 
+# ---------------------------------------------------------------------------
+# Collection management models
+# ---------------------------------------------------------------------------
+
+
+class CollectionInfo(BaseModel):
+    name: str
+    backend: str
+    vector_size: int | None = None
+    distance: str | None = None
+    points_count: int | None = None
+
+
+class CollectionListResponse(BaseModel):
+    collections: list[CollectionInfo]
+    backends_available: list[str]
+
+
+class EnsureCollectionRequest(BaseModel):
+    dataset_name: str
+    backend: str = "qdrant"
+    chunk_size: int = 512
+    chunk_overlap: int = 50
+    embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
+    embedding_dimension: int = 384
+    distance_metric: str = "cosine"
+
+
+class EnsureCollectionResponse(BaseModel):
+    status: str  # "exists" | "created"
+    collection_name: str
+    message: str
+
+
+class CollectionCreateRequest(BaseModel):
+    dataset_name: str
+    collection_name: str | None = None
+    backend: str = "qdrant"
+    chunk_size: int = 512
+    chunk_overlap: int = 50
+    embedding_model: str = "all-MiniLM-L6-v2"
+    embedding_dimension: int = 384
+    distance_metric: str = "cosine"
+
+
+class CollectionCreateResponse(BaseModel):
+    status: str
+    collection_name: str
+    message: str
+
+
 class NormalizedBenchmarkResult(BaseModel):
     filename: str
     format: str
@@ -80,7 +131,7 @@ class NormalizedBenchmarkResult(BaseModel):
     avg_ndcg: dict[str, float]
     avg_article_hit_at_k: dict[str, float] | None = None
     avg_chunk_hit_at_k: dict[str, float] | None = None
-    metrics_by_type: dict[str, dict[str, float]]
+    metrics_by_type: dict[str, dict[str, float | None]]
     per_question: list[NormalizedQuestion]
     total_questions: int
     avg_retrieval_time_ms: float

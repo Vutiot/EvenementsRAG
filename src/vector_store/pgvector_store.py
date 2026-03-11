@@ -164,6 +164,24 @@ class PgVectorStore(BaseVectorStore):
         logger.info(f"Dropped pgvector table '{table}'")
         return True
 
+    def list_collections(self) -> list:
+        conn = self._get_conn()
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT tablename FROM pg_tables WHERE schemaname = 'public' AND tablename LIKE 'vec_%'"
+            )
+            tables = [row[0] for row in cur.fetchall()]
+        result = []
+        for table in tables:
+            # Reverse the vec_ prefix to get collection name
+            collection_name = table[4:]  # strip "vec_"
+            try:
+                info = self.get_collection_info(collection_name)
+                result.append(info)
+            except Exception:
+                result.append({"name": collection_name, "vector_size": None, "distance": None, "points_count": None})
+        return result
+
     # ------------------------------------------------------------------
     # Vector operations
     # ------------------------------------------------------------------

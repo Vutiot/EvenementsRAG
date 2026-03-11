@@ -24,7 +24,7 @@ CONTAINER_NAME="qdrant-evenementsrag"
 QDRANT_IMAGE="qdrant/qdrant:latest"
 QDRANT_PORT=6333
 QDRANT_GRPC_PORT=6334
-STORAGE_PATH="$(pwd)/qdrant_storage"
+STORAGE_PATH="$(pwd)/data/vector_store"
 
 # Colors for output
 RED='\033[0;31m'

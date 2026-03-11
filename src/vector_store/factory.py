@@ -60,6 +60,10 @@ class VectorStoreFactory:
         if vector_db_config.connection_params:
             kwargs.update(vector_db_config.connection_params)
         kwargs["default_distance"] = DistanceMetric(vector_db_config.distance_metric)
+        # Ensure FAISS gets a persist_dir when none was provided
+        if vector_db_config.backend == "faiss" and "persist_dir" not in kwargs:
+            from src.api.dependencies import FAISS_PERSIST_DIR
+            kwargs["persist_dir"] = str(FAISS_PERSIST_DIR)
         return VectorStoreFactory.create(vector_db_config.backend, **kwargs)
 
     @staticmethod

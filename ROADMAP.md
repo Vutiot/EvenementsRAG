@@ -40,6 +40,10 @@ graph TD
   E3F2T2["✅ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)"]
   E3F2T3["🔵 E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)"]
 
+  E3F3T1["✅ E3-F3-T1: Collection CRUD API & service"]
+  E3F3T2["✅ E3-F3-T2: Collection Manager UI page"]
+  E3F3T3["✅ E3-F3-T3: Fix FAISS persist_dir in VectorStoreFactory"]
+
   E4F1T1["🔵 E4-F1-T1: Design results database schema"]
   E4F1T2["⚪ E4-F1-T2: Implement benchmark result caching"]
   E4F1T3["⚪ E4-F1-T3: Add cache invalidation & versioning"]
@@ -70,6 +74,10 @@ graph TD
   E3F2T1 --> E3F2T2
   E3F2T2 --> E3F2T3
 
+  E2F2T1 --> E3F3T1
+  E3F3T1 --> E3F3T2
+  E3F3T1 --> E3F3T3
+
   E3F1T2 --> E4F1T1
   E3F2T1 --> E4F1T1
   E4F1T1 --> E4F1T2
@@ -96,9 +104,12 @@ graph TD
   style E3F1T1 fill:#22c55e
   style E3F1T2 fill:#22c55e
   style E3F1T3 fill:#22c55e
-  style E3F2T1 fill:#3b82f6
-  style E3F2T2 fill:#6b7280
+  style E3F2T1 fill:#22c55e
+  style E3F2T2 fill:#22c55e
   style E3F2T3 fill:#6b7280
+  style E3F3T1 fill:#22c55e
+  style E3F3T2 fill:#22c55e
+  style E3F3T3 fill:#22c55e
   style E4F1T1 fill:#6b7280
   style E4F1T2 fill:#6b7280
   style E4F1T3 fill:#6b7280
@@ -288,6 +299,26 @@ Web interface for testing individual queries and visualizing benchmark results.
 - effort: L
 - agent_hint: Create multi-result analyzer. User fixes all params except one (e.g., chunk_size), view quality change as line chart. Support 2D heatmaps for two varying params. Use Plotly for interactivity.
 - description: Visualization for parameter sensitivity analysis. Line charts for single-param sweeps, heatmaps for two-param comparisons. Show how metrics vary with parameter changes.
+
+#### E3-F3: Collection Management
+
+##### ✅ E3-F3-T1: Collection CRUD API & service layer
+- blocked_by: [E2-F2-T1]
+- status: done
+- effort: M
+- description: REST API endpoints (list/create/delete) and multi-backend collection service. Files: `src/api/routers/collections.py`, `src/api/collection_service.py`, `src/api/schemas.py` (CollectionInfo, CollectionCreateRequest/Response, EnsureCollectionRequest/Response), `src/api/dependencies.py` (FAISS_PERSIST_DIR constant).
+
+##### ✅ E3-F3-T2: Collection Manager UI page
+- blocked_by: [E3-F3-T1]
+- status: done
+- effort: M
+- description: React page to list, create (with backend/dataset/chunk params), and delete collections. Files: `frontend/src/pages/CollectionManager.tsx`, sidebar nav entry, App.tsx route, `frontend/src/api/client.ts` (getCollections, createCollection, deleteCollection), `frontend/src/api/types.ts` (CollectionInfo type).
+
+##### ✅ E3-F3-T3: Fix FAISS persist_dir in VectorStoreFactory
+- blocked_by: [E3-F3-T1]
+- status: done
+- effort: S
+- description: Inject `persist_dir` for FAISS backend in `VectorStoreFactory.from_config()`. Fixes HTTP 409 when querying FAISS-backed collections. File: `src/vector_store/factory.py`.
 
 ---
 
@@ -491,8 +522,8 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 
 | Metric | Value |
 |--------|-------|
-| **Total Tasks** | 33 |
-| **Done** | 20 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2) |
+| **Total Tasks** | 36 |
+| **Done** | 23 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F3-T1, E3-F3-T2, E3-F3-T3) |
 | **Ready (no blockers)** | 3 (E3-F2-T3, E4-F1-T1, E5-F1-T1) |
 | **In Progress** | 0 |
 | **Pending** | 10 |
@@ -788,6 +819,14 @@ Rationale: pure functions that can be unit-tested in isolation. `chunk_hit_at_k(
 
 **Serialization fix in `ParameterizedBenchmarkRunner.run()`**: converts `RetrievalMetrics` to dict via `.to_dict()` before JSON serialization.
 Rationale: `json.dumps(default=str)` was rendering `RetrievalMetrics` as `__repr__` strings, losing all metric data.
+
+### E3-F3-T1 — Collection Management
+
+**`persist_dir` injection in `VectorStoreFactory.from_config()`** for FAISS backend.
+Rationale: FAISS requires a `persist_dir` to load/save index files; without it, querying a FAISS-backed collection after restart returns HTTP 409. The factory now lazy-imports `FAISS_PERSIST_DIR` from `src.api.dependencies` to avoid import overhead for non-FAISS paths.
+
+**`CollectionService` discovers collections across all backends** (qdrant, faiss, pgvector).
+Rationale: the UI needs a unified collection list regardless of which vector store backend was used. The service aggregates collections from all available backends, with graceful fallback when a backend is unavailable.
 
 ## Notes
 

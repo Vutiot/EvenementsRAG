@@ -17,3 +17,5 @@
 # Example - uncomment to override the model:
 generation:
   model: nvidia/nemotron-3-nano-30b-a3b:free
+  temperature: 0.5
+  max_tokens: 3000

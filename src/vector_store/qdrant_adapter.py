@@ -93,6 +93,17 @@ class QdrantAdapter(BaseVectorStore):
     def delete_collection(self, collection_name: str) -> bool:
         return self._mgr.delete_collection(collection_name)
 
+    def list_collections(self) -> list:
+        collections = self._mgr.client.get_collections().collections
+        result = []
+        for c in collections:
+            try:
+                info = self._mgr.get_collection_info(c.name)
+                result.append(info)
+            except Exception:
+                result.append({"name": c.name, "vector_size": None, "distance": None, "points_count": None})
+        return result
+
     # ------------------------------------------------------------------
     # Vector operations
     # ------------------------------------------------------------------

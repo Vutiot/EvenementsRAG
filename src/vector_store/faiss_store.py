@@ -207,6 +207,27 @@ class FAISSStore(BaseVectorStore):
         logger.info(f"Deleted FAISS collection '{collection_name}'")
         return True
 
+    def list_collections(self) -> list:
+        # Start from in-memory collections
+        names = set(self._collections.keys())
+        # Also discover persisted collections on disk
+        if self._persist_dir is not None and self._persist_dir.exists():
+            for meta_file in self._persist_dir.glob("*.meta.pkl"):
+                name = meta_file.stem.replace(".meta", "")
+                if name not in names:
+                    # Load into memory so get_collection_info works
+                    coll = self._load_collection(name)
+                    if coll is not None:
+                        self._collections[name] = coll
+                        names.add(name)
+        result = []
+        for name in sorted(names):
+            try:
+                result.append(self.get_collection_info(name))
+            except KeyError:
+                pass
+        return result
+
     # ------------------------------------------------------------------
     # Vector operations
     # ------------------------------------------------------------------

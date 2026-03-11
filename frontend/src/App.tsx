@@ -4,6 +4,7 @@ import QueryTester from "./pages/QueryTester";
 import BenchmarkViewer from "./pages/BenchmarkViewer";
 import MetricDashboards from "./pages/MetricDashboards";
 import SweepVisualizer from "./pages/SweepVisualizer";
+import CollectionManager from "./pages/CollectionManager";
 
 export default function App() {
   return (
@@ -13,6 +14,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Navigate to="/query" replace />} />
           <Route path="/query" element={<QueryTester />} />
+          <Route path="/collections" element={<CollectionManager />} />
           <Route path="/benchmarks" element={<BenchmarkViewer />} />
           <Route path="/metrics" element={<MetricDashboards />} />
           <Route path="/sweeps" element={<SweepVisualizer />} />

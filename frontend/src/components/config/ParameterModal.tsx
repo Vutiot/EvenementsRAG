@@ -56,6 +56,13 @@ const EMBEDDING_MODELS: { value: string; label: string }[] = [
   { value: "BAAI/bge-base-en-v1.5", label: "BGE-Base" },
 ];
 
+const EMBEDDING_DIMENSION_MAP: Record<string, number> = {
+  "sentence-transformers/all-MiniLM-L6-v2": 384,
+  "sentence-transformers/all-MiniLM-L12-v2": 384,
+  "BAAI/bge-small-en-v1.5": 384,
+  "BAAI/bge-base-en-v1.5": 768,
+};
+
 const DISTANCE_OPTIONS = [
   { value: "cosine", label: "cosine" },
   { value: "euclidean", label: "euclidean" },
@@ -276,7 +283,11 @@ export default function ParameterModal({
               options={EMBEDDING_MODELS}
               value={effective("embedding.model_name") as string}
               presetValue={preset("embedding.model_name") as string}
-              onChange={(v) => handleChange("embedding.model_name", v)}
+              onChange={(v) => {
+                handleChange("embedding.model_name", v);
+                const dim = EMBEDDING_DIMENSION_MAP[v as string];
+                if (dim !== undefined) handleChange("embedding.dimension", dim);
+              }}
             />
             <ParamChips
               label="Distance"
