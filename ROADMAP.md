@@ -44,6 +44,10 @@ graph TD
   E3F3T2["✅ E3-F3-T2: Collection Manager UI page"]
   E3F3T3["✅ E3-F3-T3: Fix FAISS persist_dir in VectorStoreFactory"]
 
+  E3F4T1["✅ E3-F4-T1: Dataset CRUD API & SSE generation service"]
+  E3F4T2["✅ E3-F4-T2: Dataset Manager UI with editable categories"]
+  E3F4T3["✅ E3-F4-T3: Query Tester dataset question picker"]
+
   E4F1T1["🔵 E4-F1-T1: Design results database schema"]
   E4F1T2["⚪ E4-F1-T2: Implement benchmark result caching"]
   E4F1T3["⚪ E4-F1-T3: Add cache invalidation & versioning"]
@@ -78,6 +82,10 @@ graph TD
   E3F3T1 --> E3F3T2
   E3F3T1 --> E3F3T3
 
+  E3F3T2 --> E3F4T1
+  E3F4T1 --> E3F4T2
+  E3F1T2 --> E3F4T3
+
   E3F1T2 --> E4F1T1
   E3F2T1 --> E4F1T1
   E4F1T1 --> E4F1T2
@@ -110,6 +118,9 @@ graph TD
   style E3F3T1 fill:#22c55e
   style E3F3T2 fill:#22c55e
   style E3F3T3 fill:#22c55e
+  style E3F4T1 fill:#22c55e
+  style E3F4T2 fill:#22c55e
+  style E3F4T3 fill:#22c55e
   style E4F1T1 fill:#6b7280
   style E4F1T2 fill:#6b7280
   style E4F1T3 fill:#6b7280
@@ -320,6 +331,26 @@ Web interface for testing individual queries and visualizing benchmark results.
 - effort: S
 - description: Inject `persist_dir` for FAISS backend in `VectorStoreFactory.from_config()`. Fixes HTTP 409 when querying FAISS-backed collections. File: `src/vector_store/factory.py`.
 
+#### E3-F4: Dataset Management
+
+##### ✅ E3-F4-T1: Dataset CRUD API & SSE generation service
+- blocked_by: [E3-F3-T2]
+- status: done
+- effort: L
+- description: Backend service for dataset CRUD (list/detail/delete) and SSE-streaming question generation. Uses OpenRouter LLM to generate categorized evaluation questions from collection chunks. Files: `src/api/routers/datasets.py`, `src/api/dataset_service.py`, `src/api/schemas.py` (DatasetCreateRequest, DatasetInfo, DatasetDetail), `src/api/dependencies.py` (DATASETS_DIR, QDRANT_PERSIST_DIR), `src/api/main.py` (router registration).
+
+##### ✅ E3-F4-T2: Dataset Manager UI with editable categories
+- blocked_by: [E3-F4-T1]
+- status: done
+- effort: M
+- description: React page with card-based category editor. Features: editable category names (inline input replacing static badges), add/delete cards, stable React keys via counter-based IDs, Nemotron Nano 30B as default model, SSE progress tracking with live counters, existing dataset list with expandable detail view. Files: `frontend/src/pages/DatasetManager.tsx`, `frontend/src/api/client.ts` (generateDataset SSE client, getDatasets, getDataset, deleteDataset), `frontend/src/api/types.ts` (Dataset types), `frontend/src/components/layout/Sidebar.tsx`, `frontend/src/App.tsx`.
+
+##### ✅ E3-F4-T3: Query Tester dataset question picker
+- blocked_by: [E3-F1-T2]
+- status: done
+- effort: S
+- description: Dataset selector in QueryTester sidebar. Loads completed datasets, shows scrollable question list with type badges. Clicking a question populates the query input. Files: `frontend/src/pages/QueryTester.tsx`.
+
 ---
 
 ### 💾 E4: Results Caching & Database
@@ -516,14 +547,23 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - `_RAG_REGISTRY`: lazy-import dispatch (vanilla implemented; hybrid/temporal raise `NotImplementedError` until E2-F3)
 - **Unit tests**: `tests/unit/benchmarks/` — 39 tests, 98% coverage on `config.py`, 90% on `runner.py`
 
+✅ **E3-F4-T1/T2/T3 – Dataset Management (API, UI, Query Tester Integration)**
+- **Backend**: `src/api/routers/datasets.py` + `src/api/dataset_service.py` — SSE streaming generation, CRUD endpoints (list/detail/delete), OpenRouter LLM question generation with per-category prompts
+- **Schemas**: `src/api/schemas.py` — DatasetCreateRequest, DatasetCategoryConfig, DatasetInfo, DatasetDetail, DatasetListResponse
+- **Frontend**: `frontend/src/pages/DatasetManager.tsx` — card-based category editor with editable type names (inline `<input>` replacing static badges), add/delete cards, counter-based stable React keys, Nemotron Nano 30B default, live SSE progress, expandable dataset detail view with question tables
+- **API client**: `frontend/src/api/client.ts` — `generateDataset()` SSE stream parser, `getDatasets()`, `getDataset()`, `deleteDataset()`
+- **Types**: `frontend/src/api/types.ts` — DatasetInfo, DatasetDetail, DatasetQuestion, DatasetProgressEvent, DatasetCategoryConfig, DatasetCreateRequest
+- **Query Tester**: `frontend/src/pages/QueryTester.tsx` — dataset selector dropdown, scrollable question list with type badges, click-to-populate query input
+- **Infrastructure**: `src/vector_store/factory.py` — Qdrant local file storage (`QDRANT_PERSIST_DIR`) when no host/memory override; `.gitignore` — `data/vector_database/` replaces `data/vector_store/`; `scripts/setup_qdrant.sh` — storage path updated
+
 ---
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
-| **Total Tasks** | 36 |
-| **Done** | 23 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F3-T1, E3-F3-T2, E3-F3-T3) |
+| **Total Tasks** | 39 |
+| **Done** | 26 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3) |
 | **Ready (no blockers)** | 3 (E3-F2-T3, E4-F1-T1, E5-F1-T1) |
 | **In Progress** | 0 |
 | **Pending** | 10 |
@@ -827,6 +867,20 @@ Rationale: FAISS requires a `persist_dir` to load/save index files; without it, 
 
 **`CollectionService` discovers collections across all backends** (qdrant, faiss, pgvector).
 Rationale: the UI needs a unified collection list regardless of which vector store backend was used. The service aggregates collections from all available backends, with graceful fallback when a backend is unavailable.
+
+### E3-F4 — Dataset Management
+
+**SSE streaming for generation progress** (not WebSocket or polling).
+Rationale: SSE is unidirectional server→client which matches the use case perfectly (server streams progress events, client only initiates). No need for bidirectional communication. FastAPI's `StreamingResponse` with `text/event-stream` content type works out of the box. The frontend parses `event:` + `data:` lines with a simple `ReadableStream` reader — no external SSE library needed.
+
+**Counter-based `id` field on `CardState`** (not `crypto.randomUUID()` or `key={card.type}`).
+Rationale: category types are now editable and can be duplicated, so `key={card.type}` causes React reconciliation bugs (keys must be unique). A module-level `_cardIdCounter++` is simpler than `crypto.randomUUID()` and produces shorter, debuggable IDs (`card_0`, `card_1`, ...). The counter survives re-renders but resets on page reload, which is fine since cards are ephemeral form state.
+
+**Nemotron Nano 30B as default model** (moved to `LLM_MODELS[0]`).
+Rationale: initial card state uses `LLM_MODELS[0]!.value`, so position determines the default. Nemotron Nano 30B (free tier) provides better instruction-following for question generation than Mistral Small 3.1.
+
+**Qdrant local file storage in `VectorStoreFactory.from_config()`** (path-based, not in-memory).
+Rationale: the API server needs collections to persist across restarts. When no `host` or `use_memory` override is provided, the factory now injects `path=QDRANT_PERSIST_DIR` (`data/vector_database/qdrant/`). This matches the FAISS `persist_dir` pattern added in E3-F3-T3.
 
 ## Notes
 
