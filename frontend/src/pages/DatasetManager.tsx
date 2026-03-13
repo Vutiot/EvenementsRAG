@@ -1,14 +1,14 @@
 import { useEffect, useState, useCallback } from "react";
 import PageHeader from "../components/layout/PageHeader";
 import {
-  getCollections,
+  getDatasetRegistry,
   getDatasets,
   getDataset,
   deleteDataset,
   generateDataset,
 } from "../api/client";
 import type {
-  CollectionInfo,
+  DatasetRegistryEntry,
   DatasetInfo,
   DatasetDetail,
   DatasetProgressEvent,
@@ -74,12 +74,13 @@ let _cardIdCounter = 0;
 // ── Component ────────────────────────────────────────────────────────
 
 export default function DatasetManager() {
-  // Collections for dropdown
-  const [collections, setCollections] = useState<CollectionInfo[]>([]);
+  // Dataset registry for dropdown
+  const [registryDatasets, setRegistryDatasets] = useState<DatasetRegistryEntry[]>([]);
+  const [selectedDataset, setSelectedDataset] = useState<DatasetRegistryEntry | null>(null);
+  const [selectedCollection, setSelectedCollection] = useState("");
 
   // Create form
   const [datasetName, setDatasetName] = useState("");
-  const [selectedCollection, setSelectedCollection] = useState("");
   const [cards, setCards] = useState<CardState[]>(() =>
     QUESTION_TYPES.map((t) => ({
       id: `card_${_cardIdCounter++}`,
@@ -124,10 +125,12 @@ export default function DatasetManager() {
   }, []);
 
   useEffect(() => {
-    getCollections().then((r) => {
-      setCollections(r.collections);
-      if (r.collections.length > 0 && !selectedCollection) {
-        setSelectedCollection(r.collections[0]!.name);
+    getDatasetRegistry().then((r) => {
+      setRegistryDatasets(r.datasets);
+      if (r.datasets.length > 0 && !selectedDataset) {
+        const first = r.datasets[0]!;
+        setSelectedDataset(first);
+        setSelectedCollection(first.collections[0] ?? first.default_collection);
       }
     });
     refreshDatasets();
@@ -202,7 +205,7 @@ export default function DatasetManager() {
         onComplete: (e) => {
           setGenerating(false);
           setGenSuccess(
-            `Dataset created with ${e.total_generated} questions.`,
+            `Evaluation set created with ${e.total_generated} questions.`,
           );
           refreshDatasets();
         },
@@ -259,14 +262,14 @@ export default function DatasetManager() {
   return (
     <div className="p-6 max-w-7xl mx-auto">
       <PageHeader
-        title="Datasets"
-        description="Create evaluation datasets with customizable question categories and generation prompts."
+        title="Evaluations"
+        description="Create evaluation question sets with customizable categories and generation prompts."
       />
 
       {/* ── Create Dataset ──────────────────────────────────────────── */}
       <section className="rounded border border-gray-200 bg-white p-5 mb-6">
         <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider mb-4">
-          Create Dataset
+          Create Evaluation Set
         </h2>
 
         <div className="space-y-4">
@@ -274,7 +277,7 @@ export default function DatasetManager() {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Dataset Name
+                Evaluation Name
               </label>
               <input
                 type="text"
@@ -287,23 +290,48 @@ export default function DatasetManager() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Source Collection
+                Original Dataset
               </label>
               <select
-                value={selectedCollection}
-                onChange={(e) => setSelectedCollection(e.target.value)}
+                value={selectedDataset?.name ?? ""}
+                onChange={(e) => {
+                  const entry = registryDatasets.find((d) => d.name === e.target.value);
+                  setSelectedDataset(entry ?? null);
+                  if (entry) {
+                    setSelectedCollection(entry.collections[0] ?? entry.default_collection);
+                  } else {
+                    setSelectedCollection("");
+                  }
+                }}
                 className="w-full rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
                            focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
               >
-                {collections.length === 0 && (
-                  <option value="">No collections available</option>
+                {registryDatasets.length === 0 && (
+                  <option value="">No datasets available</option>
                 )}
-                {collections.map((c) => (
-                  <option key={`${c.backend}::${c.name}`} value={c.name}>
-                    {c.name} ({c.backend}, {c.points_count?.toLocaleString() ?? "?"} vectors)
+                {registryDatasets.map((d) => (
+                  <option key={d.name} value={d.name}>
+                    {d.name} ({d.description})
                   </option>
                 ))}
               </select>
+              {selectedDataset && selectedDataset.collections.length > 1 && (
+                <select
+                  value={selectedCollection}
+                  onChange={(e) => setSelectedCollection(e.target.value)}
+                  className="w-full mt-1 rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
+                             focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                >
+                  {selectedDataset.collections.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              )}
+              {selectedDataset && selectedDataset.collections.length === 0 && (
+                <p className="mt-1 text-xs text-amber-600">
+                  No indexed collection found for this dataset. Create one in Collections first.
+                </p>
+              )}
             </div>
           </div>
 
@@ -449,13 +477,13 @@ export default function DatasetManager() {
             <button
               onClick={handleGenerate}
               disabled={
-                generating || !datasetName.trim() || !selectedCollection || totalQuestions === 0
+                generating || !datasetName.trim() || !selectedCollection || (selectedDataset?.collections.length === 0) || totalQuestions === 0
               }
               className="rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white
                          hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                          transition-colors"
             >
-              {generating ? "Generating..." : "Create Dataset"}
+              {generating ? "Generating..." : "Create Evaluation Set"}
             </button>
 
             {generating && (
@@ -484,7 +512,7 @@ export default function DatasetManager() {
       <section className="rounded border border-gray-200 bg-white p-5">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
-            Existing Datasets
+            Existing Evaluation Sets
           </h2>
           <button
             onClick={refreshDatasets}
@@ -501,7 +529,7 @@ export default function DatasetManager() {
           </div>
         ) : datasets.length === 0 ? (
           <p className="text-sm text-gray-400 text-center py-8">
-            No datasets yet. Create one above.
+            No evaluation sets yet. Create one above.
           </p>
         ) : (
           <div className="space-y-2">
@@ -626,17 +654,19 @@ function DatasetDetailView({ detail }: { detail: DatasetDetail }) {
   return (
     <div className="mt-2 rounded-lg border border-gray-200 bg-white p-4 space-y-4">
       {/* Summary */}
-      <div className="flex items-center gap-6 text-xs text-gray-500">
-        <span>
-          <strong className="text-gray-700">{detail.metadata.total_generated}</strong> questions
-        </span>
-        <span>
-          <strong className="text-gray-700">{detail.metadata.unique_articles}</strong> unique articles
-        </span>
-        <span>
-          Generated in <strong className="text-gray-700">{detail.metadata.generation_time_s}s</strong>
-        </span>
-      </div>
+      {detail.metadata && (
+        <div className="flex items-center gap-6 text-xs text-gray-500">
+          <span>
+            <strong className="text-gray-700">{detail.metadata.total_generated}</strong> questions
+          </span>
+          <span>
+            <strong className="text-gray-700">{detail.metadata.unique_articles}</strong> unique articles
+          </span>
+          <span>
+            Generated in <strong className="text-gray-700">{detail.metadata.generation_time_s}s</strong>
+          </span>
+        </div>
+      )}
 
       {/* Category cards (read-only) */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">

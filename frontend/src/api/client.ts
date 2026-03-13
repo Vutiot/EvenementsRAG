@@ -9,6 +9,7 @@ import type {
   DatasetDetail,
   DatasetInfo,
   DatasetProgressEvent,
+  DatasetRegistryEntry,
   EnsureCollectionRequest,
   EnsureCollectionResponse,
   NormalizedBenchmarkResult,
@@ -91,6 +92,10 @@ export function deleteCollection(
 // ---------------------------------------------------------------------------
 // Datasets
 // ---------------------------------------------------------------------------
+
+export function getDatasetRegistry(): Promise<{ datasets: DatasetRegistryEntry[] }> {
+  return fetchJSON(`${BASE}/datasets/registry`);
+}
 
 export function getDatasets(): Promise<{ datasets: DatasetInfo[] }> {
   return fetchJSON(`${BASE}/datasets`);

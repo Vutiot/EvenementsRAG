@@ -20,6 +20,31 @@ router = APIRouter()
 _service = DatasetService()
 
 
+@router.get("/datasets/registry")
+async def get_dataset_registry():
+    """Return known raw datasets with their default collection names."""
+    from src.benchmarks.dataset_manager import DATASET_REGISTRY
+    from src.api.collection_service import CollectionService
+
+    svc = CollectionService()
+    all_collections = await asyncio.to_thread(svc.list_all)
+    existing_names = {c["name"] for c in all_collections["collections"]}
+
+    results = []
+    for name, info in DATASET_REGISTRY.items():
+        default_col = CollectionService.derive_collection_name(name)
+        # Find all existing collections that start with this dataset name
+        matching = sorted(c for c in existing_names if c.startswith(name) or c == default_col)
+        results.append({
+            "name": name,
+            "description": info.get("description", ""),
+            "default_collection": default_col,
+            "collections": matching,
+        })
+
+    return {"datasets": results}
+
+
 @router.get("/datasets", response_model=DatasetListResponse)
 async def list_datasets():
     """List all saved datasets."""

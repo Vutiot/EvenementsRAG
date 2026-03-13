@@ -9,7 +9,7 @@ const NAV_ITEMS = [
     group: "Data",
     items: [
       { to: "/collections", label: "Collections" },
-      { to: "/datasets", label: "Datasets" },
+      { to: "/evaluations", label: "Evaluations" },
     ],
   },
   {

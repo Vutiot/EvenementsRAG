@@ -120,6 +120,14 @@ export interface CollectionCreateResponse {
   message: string;
 }
 
+/** Dataset registry (raw source datasets) */
+export interface DatasetRegistryEntry {
+  name: string;
+  description: string;
+  default_collection: string;
+  collections: string[];
+}
+
 /** Dataset management types */
 export interface DatasetCategoryConfig {
   type: string;
@@ -147,7 +155,7 @@ export interface DatasetInfo {
 
 export interface DatasetDetail extends DatasetInfo {
   questions: DatasetQuestion[];
-  metadata: {
+  metadata?: {
     total_generated: number;
     unique_articles: number;
     generation_time_s: number;

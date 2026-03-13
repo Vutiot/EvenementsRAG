@@ -283,7 +283,7 @@ export default function QueryTester() {
           {/* Dataset selector */}
           <div className="rounded border border-gray-200 bg-white p-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Dataset (optional)
+              Evaluation Set (optional)
             </label>
             <select
               value={selectedDatasetId}
