@@ -217,44 +217,68 @@ class DatasetService:
             pool_iter = iter(pool)
 
             for _ in range(cat.count):
-                chunk = next(pool_iter, None)
-                if chunk is None:
-                    # Exhausted pool — reshuffle and restart
-                    random.shuffle(pool)
-                    pool_iter = iter(pool)
+                MAX_RETRIES = 5
+                retries = 0
+                success = False
+
+                while retries < MAX_RETRIES:
                     chunk = next(pool_iter, None)
                     if chunk is None:
-                        break
+                        random.shuffle(pool)
+                        pool_iter = iter(pool)
+                        chunk = next(pool_iter, None)
+                        if chunk is None:
+                            break
 
-                try:
-                    questions = self._generate_for_chunk(
-                        client, chunk, cat, question_counter
-                    )
-                except Exception as exc:
-                    logger.warning(f"LLM call failed for {cat.type}: {exc}")
-                    yield self._sse("question_error", {
+                    try:
+                        questions = self._generate_for_chunk(
+                            client, chunk, cat, question_counter
+                        )
+                    except Exception as exc:
+                        retries += 1
+                        logger.warning("LLM error (%d/%d) for %s: %s", retries, MAX_RETRIES, cat.type, exc)
+                        yield self._sse("retry", {
+                            "category": cat.type,
+                            "attempt": retries,
+                            "max_retries": MAX_RETRIES,
+                            "message": str(exc),
+                        })
+                        time.sleep(2)
+                        continue
+
+                    if questions is None:
+                        # LLM said "next" — chunk not relevant, don't count as retry
+                        logger.info("next — LLM deemed chunk not relevant for %s", cat.type)
+                        yield self._sse("skip", {"category": cat.type, "reason": "chunk_not_relevant"})
+                        continue
+
+                    if not questions:
+                        retries += 1
+                        continue
+
+                    # Success
+                    success = True
+                    for q in questions:
+                        question_counter += 1
+                        q["id"] = f"gen_q{question_counter:03d}"
+                        all_questions.append(q)
+                        cat_generated += 1
+
+                    categories_state[cat_idx]["generated"] = cat_generated
+                    yield self._sse("progress", {
                         "category": cat.type,
-                        "message": str(exc),
+                        "generated": cat_generated,
+                        "total": cat.count,
+                        "question_id": questions[0]["id"] if questions else None,
                     })
-                    time.sleep(2)
-                    continue
 
-                for q in questions:
-                    question_counter += 1
-                    q["id"] = f"gen_q{question_counter:03d}"
-                    all_questions.append(q)
-                    cat_generated += 1
+                    # Rate limiting
+                    time.sleep(1.5)
+                    break
 
-                categories_state[cat_idx]["generated"] = cat_generated
-                yield self._sse("progress", {
-                    "category": cat.type,
-                    "generated": cat_generated,
-                    "total": cat.count,
-                    "question_id": questions[0]["id"] if questions else None,
-                })
-
-                # Rate limiting
-                time.sleep(1.5)
+                if not success:
+                    logger.warning("Skipping question for %s after %d failed attempts", cat.type, retries)
+                    yield self._sse("skip", {"category": cat.type, "reason": "max_retries"})
 
             yield self._sse("category_complete", {
                 "category": cat.type,
@@ -289,7 +313,7 @@ class DatasetService:
 
     def _load_chunks(self, collection_name: str) -> list[dict]:
         """Load all chunks from the given Qdrant collection."""
-        mgr = QdrantManager(use_memory=True)
+        mgr = QdrantManager()
         chunks: list[dict] = []
         offset = None
 
@@ -321,13 +345,19 @@ class DatasetService:
         chunk: dict,
         cat: DatasetCategoryConfig,
         counter: int,
-    ) -> list[dict]:
-        """Call LLM to generate 1 question for a chunk with the category's prompt."""
+    ) -> list[dict] | None:
+        """Call LLM to generate 1 question for a chunk.
+
+        Returns parsed question list, or ``None`` when the LLM deems
+        the chunk not relevant (responds with "next").
+        """
         prompt = f"""{cat.prompt}
 
 Source Article: {chunk['article_title']}
 Text Passage:
 {chunk['content'][:2000]}
+
+If the passage is not relevant or suitable for generating a {cat.type} question, respond with exactly: next
 
 Generate exactly 1 question as a JSON array. Target question type: {cat.type}
 Output ONLY the JSON array, no other text:
@@ -353,13 +383,33 @@ Output ONLY the JSON array, no other text:
             max_tokens=settings.QUESTION_GEN_MAX_TOKENS,
         )
 
-        text = response.choices[0].message.content.strip()
+        raw = response.choices[0].message.content
+        if not raw:
+            raise ValueError("LLM returned empty content")
+        text = raw.strip()
+
+        # LLM deemed chunk not relevant
+        if text.lower() == "next":
+            return None
+
         if text.startswith("```"):
             text = text.split("```")[1]
             if text.startswith("json"):
                 text = text[4:]
 
-        questions = json.loads(text)
+        # Try parsing as-is first; if truncated, attempt to close the JSON
+        try:
+            questions = json.loads(text)
+        except json.JSONDecodeError:
+            # Try closing truncated JSON: add missing `}]`
+            for suffix in ('"}]', "}]", "]"):
+                try:
+                    questions = json.loads(text + suffix)
+                    break
+                except json.JSONDecodeError:
+                    continue
+            else:
+                raise
         for q in questions:
             q["source_chunk_id"] = chunk["chunk_id"]
             q["source_article"] = chunk["article_title"]
