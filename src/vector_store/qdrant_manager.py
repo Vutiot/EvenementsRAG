@@ -2,6 +2,8 @@
 Qdrant vector store client for RAG system.
 
 Manages connections, collections, and vector operations with Qdrant.
+Requires a running Qdrant container (see scripts/setup_qdrant.sh).
+
 Supports:
 - Collection creation and management
 - Vector insertion with metadata
@@ -18,7 +20,6 @@ Usage:
     results = manager.search(collection_name="ww2_events", query_vector=query_embedding, limit=5)
 """
 
-from pathlib import Path
 from typing import Dict, List, Optional, Union
 from uuid import uuid4
 
@@ -47,39 +48,27 @@ class QdrantManager:
         self,
         host: Optional[str] = None,
         port: Optional[int] = None,
-        path: Optional[Path] = None,
-        use_memory: bool = False,
     ):
         """
-        Initialize Qdrant client.
+        Initialize Qdrant client (container-only).
 
         Args:
             host: Qdrant server host (default: from settings)
             port: Qdrant server port (default: from settings)
-            path: Path for local storage (alternative to host/port)
-            use_memory: Use in-memory storage for testing
         """
         self.host = host or settings.QDRANT_HOST
         self.port = port or settings.QDRANT_PORT
 
-        # Initialize client
-        if use_memory:
-            logger.info("Initializing Qdrant with in-memory storage")
-            self.client = QdrantClient(":memory:")
-        elif path:
-            logger.info(f"Initializing Qdrant with local storage: {path}")
-            self.client = QdrantClient(path=str(path))
-        else:
-            logger.info(f"Connecting to Qdrant at {self.host}:{self.port}")
-            try:
-                self.client = QdrantClient(host=self.host, port=self.port)
-                # Test connection
-                self.client.get_collections()
-                logger.info("Successfully connected to Qdrant")
-            except Exception as e:
-                logger.error(f"Failed to connect to Qdrant: {e}")
-                logger.info("Tip: Start Qdrant with: docker run -p 6333:6333 qdrant/qdrant")
-                raise
+        logger.info(f"Connecting to Qdrant at {self.host}:{self.port}")
+        try:
+            self.client = QdrantClient(host=self.host, port=self.port)
+            # Test connection
+            self.client.get_collections()
+            logger.info("Successfully connected to Qdrant")
+        except Exception as e:
+            logger.error(f"Failed to connect to Qdrant: {e}")
+            logger.info("Tip: Start Qdrant with: bash scripts/setup_qdrant.sh start")
+            raise
 
     def create_collection(
         self,
@@ -403,8 +392,7 @@ if __name__ == "__main__":
     # Test the Qdrant manager
     print("Testing QdrantManager...")
 
-    # Use in-memory storage for testing
-    manager = QdrantManager(use_memory=True)
+    manager = QdrantManager()
 
     # Create test collection
     print("\n=== Creating test collection ===")

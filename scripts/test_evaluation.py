@@ -30,7 +30,7 @@ def main():
 
     # Step 1: Initialize in-memory Qdrant
     print("Step 1: Initializing in-memory Qdrant...")
-    qdrant = QdrantManager(use_memory=True)
+    qdrant = QdrantManager()
     print("✓ Qdrant initialized")
     print()
 

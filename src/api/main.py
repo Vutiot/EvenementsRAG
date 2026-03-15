@@ -4,15 +4,26 @@ Run with:
     .venv/bin/uvicorn src.api.main:app --reload --port 8000
 """
 
+from contextlib import asynccontextmanager
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from src.api.ensure_qdrant import ensure_qdrant_running
 from src.api.routers import collections, config, datasets, health, query, results
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    ensure_qdrant_running()
+    yield
+
 
 app = FastAPI(
     title="EvenementsRAG API",
     description="REST API for interactive RAG query testing and benchmark visualization",
     version="0.1.0",
+    lifespan=lifespan,
 )
 
 # CORS for frontend dev server (Vite on port 5173)

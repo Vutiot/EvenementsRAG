@@ -281,7 +281,7 @@ def main():
 
     # Initialize Qdrant and indexer
     print("Initializing Qdrant and indexing 10,000 articles...")
-    qdrant = QdrantManager(use_memory=True)
+    qdrant = QdrantManager()
     embedding_gen = EmbeddingGenerator()
     indexer = DocumentIndexer(qdrant_manager=qdrant)
 

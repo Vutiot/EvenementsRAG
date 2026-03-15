@@ -152,7 +152,7 @@ def main():
     print("=" * 70)
     print()
 
-    qdrant = QdrantManager(use_memory=True)
+    qdrant = QdrantManager()
     logger.info("In-memory Qdrant initialized")
     print("In-memory Qdrant ready.")
     print()

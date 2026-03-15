@@ -49,7 +49,7 @@ def main():
     print("(Fast due to embedding cache)")
     print()
 
-    qdrant = QdrantManager(use_memory=True)
+    qdrant = QdrantManager()
     indexer = DocumentIndexer(qdrant_manager=qdrant)
 
     stats = indexer.index_all_articles(

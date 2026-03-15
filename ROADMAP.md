@@ -879,8 +879,8 @@ Rationale: category types are now editable and can be duplicated, so `key={card.
 **Nemotron Nano 30B as default model** (moved to `LLM_MODELS[0]`).
 Rationale: initial card state uses `LLM_MODELS[0]!.value`, so position determines the default. Nemotron Nano 30B (free tier) provides better instruction-following for question generation than Mistral Small 3.1.
 
-**Qdrant local file storage in `VectorStoreFactory.from_config()`** (path-based, not in-memory).
-Rationale: the API server needs collections to persist across restarts. When no `host` or `use_memory` override is provided, the factory now injects `path=QDRANT_PERSIST_DIR` (`data/vector_database/qdrant/`). This matches the FAISS `persist_dir` pattern added in E3-F3-T3.
+**Qdrant container-only** (removed embedded and in-memory modes).
+Rationale: Qdrant embedded (`path=`) and in-memory (`:memory:`) modes were removed. The Docker container (`scripts/setup_qdrant.sh`) is now the only supported backend. This simplifies the architecture — `QdrantManager()` always connects to `settings.QDRANT_HOST:QDRANT_PORT`. Persistence is managed by the container's volume mount. `QDRANT_PERSIST_DIR` and `VectorStoreFactory` path-injection logic were removed. Tests skip automatically when no container is running.
 
 ## Notes
 

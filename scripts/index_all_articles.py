@@ -86,13 +86,6 @@ Examples:
         help="Save processed chunks to JSON file",
     )
 
-    parser.add_argument(
-        "--use-memory",
-        "-m",
-        action="store_true",
-        help="Use in-memory Qdrant (for testing only)",
-    )
-
     return parser.parse_args()
 
 
@@ -116,30 +109,19 @@ def main():
     print(f"  Collection:       {args.collection}")
     print(f"  Recreate:         {args.recreate}")
     print(f"  Save chunks:      {args.save_chunks}")
-    print(f"  Use in-memory:    {args.use_memory}")
     print()
 
     # Initialize Qdrant
     try:
-        if args.use_memory:
-            logger.info("Using in-memory Qdrant for testing")
-            qdrant = QdrantManager(use_memory=True)
-            print("⚠ Using in-memory Qdrant (data will be lost on exit)")
-        else:
-            logger.info("Connecting to Qdrant...")
-            qdrant = QdrantManager()
-
+        logger.info("Connecting to Qdrant...")
+        qdrant = QdrantManager()
         logger.info("Connected to Qdrant successfully")
-
     except Exception as e:
         logger.error(f"Failed to connect to Qdrant: {e}")
         print("❌ Error: Cannot connect to Qdrant")
         print()
-        if not args.use_memory:
-            print("Start Qdrant first:")
-            print("  bash scripts/setup_qdrant.sh start")
-            print()
-            print("Or use --use-memory flag for testing")
+        print("Start Qdrant first:")
+        print("  bash scripts/setup_qdrant.sh start")
         sys.exit(1)
 
     # Initialize indexer

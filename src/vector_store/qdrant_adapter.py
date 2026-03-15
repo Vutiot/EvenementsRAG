@@ -8,7 +8,7 @@ in scroll().
 Usage:
     from src.vector_store.qdrant_adapter import QdrantAdapter
 
-    store = QdrantAdapter(use_memory=True)
+    store = QdrantAdapter()
     store.create_collection("test", vector_size=384)
 """
 
@@ -43,8 +43,7 @@ class QdrantAdapter(BaseVectorStore):
             default_distance: Metric used when ``create_collection`` is called
                               without an explicit ``distance``.
             **kwargs: Forwarded to ``QdrantManager(...)`` when *qdrant_manager*
-                      is ``None``.  Common keys: ``use_memory``, ``host``,
-                      ``port``, ``path``.
+                      is ``None``.  Common keys: ``host``, ``port``.
         """
         super().__init__(default_distance=default_distance)
         if qdrant_manager is not None:

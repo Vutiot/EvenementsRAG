@@ -33,7 +33,7 @@ def main():
 
     # Step 1: Index articles
     print("Step 1: Indexing articles...")
-    qdrant = QdrantManager(use_memory=True)
+    qdrant = QdrantManager()
     indexer = DocumentIndexer(qdrant_manager=qdrant)
 
     stats = indexer.index_all_articles(

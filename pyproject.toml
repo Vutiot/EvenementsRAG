@@ -98,3 +98,6 @@ testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
 addopts = "-v --cov=src --cov-report=term-missing"
+markers = [
+    "qdrant: tests requiring a running Qdrant container",
+]

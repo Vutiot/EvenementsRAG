@@ -328,9 +328,8 @@ if __name__ == "__main__":
     print("Document Indexer Test")
     print("=" * 70)
 
-    # Initialize indexer with in-memory Qdrant for testing
-    print("\nInitializing indexer with in-memory Qdrant...")
-    qdrant = QdrantManager(use_memory=True)
+    print("\nInitializing indexer (connecting to Qdrant container)...")
+    qdrant = QdrantManager()
     indexer = DocumentIndexer(qdrant_manager=qdrant)
 
     # Check if articles exist

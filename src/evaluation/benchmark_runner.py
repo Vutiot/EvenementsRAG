@@ -554,7 +554,7 @@ if __name__ == "__main__":
 
     # Check if vector store is ready
     print("\nChecking vector store...")
-    qdrant = QdrantManager(use_memory=True)  # Use memory for testing
+    qdrant = QdrantManager()
 
     collection_name = "test_benchmark"
 

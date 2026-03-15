@@ -119,12 +119,6 @@ Metrics Computed:
         help="Don't print summary to console",
     )
 
-    parser.add_argument(
-        "--use-memory",
-        action="store_true",
-        help="Use in-memory Qdrant (for testing only)",
-    )
-
     return parser.parse_args()
 
 
@@ -204,24 +198,15 @@ def main():
 
     # Initialize Qdrant
     try:
-        if args.use_memory:
-            logger.info("Using in-memory Qdrant for testing")
-            qdrant = QdrantManager(use_memory=True)
-            print("⚠ Using in-memory Qdrant (data will be lost on exit)")
-            print()
-        else:
-            logger.info("Connecting to Qdrant...")
-            qdrant = QdrantManager()
+        logger.info("Connecting to Qdrant...")
+        qdrant = QdrantManager()
         logger.info("Connected to Qdrant")
     except Exception as e:
         logger.error(f"Failed to connect to Qdrant: {e}")
         print("❌ Error: Cannot connect to Qdrant")
         print()
-        if not args.use_memory:
-            print("Start Qdrant first:")
-            print("  bash scripts/setup_qdrant.sh start")
-            print()
-            print("Or use --use-memory flag for testing")
+        print("Start Qdrant first:")
+        print("  bash scripts/setup_qdrant.sh start")
         sys.exit(1)
 
     # Check prerequisites

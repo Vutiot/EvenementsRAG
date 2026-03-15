@@ -48,9 +48,6 @@ Examples:
   # Custom output location
   python scripts/generate_evaluation_questions.py --output results/questions.json
 
-  # Use in-memory Qdrant for testing
-  python scripts/generate_evaluation_questions.py --use-memory
-
 Question Type Distribution:
   - Factual:        25% (dates, names, events)
   - Temporal:       20% (before/after, chronology)
@@ -116,12 +113,6 @@ Question Type Distribution:
         help="Skip taxonomic diversity enforcement",
     )
 
-    parser.add_argument(
-        "--use-memory",
-        action="store_true",
-        help="Use in-memory Qdrant (requires indexing first)",
-    )
-
     return parser.parse_args()
 
 
@@ -173,14 +164,8 @@ def main():
 
     # Initialize Qdrant
     try:
-        if args.use_memory:
-            logger.info("Using in-memory Qdrant")
-            print("⚠ Using in-memory Qdrant - make sure data is already indexed")
-            print()
-            qdrant = QdrantManager(use_memory=True)
-        else:
-            logger.info("Connecting to Qdrant...")
-            qdrant = QdrantManager()
+        logger.info("Connecting to Qdrant...")
+        qdrant = QdrantManager()
 
         # Check collection exists
         if not qdrant.collection_exists(args.collection):
@@ -202,11 +187,8 @@ def main():
         logger.error(f"Failed to connect to Qdrant: {e}")
         print(f"❌ Error: Cannot connect to Qdrant")
         print()
-        if not args.use_memory:
-            print("Start Qdrant first:")
-            print("  bash scripts/setup_qdrant.sh start")
-            print()
-            print("Or use --use-memory flag for testing")
+        print("Start Qdrant first:")
+        print("  bash scripts/setup_qdrant.sh start")
         sys.exit(1)
 
     # Initialize generator

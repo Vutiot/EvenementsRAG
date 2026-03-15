@@ -104,9 +104,17 @@ def tmp_questions_file(tmp_path):
 
 
 @pytest.fixture
-def qdrant_memory_adapter():
-    """QdrantAdapter backed by in-memory QdrantManager."""
-    return QdrantAdapter(qdrant_manager=QdrantManager(use_memory=True))
+def qdrant_adapter():
+    """QdrantAdapter backed by Qdrant container. Skips if container unavailable."""
+    try:
+        adapter = QdrantAdapter()
+    except Exception:
+        pytest.skip("Qdrant container not available")
+    return adapter
+
+
+# Keep old name as alias for backward compat during transition
+qdrant_memory_adapter = qdrant_adapter
 
 
 @pytest.fixture
