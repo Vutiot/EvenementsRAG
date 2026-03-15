@@ -1,21 +1,14 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import PageHeader from "../components/layout/PageHeader";
 import ParamChips from "../components/config/ParamChips";
+import CollectionSection from "../components/config/CollectionSection";
 import { getCollections, createCollection, deleteCollection } from "../api/client";
 import type { CollectionInfo } from "../api/types";
-
-// ── Embedding model dimension lookup ─────────────────────────────────
-
-const EMBEDDING_MODELS = [
-  { value: "all-MiniLM-L6-v2", label: "MiniLM-L6 (384d)", dimension: 384 },
-  { value: "all-MiniLM-L12-v2", label: "MiniLM-L12 (384d)", dimension: 384 },
-  { value: "BAAI/bge-small-en-v1.5", label: "BGE-small (384d)", dimension: 384 },
-  { value: "BAAI/bge-base-en-v1.5", label: "BGE-base (768d)", dimension: 768 },
-];
-
-const DIMENSION_MAP: Record<string, number> = Object.fromEntries(
-  EMBEDDING_MODELS.map((m) => [m.value, m.dimension]),
-);
+import {
+  DATASET_OPTIONS,
+  EMBEDDING_DIMENSION_MAP,
+  deriveCollectionName,
+} from "../constants/paramOptions";
 
 // ── Backend badge colors ─────────────────────────────────────────────
 
@@ -39,7 +32,7 @@ export default function CollectionManager() {
   const [backend, setBackend] = useState<string>("qdrant");
   const [chunkSize, setChunkSize] = useState<number>(512);
   const [chunkOverlap, setChunkOverlap] = useState<number>(50);
-  const [embeddingModel, setEmbeddingModel] = useState<string>("all-MiniLM-L6-v2");
+  const [embeddingModel, setEmbeddingModel] = useState<string>("sentence-transformers/all-MiniLM-L6-v2");
   const [distanceMetric, setDistanceMetric] = useState<string>("cosine");
   const [collectionName, setCollectionName] = useState<string>("");
   const [nameManuallyEdited, setNameManuallyEdited] = useState(false);
@@ -55,8 +48,8 @@ export default function CollectionManager() {
 
   // Auto-generate collection name
   const autoName = useMemo(
-    () => `${dataset}_${backend}_cs${chunkSize}_co${chunkOverlap}`,
-    [dataset, backend, chunkSize, chunkOverlap],
+    () => deriveCollectionName(dataset, backend, chunkSize, chunkOverlap, embeddingModel, distanceMetric),
+    [dataset, backend, chunkSize, chunkOverlap, embeddingModel, distanceMetric],
   );
 
   useEffect(() => {
@@ -82,6 +75,17 @@ export default function CollectionManager() {
     refreshCollections();
   }, [refreshCollections]);
 
+  // Handle param changes from CollectionSection
+  const handleParamChange = useCallback((field: string, value: string | number) => {
+    switch (field) {
+      case "backend": setBackend(value as string); break;
+      case "chunkSize": setChunkSize(value as number); break;
+      case "chunkOverlap": setChunkOverlap(value as number); break;
+      case "embeddingModel": setEmbeddingModel(value as string); break;
+      case "distanceMetric": setDistanceMetric(value as string); break;
+    }
+  }, []);
+
   // Create handler
   const handleCreate = useCallback(async () => {
     if (!collectionName.trim()) return;
@@ -96,7 +100,7 @@ export default function CollectionManager() {
         chunk_size: chunkSize,
         chunk_overlap: chunkOverlap,
         embedding_model: embeddingModel,
-        embedding_dimension: DIMENSION_MAP[embeddingModel] ?? 384,
+        embedding_dimension: EMBEDDING_DIMENSION_MAP[embeddingModel] ?? 384,
         distance_metric: distanceMetric,
       });
       setCreateSuccess(res.message);
@@ -145,70 +149,22 @@ export default function CollectionManager() {
         <div className="space-y-3">
           <ParamChips
             label="Dataset"
-            options={[
-              { value: "wiki_10k", label: "wiki_10k" },
-              { value: "octank", label: "octank" },
-            ]}
+            options={DATASET_OPTIONS}
             value={dataset}
             presetValue={dataset}
             onChange={setDataset}
           />
 
-          <ParamChips
-            label="Backend"
-            options={[
-              { value: "qdrant", label: "Qdrant", disabled: !backendsAvailable.includes("qdrant") },
-              { value: "faiss", label: "FAISS", disabled: !backendsAvailable.includes("faiss") },
-              { value: "pgvector", label: "pgvector", disabled: !backendsAvailable.includes("pgvector") },
-            ]}
-            value={backend}
-            presetValue={backend}
-            onChange={setBackend}
-          />
-
-          <ParamChips
-            label="Chunk Size"
-            options={[
-              { value: 256, label: "256" },
-              { value: 512, label: "512" },
-              { value: 1024, label: "1024" },
-            ]}
-            value={chunkSize}
-            presetValue={chunkSize}
-            onChange={setChunkSize}
-          />
-
-          <ParamChips
-            label="Chunk Overlap"
-            options={[
-              { value: 0, label: "0" },
-              { value: 50, label: "50" },
-              { value: 128, label: "128" },
-              { value: 256, label: "256" },
-            ]}
-            value={chunkOverlap}
-            presetValue={chunkOverlap}
-            onChange={setChunkOverlap}
-          />
-
-          <ParamChips
-            label="Embedding"
-            options={EMBEDDING_MODELS}
-            value={embeddingModel}
-            presetValue={embeddingModel}
-            onChange={setEmbeddingModel}
-          />
-
-          <ParamChips
-            label="Distance"
-            options={[
-              { value: "cosine", label: "Cosine" },
-              { value: "euclidean", label: "Euclidean" },
-              { value: "dot_product", label: "Dot Product" },
-            ]}
-            value={distanceMetric}
-            presetValue={distanceMetric}
-            onChange={setDistanceMetric}
+          <CollectionSection
+            datasetName={dataset}
+            backend={backend}
+            chunkSize={chunkSize}
+            chunkOverlap={chunkOverlap}
+            embeddingModel={embeddingModel}
+            distanceMetric={distanceMetric}
+            onParamChange={handleParamChange}
+            mode="create"
+            backendsAvailable={backendsAvailable}
           />
 
           {/* Collection name */}
@@ -338,15 +294,15 @@ export default function CollectionManager() {
                         </span>
                       </td>
                       <td className="py-2.5 pr-4 text-gray-600">
-                        {c.distance ?? "—"}
+                        {c.distance ?? "\u2014"}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-gray-600">
-                        {c.vector_size ?? "—"}
+                        {c.vector_size ?? "\u2014"}
                       </td>
                       <td className="py-2.5 pr-4 text-right text-gray-600">
                         {c.points_count != null
                           ? c.points_count.toLocaleString()
-                          : "—"}
+                          : "\u2014"}
                       </td>
                       <td className="py-2.5 text-right">
                         {isConfirming ? (

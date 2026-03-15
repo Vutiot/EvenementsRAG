@@ -82,6 +82,7 @@ export default function ConfigSummary({ config }: Props) {
           <>
             <Field label="Sparse weight" value={config.retrieval.sparse_weight} />
             <Field label="Dense weight" value={config.retrieval.dense_weight} />
+            <Field label="Sparse type" value={config.retrieval.sparse_type ?? "bm25"} />
             <Field label="Fusion" value={config.retrieval.fusion_method} />
           </>
         )}

@@ -7,8 +7,22 @@ import ChunkList from "../components/results/ChunkList";
 import GeneratedAnswer from "../components/results/GeneratedAnswer";
 import LatencyBreakdown from "../components/results/LatencyBreakdown";
 import ChunkScoresChart from "../components/results/ChunkScoresChart";
-import { getPresetConfig, executeQuery, ensureCollection, getDatasets, getDataset } from "../api/client";
-import type { BenchmarkConfig, DatasetInfo, DatasetQuestion, EnsureCollectionRequest, QueryResult } from "../api/types";
+import {
+  getPresetConfig,
+  executeQuery,
+  ensureCollection,
+  getDatasets,
+  getDataset,
+  getDatasetRegistry,
+} from "../api/client";
+import type {
+  BenchmarkConfig,
+  DatasetInfo,
+  DatasetQuestion,
+  DatasetRegistryEntry,
+  EnsureCollectionRequest,
+  QueryResult,
+} from "../api/types";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -85,36 +99,6 @@ function countOverrides(obj: Record<string, unknown>): number {
   return count;
 }
 
-// ── Collection-affecting override detection ──────────────────────────
-
-const COLLECTION_AFFECTING_PATHS = [
-  "dataset.dataset_name",
-  "chunking.chunk_size",
-  "chunking.chunk_overlap",
-  "embedding.model_name",
-  "vector_db.distance_metric",
-  "vector_db.backend",
-];
-
-/** Resolve a dotted path in a nested object. */
-function getPath(obj: Record<string, unknown>, path: string): unknown {
-  const parts = path.split(".");
-  let cur: unknown = obj;
-  for (const p of parts) {
-    if (cur == null || typeof cur !== "object") return undefined;
-    cur = (cur as Record<string, unknown>)[p];
-  }
-  return cur;
-}
-
-function hasCollectionAffectingOverrides(
-  overrides: Record<string, unknown>,
-): boolean {
-  return COLLECTION_AFFECTING_PATHS.some(
-    (p) => getPath(overrides, p) !== undefined,
-  );
-}
-
 type Phase = "idle" | "ensuring" | "querying";
 
 // ── Component ────────────────────────────────────────────────────────
@@ -134,6 +118,9 @@ export default function QueryTester() {
   const [selectedDatasetId, setSelectedDatasetId] = useState("");
   const [datasetQuestions, setDatasetQuestions] = useState<DatasetQuestion[]>([]);
 
+  // Dataset registry for filtering eval datasets by selected dataset
+  const [registryMap, setRegistryMap] = useState<Record<string, DatasetRegistryEntry>>({});
+
   const overrideCount = useMemo(() => countOverrides(overrides), [overrides]);
 
   const effectiveConfig = useMemo(() => {
@@ -145,13 +132,34 @@ export default function QueryTester() {
     ) as unknown as BenchmarkConfig;
   }, [baseConfig, overrides, overrideCount]);
 
-  // Load datasets on mount
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // Load datasets and registry on mount
   useEffect(() => {
     getDatasets()
       .then((r) => setDatasets(r.datasets.filter((d) => d.status === "completed")))
       .catch(() => {});
+    getDatasetRegistry()
+      .then((r) => {
+        const map: Record<string, DatasetRegistryEntry> = {};
+        for (const d of r.datasets) map[d.name] = d;
+        setRegistryMap(map);
+      })
+      .catch(() => {});
   }, []);
+
+  // Filter eval datasets by the currently-selected raw dataset
+  const currentDatasetName = effectiveConfig?.dataset.dataset_name;
+  const registryEntry = currentDatasetName ? registryMap[currentDatasetName] : null;
+  const filteredDatasets = registryEntry
+    ? datasets.filter((ds) => registryEntry.collections.includes(ds.collection_name))
+    : datasets;
+
+  // Reset eval selection when filtered list changes
+  useEffect(() => {
+    if (selectedDatasetId && !filteredDatasets.some((ds) => ds.id === selectedDatasetId)) {
+      setSelectedDatasetId("");
+      setDatasetQuestions([]);
+    }
+  }, [filteredDatasets, selectedDatasetId]);
 
   const handleDatasetChange = useCallback(async (dsId: string) => {
     setSelectedDatasetId(dsId);
@@ -193,33 +201,32 @@ export default function QueryTester() {
     setError(null);
     setResult(null);
 
-    let finalOverrides = overrideCount > 0 ? { ...overrides } : undefined;
+    let finalOverrides: Record<string, unknown> =
+      overrideCount > 0 ? { ...overrides } : {};
 
     try {
-      // Phase 1: ensure collection exists if collection-affecting params changed
-      if (overrideCount > 0 && hasCollectionAffectingOverrides(overrides)) {
-        const ec = effectiveConfig;
-        const req: EnsureCollectionRequest = {
-          dataset_name: ec.dataset.dataset_name,
-          backend: ec.vector_db.backend,
-          chunk_size: ec.chunking.chunk_size,
-          chunk_overlap: ec.chunking.chunk_overlap,
-          embedding_model: ec.embedding.model_name,
-          embedding_dimension: ec.embedding.dimension,
-          distance_metric: ec.vector_db.distance_metric,
-        };
-        const ensureRes = await ensureCollection(req);
-        // Inject the derived collection_name into overrides
-        finalOverrides = {
-          ...(finalOverrides ?? {}),
-          dataset: {
-            ...((finalOverrides?.dataset as Record<string, unknown>) ?? {}),
-            collection_name: ensureRes.collection_name,
-          },
-        };
-      }
+      // Always ensure collection exists (idempotent — returns fast if already present)
+      const ec = effectiveConfig;
+      const req: EnsureCollectionRequest = {
+        dataset_name: ec.dataset.dataset_name,
+        backend: ec.vector_db.backend,
+        chunk_size: ec.chunking.chunk_size,
+        chunk_overlap: ec.chunking.chunk_overlap,
+        embedding_model: ec.embedding.model_name,
+        embedding_dimension: ec.embedding.dimension,
+        distance_metric: ec.vector_db.distance_metric,
+      };
+      const ensureRes = await ensureCollection(req);
+      // Inject the derived collection_name into overrides
+      finalOverrides = {
+        ...finalOverrides,
+        dataset: {
+          ...((finalOverrides.dataset as Record<string, unknown>) ?? {}),
+          collection_name: ensureRes.collection_name,
+        },
+      };
 
-      // Phase 2: execute query
+      // Execute query
       setPhase("querying");
       const res = await executeQuery(query, preset, finalOverrides);
       setResult(res);
@@ -280,10 +287,10 @@ export default function QueryTester() {
 
           <ConfigSummary config={effectiveConfig} />
 
-          {/* Dataset selector */}
+          {/* Evaluation query example selector */}
           <div className="rounded border border-gray-200 bg-white p-3">
             <label className="block text-sm font-medium text-gray-700 mb-1">
-              Evaluation Set (optional)
+              Evaluation Query Example (optional)
             </label>
             <select
               value={selectedDatasetId}
@@ -292,7 +299,7 @@ export default function QueryTester() {
                          focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-2"
             >
               <option value="">No dataset</option>
-              {datasets.map((ds) => (
+              {filteredDatasets.map((ds) => (
                 <option key={ds.id} value={ds.id}>
                   {ds.name} ({ds.total_questions}q)
                 </option>

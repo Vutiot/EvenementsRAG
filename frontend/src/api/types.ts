@@ -207,6 +207,7 @@ export interface BenchmarkConfig {
     sparse_weight: number;
     dense_weight: number;
     fusion_method: string;
+    sparse_type: string;
   };
   reranker: {
     type: string;
