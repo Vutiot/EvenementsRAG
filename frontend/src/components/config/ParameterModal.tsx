@@ -1,6 +1,6 @@
-/** Centered modal for tuning RAG pipeline parameters — 3-part structure. */
+/** Centered modal for tuning RAG pipeline parameters — 5-section structure. */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import ParamChips from "./ParamChips";
 import ParamSlider from "./ParamSlider";
 import CollectionSection, { type CollectionMode } from "./CollectionSection";
@@ -38,6 +38,24 @@ const COLLECTION_FIELD_TO_PATH: Record<string, string> = {
   embeddingModel: "embedding.model_name",
   distanceMetric: "vector_db.distance_metric",
 };
+
+// ── System Prompt Presets ────────────────────────────────────────────
+
+const SYSTEM_PROMPT_PRESETS: { label: string; value: string }[] = [
+  { label: "Default (Historian)", value: "You are a knowledgeable historian assistant." },
+  { label: "Concise Analyst", value: "You are a concise military analyst. Answer with bullet points and hard facts. Avoid filler." },
+  { label: "Detailed Researcher", value: "You are a thorough historical researcher. Provide detailed, well-sourced answers with full context, dates, and cross-references between events." },
+  { label: "Teacher", value: "You are a history teacher explaining concepts to a student. Use simple language, provide examples, and build understanding step by step." },
+  { label: "Custom", value: "__custom__" },
+];
+
+// ── Prompt Pieces ────────────────────────────────────────────────────
+
+const PROMPT_PIECES = [
+  { key: "citation", label: "Citation", default: "Cite chunk(s) used to answer, you can cite several chunks for one answer." },
+  { key: "relevance", label: "Relevance", default: "If no chunk relevant, do not answer and say you don't know instead." },
+  { key: "misc", label: "Misc", default: "When answering, pay special attention to chronological order, cause-and-effect relationships, and the geopolitical context of events." },
+] as const;
 
 // ── Types ────────────────────────────────────────────────────────────
 
@@ -292,34 +310,45 @@ export default function ParameterModal({
                 presetValue={preset("generation.max_tokens") as number}
                 onChange={(v) => handleChange("generation.max_tokens", v)}
               />
-              {/* Highlight Chunks toggle */}
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-medium text-gray-700">Highlight Chunks</span>
-                  <p className="text-xs text-gray-400">Use LLM to highlight relevant passages</p>
-                </div>
-                <button
-                  onClick={() =>
-                    handleChange(
-                      "generation.highlight_chunks",
-                      !(effective("generation.highlight_chunks") as boolean),
-                    )
-                  }
-                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                    (effective("generation.highlight_chunks") as boolean)
-                      ? "bg-blue-600"
-                      : "bg-gray-200"
-                  }`}
-                >
-                  <span
-                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                      (effective("generation.highlight_chunks") as boolean)
-                        ? "translate-x-6"
-                        : "translate-x-1"
-                    }`}
-                  />
-                </button>
+            </div>
+          </Section>
+
+          {/* ── Part 4: System Prompt ── */}
+          <Section title="System Prompt">
+            <SystemPromptSection
+              currentPrompt={(effective("generation.system_prompt") as string) ?? ""}
+              onPromptChange={(v) => handleChange("generation.system_prompt", v)}
+            />
+          </Section>
+
+          {/* ── Part 5: Results ── */}
+          <Section title="Results">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-gray-700">Highlight Chunks</span>
+                <p className="text-xs text-gray-400">Use LLM to highlight relevant passages</p>
               </div>
+              <button
+                onClick={() =>
+                  handleChange(
+                    "generation.highlight_chunks",
+                    !(effective("generation.highlight_chunks") as boolean),
+                  )
+                }
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  (effective("generation.highlight_chunks") as boolean)
+                    ? "bg-blue-600"
+                    : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    (effective("generation.highlight_chunks") as boolean)
+                      ? "translate-x-6"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
             </div>
           </Section>
         </div>
@@ -339,6 +368,136 @@ export default function ParameterModal({
             Apply
           </button>
         </div>
+      </div>
+    </div>
+  );
+}
+
+// ── System Prompt sub-component ──────────────────────────────────────
+
+function SystemPromptSection({
+  currentPrompt,
+  onPromptChange,
+}: {
+  currentPrompt: string;
+  onPromptChange: (value: string) => void;
+}) {
+  // Detect which preset matches current prompt
+  const matchedPreset = SYSTEM_PROMPT_PRESETS.find(
+    (p) => p.value !== "__custom__" && p.value === currentPrompt,
+  );
+  const defaultPreset = SYSTEM_PROMPT_PRESETS[0]!;
+  const initialKey = !currentPrompt
+    ? defaultPreset.label
+    : matchedPreset
+      ? matchedPreset.label
+      : "custom";
+
+  const [selectedPreset, setSelectedPreset] = useState(initialKey);
+
+  // Populate textarea with default text on first render when prompt is empty
+  useEffect(() => {
+    if (!currentPrompt) {
+      onPromptChange(defaultPreset.value);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const [selectedPiece, setSelectedPiece] = useState<string>(PROMPT_PIECES[0].key);
+  const [pieceText, setPieceText] = useState<string>(PROMPT_PIECES[0].default);
+
+  const handleAddPiece = useCallback(() => {
+    if (!pieceText.trim()) return;
+    const updated = currentPrompt
+      ? currentPrompt.trimEnd() + "\n" + pieceText.trim()
+      : pieceText.trim();
+    onPromptChange(updated);
+    if (selectedPreset !== "custom") setSelectedPreset("custom");
+  }, [pieceText, currentPrompt, onPromptChange, selectedPreset]);
+
+  const handlePresetChange = useCallback(
+    (presetKey: string) => {
+      setSelectedPreset(presetKey);
+      if (presetKey === "custom") {
+        // Keep current text
+      } else {
+        const found = SYSTEM_PROMPT_PRESETS.find((p) => p.label === presetKey);
+        if (found && found.value !== "__custom__") {
+          onPromptChange(found.value);
+        }
+      }
+    },
+    [onPromptChange],
+  );
+
+  return (
+    <div className="space-y-3">
+      {/* Preset dropdown */}
+      <select
+        value={selectedPreset}
+        onChange={(e) => handlePresetChange(e.target.value)}
+        className="w-full rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
+                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+      >
+        {SYSTEM_PROMPT_PRESETS.map((p) => (
+          <option key={p.label} value={p.value === "__custom__" ? "custom" : p.label}>
+            {p.label}
+          </option>
+        ))}
+      </select>
+
+      {/* Editable textarea */}
+      <textarea
+        value={currentPrompt}
+        onChange={(e) => {
+          onPromptChange(e.target.value);
+          if (selectedPreset !== "custom") setSelectedPreset("custom");
+        }}
+        placeholder="Enter a system prompt..."
+        rows={3}
+        className="w-full rounded border-gray-300 px-3 py-2 text-sm shadow-sm
+                   focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                   placeholder:text-gray-400"
+      />
+
+      {/* Prompt pieces */}
+      <div className="space-y-2">
+        <h4 className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
+          Prompt Pieces
+        </h4>
+        <div className="flex items-center gap-2">
+          <select
+            value={selectedPiece}
+            onChange={(e) => {
+              setSelectedPiece(e.target.value);
+              const piece = PROMPT_PIECES.find((p) => p.key === e.target.value);
+              if (piece) setPieceText(piece.default);
+            }}
+            className="rounded border-gray-300 bg-white px-2 py-1.5 text-sm shadow-sm
+                       focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+          >
+            {PROMPT_PIECES.map((piece) => (
+              <option key={piece.key} value={piece.key}>
+                {piece.label}
+              </option>
+            ))}
+          </select>
+          <button
+            onClick={handleAddPiece}
+            className="shrink-0 rounded bg-blue-600 px-3 py-1.5 text-sm font-medium text-white
+                       hover:bg-blue-700 transition"
+            title="Append piece to system prompt"
+          >
+            +
+          </button>
+        </div>
+        <textarea
+          value={pieceText}
+          onChange={(e) => setPieceText(e.target.value)}
+          rows={2}
+          className="w-full rounded border-gray-200 px-2 py-1.5 text-xs shadow-sm
+                     focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                     bg-white text-gray-600"
+        />
       </div>
     </div>
   );

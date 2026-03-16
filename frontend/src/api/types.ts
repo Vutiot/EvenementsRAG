@@ -171,6 +171,7 @@ export interface DatasetQuestion {
   source_article: string;
   source_article_id: string;
   source_chunk_id: string;
+  source_chunk_index?: number;
   model: string;
   generated_at: string;
 }

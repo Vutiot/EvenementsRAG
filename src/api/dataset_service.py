@@ -412,6 +412,7 @@ Output ONLY the JSON array, no other text:
                 raise
         for q in questions:
             q["source_chunk_id"] = chunk["chunk_id"]
+            q["source_chunk_index"] = chunk.get("chunk_index", 0)
             q["source_article"] = chunk["article_title"]
             q["source_article_id"] = chunk["article_id"]
             q["generated_at"] = datetime.now().isoformat()

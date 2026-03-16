@@ -263,7 +263,7 @@ export default function DatasetManager() {
     <div className="p-6 max-w-7xl mx-auto">
       <PageHeader
         title="Evaluations"
-        description="Create evaluation question sets with customizable categories and generation prompts."
+        description="Create evaluation question sets associated to a collection, with customizable categories and generation prompts."
       />
 
       {/* ── Create Dataset ──────────────────────────────────────────── */}
@@ -290,7 +290,7 @@ export default function DatasetManager() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Original Dataset
+                Collection
               </label>
               <select
                 value={selectedDataset?.name ?? ""}

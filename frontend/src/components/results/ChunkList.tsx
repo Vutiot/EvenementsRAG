@@ -5,6 +5,7 @@ interface Props {
   chunks: RetrievedChunk[];
   highlightedContent?: Record<string, string>;
   highlighting?: boolean;
+  sourceChunkId?: string | null;
 }
 
 /** Sanitize HTML to only allow <mark> tags. */
@@ -13,14 +14,14 @@ function sanitizeHighlight(html: string): string {
     .replace(/<(?!\/?mark\b)[^>]*>/gi, "");
 }
 
-function ScoreBar({ score }: { score: number }) {
+function ScoreBar({ score, colorOverride }: { score: number; colorOverride?: string }) {
   const pct = Math.round(score * 100);
-  const color =
-    score >= 0.8
+  const color = colorOverride
+    ?? (score >= 0.8
       ? "bg-green-500"
       : score >= 0.6
         ? "bg-yellow-500"
-        : "bg-red-400";
+        : "bg-red-400");
   return (
     <div className="flex items-center gap-2">
       <div className="h-2 w-24 rounded-full bg-gray-200">
@@ -31,7 +32,7 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
-export default function ChunkList({ chunks, highlightedContent, highlighting }: Props) {
+export default function ChunkList({ chunks, highlightedContent, highlighting, sourceChunkId }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
@@ -59,6 +60,19 @@ export default function ChunkList({ chunks, highlightedContent, highlighting }: 
       {chunks.map((chunk, i) => {
         const isOpen = expanded.has(chunk.chunk_id);
         const highlighted = highlightedContent?.[chunk.chunk_id];
+
+        // Determine bar color override when in eval context
+        let barColor: string | undefined;
+        if (sourceChunkId) {
+          if (chunk.chunk_id === sourceChunkId) {
+            barColor = "bg-red-500";
+          } else if (highlightedContent?.[chunk.chunk_id]) {
+            barColor = "bg-yellow-500";
+          } else {
+            barColor = "bg-blue-300";
+          }
+        }
+
         return (
           <div
             key={chunk.chunk_id}
@@ -81,7 +95,7 @@ export default function ChunkList({ chunks, highlightedContent, highlighting }: 
                   </span>
                 </div>
               </div>
-              <ScoreBar score={chunk.score} />
+              <ScoreBar score={chunk.score} colorOverride={barColor} />
             </button>
             {isOpen && (
               <div className="border-t border-gray-100 px-4 py-3">
