@@ -221,6 +221,8 @@ export interface BenchmarkConfig {
     top_k_chunks: number;
     top_k_articles: number | null;
     prompt_template: string | null;
+    system_prompt: string | null;
+    highlight_chunks: boolean;
     enabled: boolean;
   };
   evaluation: {
@@ -238,4 +240,14 @@ export interface BenchmarkConfig {
     distance_metric: string;
     connection_params: Record<string, unknown> | null;
   };
+}
+
+/** Chunk highlighting types */
+export interface HighlightedChunk {
+  chunk_id: string;
+  highlighted_content: string;
+}
+
+export interface HighlightChunksResponse {
+  highlighted_chunks: HighlightedChunk[];
 }

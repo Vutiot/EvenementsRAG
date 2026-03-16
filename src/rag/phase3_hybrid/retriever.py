@@ -54,6 +54,7 @@ class HybridRetriever(BaseRAG):
         llm_client: Optional[openai.OpenAI] = None,
         prompt_template: Optional[str] = None,
         config=None,
+        system_prompt: Optional[str] = None,
     ):
         """Initialize hybrid retriever.
 
@@ -64,6 +65,7 @@ class HybridRetriever(BaseRAG):
             llm_client: OpenAI-compatible LLM client.
             prompt_template: Custom prompt template.
             config: BenchmarkConfig with retrieval/reranker sub-models.
+            system_prompt: System prompt for LLM generation.
         """
         super().__init__(name="Phase3_Hybrid_RAG")
 
@@ -71,6 +73,7 @@ class HybridRetriever(BaseRAG):
         self.embedding_gen = embedding_generator or EmbeddingGenerator()
         self.prompt_template = prompt_template or DEFAULT_PROMPT_TEMPLATE
         self._config = config
+        self.system_prompt = system_prompt or "You are a knowledgeable historian assistant."
 
         # Unwrap QdrantAdapter → raw QdrantManager for HybridSearcher
         # (HybridSearcher.index_collection uses qdrant.client.scroll)
@@ -198,7 +201,7 @@ class HybridRetriever(BaseRAG):
         messages = [
             {
                 "role": "system",
-                "content": "You are a knowledgeable historian assistant.",
+                "content": self.system_prompt,
             },
             {"role": "user", "content": prompt},
         ]

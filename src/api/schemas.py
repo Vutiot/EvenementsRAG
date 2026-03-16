@@ -37,6 +37,21 @@ class QueryResult(BaseModel):
     config_hash: str
 
 
+class HighlightChunksRequest(BaseModel):
+    query: str
+    chunks: list[dict]  # [{chunk_id, content}, ...]
+    model: str = "mistralai/mistral-small-3.1-24b-instruct:free"
+
+
+class HighlightedChunk(BaseModel):
+    chunk_id: str
+    highlighted_content: str
+
+
+class HighlightChunksResponse(BaseModel):
+    highlighted_chunks: list[HighlightedChunk]
+
+
 # ---------------------------------------------------------------------------
 # Benchmark result viewer models
 # ---------------------------------------------------------------------------

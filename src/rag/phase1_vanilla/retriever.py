@@ -50,6 +50,7 @@ class VanillaRetriever(BaseRAG):
         embedding_generator: Optional[EmbeddingGenerator] = None,
         llm_client: Optional[openai.OpenAI] = None,
         prompt_template: Optional[str] = None,
+        system_prompt: Optional[str] = None,
     ):
         """
         Initialize vanilla RAG retriever.
@@ -60,6 +61,7 @@ class VanillaRetriever(BaseRAG):
             embedding_generator: Embedding generator instance
             llm_client: OpenAI-compatible LLM client
             prompt_template: Custom prompt template
+            system_prompt: System prompt for LLM generation
         """
         super().__init__(name="Phase1_Vanilla_RAG")
 
@@ -67,6 +69,7 @@ class VanillaRetriever(BaseRAG):
         self.qdrant = qdrant_manager or QdrantManager()
         self.embedding_gen = embedding_generator or EmbeddingGenerator()
         self.prompt_template = prompt_template or DEFAULT_PROMPT_TEMPLATE
+        self.system_prompt = system_prompt or "You are a knowledgeable historian assistant."
 
         # Initialize LLM client
         if llm_client:
@@ -181,7 +184,7 @@ class VanillaRetriever(BaseRAG):
         logger.debug(f"Generating answer with {len(context_chunks)} context chunks")
 
         messages = [
-            {"role": "system", "content": "You are a knowledgeable historian assistant."},
+            {"role": "system", "content": self.system_prompt},
             {"role": "user", "content": prompt},
         ]
 

@@ -14,6 +14,7 @@ import {
   getDatasets,
   getDataset,
   getDatasetRegistry,
+  highlightChunks,
 } from "../api/client";
 import type {
   BenchmarkConfig,
@@ -101,6 +102,16 @@ function countOverrides(obj: Record<string, unknown>): number {
 
 type Phase = "idle" | "ensuring" | "querying";
 
+// ── System Prompt Presets ────────────────────────────────────────────
+
+const SYSTEM_PROMPT_PRESETS: { label: string; value: string | null }[] = [
+  { label: "Default (Historian)", value: null },
+  { label: "Concise Analyst", value: "You are a concise military analyst. Answer with bullet points and hard facts. Avoid filler." },
+  { label: "Detailed Researcher", value: "You are a thorough historical researcher. Provide detailed, well-sourced answers with full context, dates, and cross-references between events." },
+  { label: "Teacher", value: "You are a history teacher explaining concepts to a student. Use simple language, provide examples, and build understanding step by step." },
+  { label: "Custom", value: "__custom__" },
+];
+
 // ── Component ────────────────────────────────────────────────────────
 
 export default function QueryTester() {
@@ -120,6 +131,14 @@ export default function QueryTester() {
 
   // Dataset registry for filtering eval datasets by selected dataset
   const [registryMap, setRegistryMap] = useState<Record<string, DatasetRegistryEntry>>({});
+
+  // System prompt state
+  const [systemPrompt, setSystemPrompt] = useState<string>("");
+  const [selectedPromptPreset, setSelectedPromptPreset] = useState<string>("default");
+
+  // Highlight state
+  const [highlightedChunks, setHighlightedChunks] = useState<Record<string, string>>({});
+  const [highlighting, setHighlighting] = useState(false);
 
   const overrideCount = useMemo(() => countOverrides(overrides), [overrides]);
 
@@ -195,14 +214,41 @@ export default function QueryTester() {
     }
   }, []);
 
+  const handlePromptPresetChange = useCallback((presetKey: string) => {
+    setSelectedPromptPreset(presetKey);
+    if (presetKey === "default") {
+      setSystemPrompt("");
+    } else if (presetKey === "custom") {
+      // Keep current text, user will edit
+    } else {
+      const found = SYSTEM_PROMPT_PRESETS.find((p) => p.label === presetKey);
+      if (found?.value && found.value !== "__custom__") {
+        setSystemPrompt(found.value);
+      }
+    }
+  }, []);
+
   const handleExecute = useCallback(async () => {
     if (!query.trim() || !preset || !effectiveConfig) return;
     setPhase("ensuring");
     setError(null);
     setResult(null);
+    setHighlightedChunks({});
+    setHighlighting(false);
 
     let finalOverrides: Record<string, unknown> =
       overrideCount > 0 ? { ...overrides } : {};
+
+    // Inject system_prompt if set
+    if (systemPrompt.trim()) {
+      finalOverrides = {
+        ...finalOverrides,
+        generation: {
+          ...((finalOverrides.generation as Record<string, unknown>) ?? {}),
+          system_prompt: systemPrompt.trim(),
+        },
+      };
+    }
 
     try {
       // Always ensure collection exists (idempotent — returns fast if already present)
@@ -230,12 +276,36 @@ export default function QueryTester() {
       setPhase("querying");
       const res = await executeQuery(query, preset, finalOverrides);
       setResult(res);
+
+      // Auto-trigger chunk highlighting if enabled
+      if (ec.generation.highlight_chunks && res.retrieved_chunks.length > 0) {
+        setHighlighting(true);
+        try {
+          const hlRes = await highlightChunks(
+            query,
+            res.retrieved_chunks.map((c) => ({
+              chunk_id: c.chunk_id,
+              content: c.content,
+            })),
+            ec.generation.model,
+          );
+          const hlMap: Record<string, string> = {};
+          for (const hl of hlRes.highlighted_chunks) {
+            hlMap[hl.chunk_id] = hl.highlighted_content;
+          }
+          setHighlightedChunks(hlMap);
+        } catch {
+          // Highlighting is best-effort
+        } finally {
+          setHighlighting(false);
+        }
+      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
     } finally {
       setPhase("idle");
     }
-  }, [query, preset, overrides, overrideCount, effectiveConfig]);
+  }, [query, preset, overrides, overrideCount, effectiveConfig, systemPrompt]);
 
   const handleOverrideChange = useCallback((path: string, value: unknown) => {
     setOverrides((prev) => setOverridePath(prev, path, value));
@@ -286,48 +356,42 @@ export default function QueryTester() {
           )}
 
           <ConfigSummary config={effectiveConfig} />
-
-          {/* Evaluation query example selector */}
-          <div className="rounded border border-gray-200 bg-white p-3">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Evaluation Query Example (optional)
-            </label>
-            <select
-              value={selectedDatasetId}
-              onChange={(e) => handleDatasetChange(e.target.value)}
-              className="w-full rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
-                         focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-2"
-            >
-              <option value="">No dataset</option>
-              {filteredDatasets.map((ds) => (
-                <option key={ds.id} value={ds.id}>
-                  {ds.name} ({ds.total_questions}q)
-                </option>
-              ))}
-            </select>
-            {datasetQuestions.length > 0 && (
-              <div className="max-h-48 overflow-y-auto space-y-1">
-                {datasetQuestions.map((q) => (
-                  <button
-                    key={q.id}
-                    onClick={() => handlePickQuestion(q)}
-                    className="w-full text-left px-2 py-1.5 rounded text-xs text-gray-700
-                               hover:bg-blue-50 hover:text-blue-700 transition-colors truncate"
-                    title={q.question}
-                  >
-                    <span className="inline-block rounded px-1 py-0.5 mr-1 text-xs font-medium bg-gray-100 text-gray-500">
-                      {q.type}
-                    </span>
-                    {q.question}
-                  </button>
-                ))}
-              </div>
-            )}
-          </div>
         </div>
 
         {/* Right: Query + Results */}
         <div className="col-span-8 space-y-4">
+          {/* System Prompt */}
+          <div className="rounded border border-gray-200 bg-white p-4">
+            <label className="block text-sm font-medium text-gray-700 mb-1">
+              System Prompt
+            </label>
+            <select
+              value={selectedPromptPreset}
+              onChange={(e) => handlePromptPresetChange(e.target.value)}
+              className="w-full rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
+                         focus:border-blue-500 focus:ring-1 focus:ring-blue-500 mb-2"
+            >
+              <option value="default">Default (Historian)</option>
+              {SYSTEM_PROMPT_PRESETS.filter((p) => p.value !== null).map((p) => (
+                <option key={p.label} value={p.label === "Custom" ? "custom" : p.label}>
+                  {p.label}
+                </option>
+              ))}
+            </select>
+            <textarea
+              value={systemPrompt}
+              onChange={(e) => {
+                setSystemPrompt(e.target.value);
+                if (selectedPromptPreset !== "custom") setSelectedPromptPreset("custom");
+              }}
+              placeholder="Using default: You are a knowledgeable historian assistant..."
+              rows={2}
+              className="w-full rounded border-gray-300 px-3 py-2 text-sm shadow-sm
+                         focus:border-blue-500 focus:ring-1 focus:ring-blue-500
+                         placeholder:text-gray-400"
+            />
+          </div>
+
           {/* Query input */}
           <div className="rounded border border-gray-200 bg-white p-4">
             <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -345,14 +409,48 @@ export default function QueryTester() {
                 if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) handleExecute();
               }}
             />
-            <div className="mt-2 flex items-center justify-between">
-              <span className="text-xs text-gray-400">Ctrl+Enter to execute</span>
+            <div className="mt-2 flex items-center justify-between gap-2">
+              <span className="text-xs text-gray-400 shrink-0">Ctrl+Enter to execute</span>
+              {/* Eval query dropdowns */}
+              <div className="flex items-center gap-1.5 min-w-0 flex-1 justify-end">
+                <select
+                  value={selectedDatasetId}
+                  onChange={(e) => handleDatasetChange(e.target.value)}
+                  className="rounded border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm
+                             focus:border-blue-500 focus:ring-1 focus:ring-blue-500 max-w-[160px]"
+                >
+                  <option value="">Eval dataset...</option>
+                  {filteredDatasets.map((ds) => (
+                    <option key={ds.id} value={ds.id}>
+                      {ds.name} ({ds.total_questions}q)
+                    </option>
+                  ))}
+                </select>
+                {datasetQuestions.length > 0 && (
+                  <select
+                    value=""
+                    onChange={(e) => {
+                      const q = datasetQuestions.find((dq) => dq.id === e.target.value);
+                      if (q) handlePickQuestion(q);
+                    }}
+                    className="rounded border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm
+                               focus:border-blue-500 focus:ring-1 focus:ring-blue-500 max-w-[220px] truncate"
+                  >
+                    <option value="">Pick question...</option>
+                    {datasetQuestions.map((q) => (
+                      <option key={q.id} value={q.id}>
+                        [{q.type}] {q.question}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
               <button
                 onClick={handleExecute}
                 disabled={phase !== "idle" || !query.trim() || !preset}
                 className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white
                            hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
-                           transition-colors"
+                           transition-colors shrink-0"
               >
                 {phase === "ensuring"
                   ? "Preparing..."
@@ -391,7 +489,11 @@ export default function QueryTester() {
                 generationMs={result.generation_time_ms}
               />
               <ChunkScoresChart chunks={result.retrieved_chunks} />
-              <ChunkList chunks={result.retrieved_chunks} />
+              <ChunkList
+                chunks={result.retrieved_chunks}
+                highlightedContent={highlightedChunks}
+                highlighting={highlighting}
+              />
             </div>
           )}
         </div>

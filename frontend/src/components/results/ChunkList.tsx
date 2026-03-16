@@ -3,6 +3,14 @@ import type { RetrievedChunk } from "../../api/types";
 
 interface Props {
   chunks: RetrievedChunk[];
+  highlightedContent?: Record<string, string>;
+  highlighting?: boolean;
+}
+
+/** Sanitize HTML to only allow <mark> tags. */
+function sanitizeHighlight(html: string): string {
+  return html
+    .replace(/<(?!\/?mark\b)[^>]*>/gi, "");
 }
 
 function ScoreBar({ score }: { score: number }) {
@@ -23,7 +31,7 @@ function ScoreBar({ score }: { score: number }) {
   );
 }
 
-export default function ChunkList({ chunks }: Props) {
+export default function ChunkList({ chunks, highlightedContent, highlighting }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
 
   const toggle = (id: string) => {
@@ -37,11 +45,20 @@ export default function ChunkList({ chunks }: Props) {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold text-gray-700">
-        Retrieved Chunks ({chunks.length})
-      </h3>
+      <div className="flex items-center gap-2">
+        <h3 className="text-sm font-semibold text-gray-700">
+          Retrieved Chunks ({chunks.length})
+        </h3>
+        {highlighting && (
+          <span className="flex items-center gap-1 text-xs text-amber-600">
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-amber-500 border-t-transparent" />
+            Highlighting...
+          </span>
+        )}
+      </div>
       {chunks.map((chunk, i) => {
         const isOpen = expanded.has(chunk.chunk_id);
+        const highlighted = highlightedContent?.[chunk.chunk_id];
         return (
           <div
             key={chunk.chunk_id}
@@ -68,9 +85,16 @@ export default function ChunkList({ chunks }: Props) {
             </button>
             {isOpen && (
               <div className="border-t border-gray-100 px-4 py-3">
-                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
-                  {chunk.content}
-                </p>
+                {highlighted ? (
+                  <p
+                    className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed [&>mark]:bg-yellow-200 [&>mark]:px-0.5 [&>mark]:rounded"
+                    dangerouslySetInnerHTML={{ __html: sanitizeHighlight(highlighted) }}
+                  />
+                ) : (
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                    {chunk.content}
+                  </p>
+                )}
                 <div className="mt-2 flex items-center gap-3 text-xs text-gray-400">
                   <span>ID: {chunk.chunk_id}</span>
                   <a

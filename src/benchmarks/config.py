@@ -151,6 +151,8 @@ class GenerationConfig(BaseModel):
     top_k_chunks: int = Field(5, ge=1, le=20)
     top_k_articles: Optional[int] = Field(None, ge=1, le=20)
     prompt_template: Optional[str] = None
+    system_prompt: Optional[str] = None
+    highlight_chunks: bool = False
     enabled: bool = True
 
 

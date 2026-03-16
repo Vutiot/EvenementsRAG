@@ -12,6 +12,7 @@ import type {
   DatasetRegistryEntry,
   EnsureCollectionRequest,
   EnsureCollectionResponse,
+  HighlightChunksResponse,
   NormalizedBenchmarkResult,
   PresetInfo,
   QueryResult,
@@ -195,6 +196,22 @@ export function executeQuery(
       query,
       preset,
       config_overrides: configOverrides ?? null,
+    }),
+  });
+}
+
+export function highlightChunks(
+  query: string,
+  chunks: { chunk_id: string; content: string }[],
+  model?: string,
+): Promise<HighlightChunksResponse> {
+  return fetchJSON(`${BASE}/query/highlight-chunks`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      query,
+      chunks,
+      ...(model ? { model } : {}),
     }),
   });
 }

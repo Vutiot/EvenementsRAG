@@ -292,6 +292,34 @@ export default function ParameterModal({
                 presetValue={preset("generation.max_tokens") as number}
                 onChange={(v) => handleChange("generation.max_tokens", v)}
               />
+              {/* Highlight Chunks toggle */}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium text-gray-700">Highlight Chunks</span>
+                  <p className="text-xs text-gray-400">Use LLM to highlight relevant passages</p>
+                </div>
+                <button
+                  onClick={() =>
+                    handleChange(
+                      "generation.highlight_chunks",
+                      !(effective("generation.highlight_chunks") as boolean),
+                    )
+                  }
+                  className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                    (effective("generation.highlight_chunks") as boolean)
+                      ? "bg-blue-600"
+                      : "bg-gray-200"
+                  }`}
+                >
+                  <span
+                    className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                      (effective("generation.highlight_chunks") as boolean)
+                        ? "translate-x-6"
+                        : "translate-x-1"
+                    }`}
+                  />
+                </button>
+              </div>
             </div>
           </Section>
         </div>

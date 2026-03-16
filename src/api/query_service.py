@@ -159,6 +159,7 @@ class QueryService:
             qdrant_manager=vector_store,
             embedding_generator=embedding_gen,
             prompt_template=config.generation.prompt_template,
+            system_prompt=config.generation.system_prompt,
             **extra,
         )
 
