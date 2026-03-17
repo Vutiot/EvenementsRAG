@@ -2,6 +2,7 @@
 
 import { useEffect } from "react";
 import type { DatasetQuestion } from "../../api/types";
+import { hashColor } from "../../utils/hashColor";
 
 interface Props {
   open: boolean;
@@ -14,15 +15,6 @@ const DIFFICULTY_COLORS: Record<string, string> = {
   easy: "bg-green-100 text-green-700",
   medium: "bg-yellow-100 text-yellow-700",
   hard: "bg-red-100 text-red-700",
-};
-
-const CATEGORY_COLORS: Record<string, string> = {
-  factual: "bg-blue-100 text-blue-700",
-  temporal: "bg-purple-100 text-purple-700",
-  comparative: "bg-orange-100 text-orange-700",
-  entity_centric: "bg-teal-100 text-teal-700",
-  relationship: "bg-pink-100 text-pink-700",
-  analytical: "bg-indigo-100 text-indigo-700",
 };
 
 function truncate(s: string | undefined | null, max: number) {
@@ -95,7 +87,7 @@ export default function QuestionPickerModal({ open, onClose, questions, onSelect
                   <td className="py-2 pr-2">
                     <span
                       className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
-                        CATEGORY_COLORS[q.type] ?? "bg-gray-100 text-gray-600"
+                        hashColor(q.type)
                       }`}
                     >
                       {q.type}

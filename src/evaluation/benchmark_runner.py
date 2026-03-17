@@ -275,7 +275,7 @@ class BenchmarkRunner:
         return {
             "question_id": question.get("id"),
             "question": question.get("question"),
-            "type": question.get("type"),
+            "type": question.get("type") or "unknown",
             "difficulty": question.get("difficulty"),
             "source_article": question.get("source_article"),
             "ground_truth_count": len(ground_truth_chunks),

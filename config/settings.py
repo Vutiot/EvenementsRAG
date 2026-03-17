@@ -351,9 +351,9 @@ class Settings(BaseSettings):
     )
 
     QUESTION_GEN_MAX_TOKENS: int = Field(
-        default=500,
+        default=1000,
         ge=100,
-        le=2000,
+        le=4000,
         description="Max tokens for question generation",
     )
 

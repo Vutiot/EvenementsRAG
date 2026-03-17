@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import PageHeader from "../components/layout/PageHeader";
 import {
   getDatasetRegistry,
@@ -13,32 +13,105 @@ import type {
   DatasetDetail,
   DatasetProgressEvent,
 } from "../api/types";
+import { hashColor } from "../utils/hashColor";
+
+// ── Preset types ──────────────────────────────────────────────────────
+
+interface CategoryPresetEntry {
+  type: string;
+  prompt: string;
+  count: number;
+}
+
+interface CategoryPreset {
+  name: string;
+  categories: CategoryPresetEntry[];
+  builtIn: boolean;
+}
+
+// ── Built-in presets ──────────────────────────────────────────────────
+
+const BUILTIN_PRESETS: CategoryPreset[] = [
+  {
+    name: "Question_Types",
+    builtIn: true,
+    categories: [
+      {
+        type: "factual",
+        count: 5,
+        prompt: "Generate factual recall questions about specific events, dates, names, and places mentioned in the passage.",
+      },
+      {
+        type: "temporal",
+        count: 5,
+        prompt: "Generate questions about chronological order, time periods, before/after relationships, and sequences of events.",
+      },
+      {
+        type: "comparative",
+        count: 5,
+        prompt: "Generate questions that compare or contrast events, strategies, figures, or outcomes described in the passage.",
+      },
+      {
+        type: "entity_centric",
+        count: 5,
+        prompt: "Generate questions focused on the roles, actions, and significance of specific people, organizations, or places.",
+      },
+      {
+        type: "relationship",
+        count: 5,
+        prompt: "Generate questions about causal links, alliances, conflicts, and connections between entities or events.",
+      },
+      {
+        type: "analytical",
+        count: 5,
+        prompt: "Generate questions requiring analysis, synthesis, or evaluation of impacts, consequences, and broader significance.",
+      },
+    ],
+  },
+  {
+    name: "Query_Styles",
+    builtIn: true,
+    categories: [
+      {
+        type: "well_redacted",
+        count: 30,
+        prompt: "Generate a well-written, grammatically correct question that a knowledgeable user might ask about the passage. Use proper sentence structure and precise vocabulary.",
+      },
+      {
+        type: "grammar_typos",
+        count: 15,
+        prompt: "Based on the passage content, write a question that a user would ask to find this information — but intentionally introduce 1-2 grammar mistakes or typos into the question itself (e.g. missing articles, wrong verb tense, swapped letters). The passage content is correct; only the question text should contain errors.",
+      },
+      {
+        type: "name_misspelling",
+        count: 15,
+        prompt: "Based on the passage content, write a question that a user would ask to find this information — but intentionally misspell one person name, place name, or organization in the question itself (e.g. 'Churchil' instead of 'Churchill', 'Stalinrad' instead of 'Stalingrad'). The passage content is correct; only the question text should have the misspelling.",
+      },
+      {
+        type: "date_place_errors",
+        count: 10,
+        prompt: "Based on the passage content, write a question that a user would ask to find this information — but intentionally use a slightly wrong date or place in the question itself (e.g. off by one year, wrong city). The passage content is correct; only the question text should contain the factual error.",
+      },
+      {
+        type: "keywords",
+        count: 10,
+        prompt: "Generate a keyword-only query (no sentence structure) about the passage. Use 3-6 relevant keywords separated by spaces, like a search engine query. Example: 'Battle Stalingrad casualties 1942 German'.",
+      },
+      {
+        type: "telegraphic",
+        count: 10,
+        prompt: "Generate a very short, telegraphic question about the passage using minimal words (5-10 words max). Drop articles, pronouns, and auxiliary verbs. Example: 'Who led D-Day invasion?' or 'Casualties Battle of Bulge?'.",
+      },
+      {
+        type: "fragmented_french",
+        count: 10,
+        prompt: "Generate a question about the passage written in broken or approximate French, as if by a non-native speaker mixing French and English. Example: 'Qui a gagné la battle de Midway et pourquoi c'était important?'. The question should still be answerable from the English passage.",
+      },
+    ],
+  },
+];
 
 // ── Constants ────────────────────────────────────────────────────────
-
-const QUESTION_TYPES = [
-  "factual",
-  "temporal",
-  "comparative",
-  "entity_centric",
-  "relationship",
-  "analytical",
-] as const;
-
-const DEFAULT_PROMPTS: Record<string, string> = {
-  factual:
-    "Generate factual recall questions about specific events, dates, names, and places mentioned in the passage.",
-  temporal:
-    "Generate questions about chronological order, time periods, before/after relationships, and sequences of events.",
-  comparative:
-    "Generate questions that compare or contrast events, strategies, figures, or outcomes described in the passage.",
-  entity_centric:
-    "Generate questions focused on the roles, actions, and significance of specific people, organizations, or places.",
-  relationship:
-    "Generate questions about causal links, alliances, conflicts, and connections between entities or events.",
-  analytical:
-    "Generate questions requiring analysis, synthesis, or evaluation of impacts, consequences, and broader significance.",
-};
 
 const LLM_MODELS = [
   { value: "nvidia/nemotron-3-nano-30b-a3b:free", label: "Nemotron Nano 30B (free)" },
@@ -48,14 +121,24 @@ const LLM_MODELS = [
   { value: "qwen/qwen3-8b:free", label: "Qwen 3 8B (free)" },
 ];
 
-const TYPE_COLORS: Record<string, string> = {
-  factual: "bg-blue-100 text-blue-700 border-blue-200",
-  temporal: "bg-amber-100 text-amber-700 border-amber-200",
-  comparative: "bg-purple-100 text-purple-700 border-purple-200",
-  entity_centric: "bg-emerald-100 text-emerald-700 border-emerald-200",
-  relationship: "bg-rose-100 text-rose-700 border-rose-200",
-  analytical: "bg-cyan-100 text-cyan-700 border-cyan-200",
-};
+const LOCALSTORAGE_KEY = "evalCategoryPresets";
+
+// ── localStorage helpers ─────────────────────────────────────────────
+
+function loadCustomPresets(): CategoryPreset[] {
+  try {
+    const raw = localStorage.getItem(LOCALSTORAGE_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as CategoryPreset[];
+    return parsed.map((p) => ({ ...p, builtIn: false }));
+  } catch {
+    return [];
+  }
+}
+
+function saveCustomPresets(presets: CategoryPreset[]) {
+  localStorage.setItem(LOCALSTORAGE_KEY, JSON.stringify(presets));
+}
 
 // ── Card state type ──────────────────────────────────────────────────
 
@@ -63,13 +146,23 @@ interface CardState {
   id: string;
   type: string;
   prompt: string;
-  model: string;
   count: number;
   generated: number;
   enabled: boolean;
 }
 
 let _cardIdCounter = 0;
+
+function cardsFromPreset(preset: CategoryPreset): CardState[] {
+  return preset.categories.map((c) => ({
+    id: `card_${_cardIdCounter++}`,
+    type: c.type,
+    prompt: c.prompt,
+    count: c.count,
+    generated: 0,
+    enabled: true,
+  }));
+}
 
 // ── Component ────────────────────────────────────────────────────────
 
@@ -81,17 +174,13 @@ export default function DatasetManager() {
 
   // Create form
   const [datasetName, setDatasetName] = useState("");
-  const [cards, setCards] = useState<CardState[]>(() =>
-    QUESTION_TYPES.map((t) => ({
-      id: `card_${_cardIdCounter++}`,
-      type: t,
-      prompt: DEFAULT_PROMPTS[t] ?? "",
-      model: LLM_MODELS[0]!.value,
-      count: 5,
-      generated: 0,
-      enabled: true,
-    })),
-  );
+  const [globalModel, setGlobalModel] = useState(LLM_MODELS[0]!.value);
+  const [cards, setCards] = useState<CardState[]>(() => cardsFromPreset(BUILTIN_PRESETS[0]!));
+
+  // Preset state
+  const [customPresets, setCustomPresets] = useState<CategoryPreset[]>(() => loadCustomPresets());
+  const [savingPreset, setSavingPreset] = useState(false);
+  const [newPresetName, setNewPresetName] = useState("");
 
   // Generation state
   const [generating, setGenerating] = useState(false);
@@ -109,6 +198,56 @@ export default function DatasetManager() {
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // ── Preset logic ────────────────────────────────────────────────────
+
+  const allPresets = useMemo(
+    () => [...BUILTIN_PRESETS, ...customPresets],
+    [customPresets],
+  );
+
+  const matchedPresetName = useMemo(() => {
+    for (const preset of allPresets) {
+      if (preset.categories.length !== cards.length) continue;
+      const match = preset.categories.every(
+        (pc, i) => cards[i]!.type === pc.type && cards[i]!.prompt === pc.prompt && cards[i]!.count === pc.count,
+      );
+      if (match) return preset.name;
+    }
+    return null;
+  }, [allPresets, cards]);
+
+  const matchedPreset = useMemo(
+    () => allPresets.find((p) => p.name === matchedPresetName) ?? null,
+    [allPresets, matchedPresetName],
+  );
+
+  const applyPreset = useCallback((preset: CategoryPreset) => {
+    setCards(cardsFromPreset(preset));
+  }, []);
+
+  const handleSavePreset = useCallback(() => {
+    const name = newPresetName.trim();
+    if (!name) return;
+    if (allPresets.some((p) => p.name === name)) return;
+    const preset: CategoryPreset = {
+      name,
+      builtIn: false,
+      categories: cards.map((c) => ({ type: c.type, prompt: c.prompt, count: c.count })),
+    };
+    const updated = [...customPresets, preset];
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+    setSavingPreset(false);
+    setNewPresetName("");
+  }, [newPresetName, allPresets, cards, customPresets]);
+
+  const handleDeletePreset = useCallback(() => {
+    if (!matchedPresetName || matchedPreset?.builtIn) return;
+    const updated = customPresets.filter((p) => p.name !== matchedPresetName);
+    setCustomPresets(updated);
+    saveCustomPresets(updated);
+  }, [matchedPresetName, matchedPreset, customPresets]);
 
   // ── Data fetching ──────────────────────────────────────────────────
 
@@ -149,7 +288,6 @@ export default function DatasetManager() {
         id: `card_${_cardIdCounter++}`,
         type: "custom",
         prompt: "",
-        model: LLM_MODELS[0]!.value,
         count: 5,
         generated: 0,
         enabled: true,
@@ -163,6 +301,13 @@ export default function DatasetManager() {
 
   const totalQuestions = cards.filter((c) => c.enabled).reduce((s, c) => s + c.count, 0);
   const totalGenerated = cards.filter((c) => c.enabled).reduce((s, c) => s + c.generated, 0);
+
+  // Auto-generate default name from preset + collection + total questions
+  useEffect(() => {
+    if (matchedPresetName && selectedCollection) {
+      setDatasetName(`${matchedPresetName.replace(/\s+/g, "_")}_${selectedCollection}_${totalQuestions}q`);
+    }
+  }, [matchedPresetName, selectedCollection, totalQuestions]);
 
   // ── Generate handler ──────────────────────────────────────────────
 
@@ -187,7 +332,7 @@ export default function DatasetManager() {
         categories: enabledCards.map((c) => ({
           type: c.type,
           prompt: c.prompt,
-          model: c.model,
+          model: globalModel,
           count: c.count,
         })),
       },
@@ -215,7 +360,7 @@ export default function DatasetManager() {
         },
       },
     );
-  }, [datasetName, selectedCollection, cards, refreshDatasets]);
+  }, [datasetName, selectedCollection, cards, globalModel, refreshDatasets]);
 
   // ── Detail handler ─────────────────────────────────────────────────
 
@@ -335,6 +480,98 @@ export default function DatasetManager() {
             </div>
           </div>
 
+          {/* Preset selector row */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700 shrink-0">Preset</label>
+            <select
+              value={matchedPresetName ?? ""}
+              onChange={(e) => {
+                const preset = allPresets.find((p) => p.name === e.target.value);
+                if (preset) applyPreset(preset);
+              }}
+              className="rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
+                         focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            >
+              <option value="">-- Custom --</option>
+              <optgroup label="Built-in">
+                {BUILTIN_PRESETS.map((p) => (
+                  <option key={p.name} value={p.name}>{p.name}</option>
+                ))}
+              </optgroup>
+              {customPresets.length > 0 && (
+                <optgroup label="Custom">
+                  {customPresets.map((p) => (
+                    <option key={p.name} value={p.name}>{p.name}</option>
+                  ))}
+                </optgroup>
+              )}
+            </select>
+
+            {/* Save as Preset */}
+            {savingPreset ? (
+              <div className="flex items-center gap-2">
+                <input
+                  type="text"
+                  value={newPresetName}
+                  onChange={(e) => setNewPresetName(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") handleSavePreset(); }}
+                  placeholder="Preset name..."
+                  autoFocus
+                  className="rounded border border-gray-300 px-2 py-1 text-sm
+                             focus:border-blue-500 focus:ring-1 focus:ring-blue-500 w-40"
+                />
+                <button
+                  onClick={handleSavePreset}
+                  disabled={!newPresetName.trim() || allPresets.some((p) => p.name === newPresetName.trim())}
+                  className="text-xs font-medium text-blue-600 hover:text-blue-800
+                             disabled:text-gray-400 disabled:cursor-not-allowed"
+                >
+                  Save
+                </button>
+                <button
+                  onClick={() => { setSavingPreset(false); setNewPresetName(""); }}
+                  className="text-xs text-gray-400 hover:text-gray-600"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setSavingPreset(true)}
+                className="text-xs font-medium text-blue-600 hover:text-blue-800"
+              >
+                Save as Preset
+              </button>
+            )}
+
+            {/* Delete Preset (only for non-built-in matched presets) */}
+            {matchedPreset && !matchedPreset.builtIn && (
+              <button
+                onClick={handleDeletePreset}
+                className="text-xs font-medium text-red-500 hover:text-red-700"
+              >
+                Delete Preset
+              </button>
+            )}
+          </div>
+
+          {/* Global model selector */}
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-medium text-gray-700 shrink-0">Model</label>
+            <select
+              value={globalModel}
+              onChange={(e) => setGlobalModel(e.target.value)}
+              className="rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
+                         focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+            >
+              {LLM_MODELS.map((m) => (
+                <option key={m.value} value={m.value}>
+                  {m.label}
+                </option>
+              ))}
+            </select>
+          </div>
+
           {/* Category cards grid */}
           <div>
             <div className="flex items-center justify-between mb-2">
@@ -375,9 +612,7 @@ export default function DatasetManager() {
                         disabled={!card.enabled}
                         className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold border w-28
                                     focus:bg-transparent focus:outline-none focus:ring-1 focus:ring-blue-500
-                                    disabled:opacity-50 ${
-                          TYPE_COLORS[card.type] ?? "bg-gray-100 text-gray-600 border-gray-200"
-                        }`}
+                                    disabled:opacity-50 ${hashColor(card.type)}`}
                       />
                       <button
                         onClick={() => removeCard(idx)}
@@ -413,22 +648,8 @@ export default function DatasetManager() {
                     placeholder="Describe the generation task..."
                   />
 
-                  {/* Model + Count row */}
+                  {/* Count */}
                   <div className="flex items-center gap-2">
-                    <select
-                      value={card.model}
-                      onChange={(e) => updateCard(idx, { model: e.target.value })}
-                      disabled={!card.enabled}
-                      className="flex-1 rounded border-gray-200 bg-white px-2 py-1 text-xs
-                                 focus:border-blue-500 focus:ring-1 focus:ring-blue-500
-                                 disabled:bg-gray-50 disabled:text-gray-400"
-                    >
-                      {LLM_MODELS.map((m) => (
-                        <option key={m.value} value={m.value}>
-                          {m.label}
-                        </option>
-                      ))}
-                    </select>
                     <input
                       type="number"
                       min={1}
@@ -444,6 +665,7 @@ export default function DatasetManager() {
                                  focus:border-blue-500 focus:ring-1 focus:ring-blue-500
                                  disabled:bg-gray-50 disabled:text-gray-400"
                     />
+                    <span className="text-xs text-gray-400">questions</span>
                   </div>
 
                   {/* Progress bar */}
@@ -566,9 +788,7 @@ export default function DatasetManager() {
                         {ds.categories.map((cat) => (
                           <span
                             key={cat.type}
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium border ${
-                              TYPE_COLORS[cat.type] ?? "bg-gray-100 text-gray-600"
-                            }`}
+                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium border ${hashColor(cat.type)}`}
                           >
                             {cat.type.replace("_", " ")} ({cat.generated ?? cat.count})
                           </span>
@@ -684,9 +904,7 @@ function DatasetDetailView({ detail }: { detail: DatasetDetail }) {
             >
               <div className="flex items-center justify-between mb-1">
                 <span
-                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold border ${
-                    TYPE_COLORS[cat.type] ?? "bg-gray-100 text-gray-600"
-                  }`}
+                  className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold border ${hashColor(cat.type)}`}
                 >
                   {cat.type.replace("_", " ")}
                 </span>

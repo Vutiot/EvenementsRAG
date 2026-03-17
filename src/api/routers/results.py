@@ -95,7 +95,7 @@ def _normalize_question_legacy(q: dict) -> NormalizedQuestion:
     return NormalizedQuestion(
         question_id=q.get("question_id", "unknown"),
         question=q.get("question", ""),
-        type=q.get("type", "unknown"),
+        type=q.get("type") or "unknown",
         difficulty=q.get("difficulty"),
         source_article=q.get("source_article"),
         ground_truth_count=q.get("ground_truth_count"),
@@ -110,7 +110,7 @@ def _normalize_question_new(q: dict) -> NormalizedQuestion:
     return NormalizedQuestion(
         question_id=q.get("question_id", "unknown"),
         question=q.get("question", ""),
-        type=q.get("type", "unknown"),
+        type=q.get("type") or "unknown",
         difficulty=q.get("difficulty"),
         source_article=q.get("source_article"),
         ground_truth_count=q.get("ground_truth_count"),

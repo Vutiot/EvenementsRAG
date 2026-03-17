@@ -236,7 +236,7 @@ class DatasetService:
                         )
                     except Exception as exc:
                         retries += 1
-                        logger.warning("LLM error (%d/%d) for %s: %s", retries, MAX_RETRIES, cat.type, exc)
+                        logger.warning("LLM error ({}/{}) for {}: {}", retries, MAX_RETRIES, cat.type, exc)
                         yield self._sse("retry", {
                             "category": cat.type,
                             "attempt": retries,
@@ -248,7 +248,7 @@ class DatasetService:
 
                     if questions is None:
                         # LLM said "next" — chunk not relevant, don't count as retry
-                        logger.info("next — LLM deemed chunk not relevant for %s", cat.type)
+                        logger.info("next — LLM deemed chunk not relevant for {}", cat.type)
                         yield self._sse("skip", {"category": cat.type, "reason": "chunk_not_relevant"})
                         continue
 
@@ -272,12 +272,12 @@ class DatasetService:
                         "question_id": questions[0]["id"] if questions else None,
                     })
 
-                    # Rate limiting
-                    time.sleep(1.5)
+                    # Rate limiting (20 RPM free tier)
+                    time.sleep(3)
                     break
 
                 if not success:
-                    logger.warning("Skipping question for %s after %d failed attempts", cat.type, retries)
+                    logger.warning("Skipping question for {} after {} failed attempts", cat.type, retries)
                     yield self._sse("skip", {"category": cat.type, "reason": "max_retries"})
 
             yield self._sse("category_complete", {
@@ -355,7 +355,7 @@ class DatasetService:
 
 Source Article: {chunk['article_title']}
 Text Passage:
-{chunk['content'][:2000]}
+{chunk['content'][:1200]}
 
 If the passage is not relevant or suitable for generating a {cat.type} question, respond with exactly: next
 
@@ -383,9 +383,11 @@ Output ONLY the JSON array, no other text:
             max_tokens=settings.QUESTION_GEN_MAX_TOKENS,
         )
 
-        raw = response.choices[0].message.content
+        choice = response.choices[0]
+        raw = choice.message.content
+        logger.info("LLM response for {} (article={}, finish={}): {}", cat.type, chunk["article_title"], choice.finish_reason, (raw or "")[:500])
         if not raw:
-            raise ValueError("LLM returned empty content")
+            raise ValueError(f"LLM returned empty content (finish_reason={choice.finish_reason})")
         text = raw.strip()
 
         # LLM deemed chunk not relevant
