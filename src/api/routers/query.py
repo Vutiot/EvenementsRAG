@@ -88,11 +88,19 @@ async def execute_query(request: QueryRequest):
 # ---------------------------------------------------------------------------
 
 _HIGHLIGHT_SYSTEM_PROMPT = (
-    "You are a text highlighting assistant. Given a user query and a text passage, "
-    "wrap the most relevant sentences or phrases in <mark> tags. "
-    "Return the FULL original text with only <mark>...</mark> additions. "
-    "Do NOT alter, summarize, or omit any text."
+    "You are a text highlighting and relevance assessment assistant.\n"
+    "Given a user query and a text passage:\n"
+    "1. On the FIRST line, write exactly one of: "
+    "RELEVANCE: exact_answer | RELEVANCE: related | RELEVANCE: not_relevant\n"
+    "   - exact_answer: passage directly answers the query\n"
+    "   - related: passage contains relevant context but not a direct answer\n"
+    "   - not_relevant: passage is not relevant to the query\n"
+    "2. On the second line, write ---\n"
+    "3. Then return the FULL original text with <mark>...</mark> around relevant phrases.\n"
+    "Do NOT alter, summarize, or omit any text in part 3."
 )
+
+_VALID_RELEVANCE = {"exact_answer", "related", "not_relevant"}
 
 
 async def _highlight_one_chunk(
@@ -119,9 +127,28 @@ async def _highlight_one_chunk(
             temperature=0.0,
             max_tokens=2000,
         )
-        raw = response.choices[0].message.content
-        highlighted = raw.strip() if raw else content
-        return HighlightedChunk(chunk_id=chunk_id, highlighted_content=highlighted)
+        raw = response.choices[0].message.content or content
+        raw = raw.strip()
+
+        # Parse relevance tier from first line
+        relevance = "not_relevant"
+        highlighted = raw
+        if "---" in raw:
+            header, _, body = raw.partition("---")
+            body = body.strip()
+            if body:  # only use parsed result if body is non-empty
+                highlighted = body
+                # Extract tier from header like "RELEVANCE: exact_answer"
+                for token in header.replace(":", " ").split():
+                    if token.lower() in _VALID_RELEVANCE:
+                        relevance = token.lower()
+                        break
+
+        return HighlightedChunk(
+            chunk_id=chunk_id,
+            highlighted_content=highlighted,
+            relevance=relevance,
+        )
     except Exception:
         return HighlightedChunk(chunk_id=chunk_id, highlighted_content=content)
 

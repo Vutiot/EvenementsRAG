@@ -76,15 +76,47 @@ export const FUSION_OPTIONS = [
   { value: "weighted_sum", label: "weighted_sum" },
 ];
 
-export const TOP_K_OPTIONS = [
-  { value: 3, label: "3" },
+export const RETRIEVER_K_OPTIONS = [
+  { value: 20, label: "20" },
+  { value: 60, label: "60" },
+  { value: 80, label: "80" },
+  { value: 100, label: "100" },
+  { value: 200, label: "200" },
+];
+
+export const RERANK_TOP_K_OPTIONS = [
   { value: 5, label: "5" },
   { value: 10, label: "10" },
+  { value: 15, label: "15" },
+  { value: 20, label: "20" },
 ];
+
+// ── Reranker ────────────────────────────────────────────────────────
+
+export const RERANKER_TYPE_OPTIONS = [
+  { value: "none", label: "None" },
+  { value: "cross_encoder", label: "Cross-Encoder" },
+  { value: "flashrank", label: "FlashRank" },
+];
+
+export const RERANKER_MODEL_OPTIONS: Record<string, { value: string; label: string }[]> = {
+  cross_encoder: [
+    { value: "cross-encoder/ms-marco-MiniLM-L-12-v2", label: "MiniLM-L12 (33M)" },
+    { value: "BAAI/bge-reranker-v2-m3", label: "BGE v2 M3 (278M)" },
+    { value: "mixedbread-ai/mxbai-rerank-large-v2", label: "MXBai Large (1.5B)" },
+  ],
+  flashrank: [
+    { value: "ms-marco-MiniLM-L-12-v2", label: "MiniLM-L12 (default)" },
+    { value: "ms-marco-MultiBERT-L-12", label: "MultiBERT (multilingual)" },
+    { value: "rank-T5-flan", label: "T5-Flan" },
+  ],
+};
+
 
 // ── Generation ───────────────────────────────────────────────────────
 
 export const LLM_MODELS: { value: string; label: string }[] = [
+  { value: "__none__", label: "None" },
   { value: "mistralai/mistral-small-3.1-24b-instruct:free", label: "Mistral" },
   { value: "meta-llama/llama-3.1-8b-instruct:free", label: "Llama" },
   { value: "google/gemma-2-9b-it:free", label: "Gemma" },

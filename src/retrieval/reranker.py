@@ -178,3 +178,50 @@ class CrossEncoderReranker(BaseReranker):
             f"reranked {len(chunks)} → {len(reranked)} chunks"
         )
         return reranked
+
+
+class FlashRankReranker(BaseReranker):
+    """Lightweight CPU reranker using FlashRank (ONNX-optimized)."""
+
+    def __init__(self, model_name: str = "ms-marco-MiniLM-L-12-v2") -> None:
+        self.model_name = model_name
+        self._ranker = None  # lazy init
+
+    def _get_ranker(self):
+        if self._ranker is None:
+            from flashrank import Ranker  # lazy import
+            self._ranker = Ranker(model_name=self.model_name)
+        return self._ranker
+
+    def rerank(
+        self,
+        query: str,
+        chunks: List[RetrievedChunk],
+        top_k: int,
+    ) -> List[RetrievedChunk]:
+        if not chunks:
+            return []
+        from flashrank import RerankRequest  # lazy import
+
+        ranker = self._get_ranker()
+        passages = [
+            {"id": i, "text": c.content}
+            for i, c in enumerate(chunks)
+        ]
+        request = RerankRequest(query=query, passages=passages)
+        results = ranker.rerank(request)
+
+        reranked = []
+        for result in results[:top_k]:
+            idx = result["id"]
+            chunk = chunks[idx]
+            reranked.append(
+                RetrievedChunk(
+                    chunk_id=chunk.chunk_id,
+                    content=chunk.content,
+                    score=float(result["score"]),
+                    metadata=chunk.metadata,
+                )
+            )
+        logger.debug(f"FlashRankReranker: reranked {len(chunks)} → {len(reranked)} chunks")
+        return reranked

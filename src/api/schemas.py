@@ -46,6 +46,7 @@ class HighlightChunksRequest(BaseModel):
 class HighlightedChunk(BaseModel):
     chunk_id: str
     highlighted_content: str
+    relevance: str = "not_relevant"  # "exact_answer" | "related" | "not_relevant"
 
 
 class HighlightChunksResponse(BaseModel):

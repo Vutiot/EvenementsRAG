@@ -88,9 +88,22 @@ export default function ConfigSummary({ config }: Props) {
         )}
       </Section>
 
-      <Section title="Generation" badge={config.generation.model.split("/").pop()}>
+      <Section
+        title="Reranker"
+        badge={config.reranker.type !== "none" ? config.reranker.type : undefined}
+      >
+        <Field label="Type" value={config.reranker.type} />
+        {config.reranker.type !== "none" && (
+          <>
+            <Field label="Model" value={config.reranker.model_name} />
+            <Field label="Top K Rerank" value={config.generation.top_k_chunks} />
+          </>
+        )}
+      </Section>
+
+      <Section title="Generation" badge={config.generation.model === "__none__" ? "disabled" : config.generation.model.split("/").pop()}>
         <Field label="Provider" value={config.generation.llm_provider} />
-        <Field label="Model" value={config.generation.model} />
+        <Field label="Model" value={config.generation.model === "__none__" ? "None" : config.generation.model} />
         <Field label="Temperature" value={config.generation.temperature} />
         <Field label="Max tokens" value={config.generation.max_tokens} />
         <Field label="Top K chunks" value={config.generation.top_k_chunks} />

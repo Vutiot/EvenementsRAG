@@ -104,8 +104,8 @@ class ChunkingConfig(BaseModel):
 
 class RetrievalConfig(BaseModel):
     technique: Literal["vanilla", "hybrid", "temporal"] = "vanilla"
-    top_k: int = Field(10, ge=1, le=100)
-    rerank_k: int = Field(20, ge=1, le=100)
+    top_k: int = Field(10, ge=1, le=200)
+    rerank_k: int = Field(20, ge=1, le=200)
     sparse_weight: float = Field(0.3, ge=0.0, le=1.0)
     dense_weight: float = Field(0.7, ge=0.0, le=1.0)
     fusion_method: Literal["rrf", "weighted_sum"] = "rrf"
@@ -124,7 +124,7 @@ class RetrievalConfig(BaseModel):
 
 
 class RerankerConfig(BaseModel):
-    type: Literal["none", "cohere", "bge", "cross_encoder"] = "none"
+    type: Literal["none", "cohere", "bge", "cross_encoder", "flashrank"] = "none"
     model_name: Optional[str] = None
 
     @model_validator(mode="after")
@@ -152,7 +152,7 @@ class GenerationConfig(BaseModel):
     top_k_articles: Optional[int] = Field(None, ge=1, le=20)
     prompt_template: Optional[str] = None
     system_prompt: Optional[str] = None
-    highlight_chunks: bool = False
+    highlight_chunks: bool = True
     enabled: bool = True
 
 

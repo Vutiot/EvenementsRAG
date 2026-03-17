@@ -132,6 +132,7 @@ export default function QueryTester() {
 
   // Highlight state
   const [highlightedChunks, setHighlightedChunks] = useState<Record<string, string>>({});
+  const [relevanceMap, setRelevanceMap] = useState<Record<string, string>>({});
   const [highlighting, setHighlighting] = useState(false);
 
   const overrideCount = useMemo(() => countOverrides(overrides), [overrides]);
@@ -228,6 +229,7 @@ export default function QueryTester() {
     setError(null);
     setResult(null);
     setHighlightedChunks({});
+    setRelevanceMap({});
     setHighlighting(false);
 
     let finalOverrides: Record<string, unknown> =
@@ -273,10 +275,13 @@ export default function QueryTester() {
             ec.generation.model,
           );
           const hlMap: Record<string, string> = {};
+          const relMap: Record<string, string> = {};
           for (const hl of hlRes.highlighted_chunks) {
             hlMap[hl.chunk_id] = hl.highlighted_content;
+            if (hl.relevance) relMap[hl.chunk_id] = hl.relevance;
           }
           setHighlightedChunks(hlMap);
+          setRelevanceMap(relMap);
         } catch {
           // Highlighting is best-effort
         } finally {
@@ -439,12 +444,15 @@ export default function QueryTester() {
                 chunks={result.retrieved_chunks}
                 sourceChunkId={sourceChunkId}
                 highlightedChunkIds={highlightedChunkIds}
+                highlightedContent={highlightedChunks}
+                relevanceMap={relevanceMap}
               />
               <ChunkList
                 chunks={result.retrieved_chunks}
                 highlightedContent={highlightedChunks}
                 highlighting={highlighting}
                 sourceChunkId={sourceChunkId}
+                relevanceMap={relevanceMap}
               />
             </div>
           )}

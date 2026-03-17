@@ -1,11 +1,13 @@
 import { useState } from "react";
 import type { RetrievedChunk } from "../../api/types";
+import { getRelevanceTier, RELEVANCE_TW } from "../../utils/chunkRelevance";
 
 interface Props {
   chunks: RetrievedChunk[];
   highlightedContent?: Record<string, string>;
   highlighting?: boolean;
   sourceChunkId?: string | null;
+  relevanceMap?: Record<string, string>;
 }
 
 /** Sanitize HTML to only allow <mark> tags. */
@@ -14,7 +16,43 @@ function sanitizeHighlight(html: string): string {
     .replace(/<(?!\/?mark\b)[^>]*>/gi, "");
 }
 
-function ScoreBar({ score, colorOverride }: { score: number; colorOverride?: string }) {
+function ScoreBar({
+  score,
+  colorOverride,
+  hasNegative,
+  absMax,
+}: {
+  score: number;
+  colorOverride?: string;
+  hasNegative?: boolean;
+  absMax?: number;
+}) {
+  if (hasNegative && absMax) {
+    // Diverging bar: 0 is at center (50%), bar extends left or right
+    const halfPct = Math.min(Math.abs(score) / absMax, 1) * 50;
+    const isPos = score >= 0;
+    const color = colorOverride ?? (isPos ? "bg-green-500" : "bg-red-400");
+    return (
+      <div className="flex items-center gap-2">
+        <span className="text-xs font-mono text-gray-600 w-14 text-right shrink-0">
+          {score.toFixed(3)}
+        </span>
+        <div className="relative h-2 w-24 rounded-full bg-gray-200">
+          {/* Zero-line */}
+          <div className="absolute left-1/2 top-0 h-full w-px bg-gray-400" />
+          <div
+            className={`absolute top-0 h-2 rounded-full ${color}`}
+            style={
+              isPos
+                ? { left: "50%", width: `${halfPct}%` }
+                : { left: `${50 - halfPct}%`, width: `${halfPct}%` }
+            }
+          />
+        </div>
+      </div>
+    );
+  }
+
   const pct = Math.round(score * 100);
   const color = colorOverride
     ?? (score >= 0.8
@@ -32,8 +70,14 @@ function ScoreBar({ score, colorOverride }: { score: number; colorOverride?: str
   );
 }
 
-export default function ChunkList({ chunks, highlightedContent, highlighting, sourceChunkId }: Props) {
+export default function ChunkList({ chunks, highlightedContent, highlighting, sourceChunkId, relevanceMap }: Props) {
   const [expanded, setExpanded] = useState<Set<string>>(new Set());
+
+  // Detect negative scores (e.g. cross-encoder reranker) for diverging bar display
+  const minScore = chunks.length ? Math.min(...chunks.map((c) => c.score)) : 0;
+  const maxScore = chunks.length ? Math.max(...chunks.map((c) => c.score)) : 1;
+  const hasNegative = minScore < 0;
+  const absMax = hasNegative ? Math.max(Math.abs(minScore), Math.abs(maxScore)) : undefined;
 
   const toggle = (id: string) => {
     setExpanded((prev) => {
@@ -61,16 +105,16 @@ export default function ChunkList({ chunks, highlightedContent, highlighting, so
         const isOpen = expanded.has(chunk.chunk_id);
         const highlighted = highlightedContent?.[chunk.chunk_id];
 
-        // Determine bar color override when in eval context
+        // Determine bar color override when highlighting data is available
         let barColor: string | undefined;
-        if (sourceChunkId) {
-          if (chunk.chunk_id === sourceChunkId) {
-            barColor = "bg-red-500";
-          } else if (highlightedContent?.[chunk.chunk_id]) {
-            barColor = "bg-yellow-500";
-          } else {
-            barColor = "bg-blue-300";
-          }
+        if (highlightedContent && Object.keys(highlightedContent).length > 0) {
+          const tier = getRelevanceTier(
+            chunk.chunk_id,
+            sourceChunkId ?? null,
+            relevanceMap?.[chunk.chunk_id],
+            highlightedContent?.[chunk.chunk_id],
+          );
+          barColor = RELEVANCE_TW[tier];
         }
 
         return (
@@ -95,7 +139,7 @@ export default function ChunkList({ chunks, highlightedContent, highlighting, so
                   </span>
                 </div>
               </div>
-              <ScoreBar score={chunk.score} colorOverride={barColor} />
+              <ScoreBar score={chunk.score} colorOverride={barColor} hasNegative={hasNegative} absMax={absMax} />
             </button>
             {isOpen && (
               <div className="border-t border-gray-100 px-4 py-3">

@@ -15,9 +15,10 @@ import importlib
 import threading
 import time
 from collections import OrderedDict
-from typing import Any, Dict
+from typing import Any, Dict, Tuple
 
 from src.benchmarks.config import BenchmarkConfig
+from src.retrieval.reranker import BaseReranker
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -42,6 +43,7 @@ class QueryService:
         self._max_cached = max_cached
         self._cache: OrderedDict[str, Any] = OrderedDict()
         self._lock = threading.Lock()
+        self._reranker_cache: Dict[Tuple[str, str | None], BaseReranker] = {}
 
     # ------------------------------------------------------------------
     # Public API
@@ -59,11 +61,22 @@ class QueryService:
         """
         pipeline = self._get_or_build(config)
 
-        top_k = config.generation.top_k_chunks
+        retrieve_k = config.retrieval.top_k
+
+        # Determine if post-retrieval reranking is needed
+        # (hybrid technique handles reranking internally)
+        needs_rerank = (
+            config.reranker.type != "none"
+            and config.retrieval.technique != "hybrid"
+        )
 
         # Retrieve
         t0 = time.perf_counter()
-        chunks = pipeline.retrieve(query, top_k=top_k)
+        chunks = pipeline.retrieve(query, top_k=retrieve_k)
+        if needs_rerank:
+            reranker = self._get_or_build_reranker(config)
+            final_k = config.generation.top_k_chunks
+            chunks = reranker.rerank(query, chunks, top_k=final_k)
         retrieval_ms = (time.perf_counter() - t0) * 1000
 
         # Generate (if enabled)
@@ -97,6 +110,15 @@ class QueryService:
     # ------------------------------------------------------------------
     # Private helpers
     # ------------------------------------------------------------------
+
+    def _get_or_build_reranker(self, config: BenchmarkConfig) -> BaseReranker:
+        """Return a cached reranker or build a new one."""
+        key = (config.reranker.type, config.reranker.model_name)
+        if key not in self._reranker_cache:
+            from src.retrieval.reranker_factory import RerankerFactory
+            self._reranker_cache[key] = RerankerFactory.from_config(config.reranker)
+            logger.info(f"Built reranker: type={key[0]}, model={key[1]}")
+        return self._reranker_cache[key]
 
     def _get_or_build(self, config: BenchmarkConfig):
         """Return a cached pipeline or build a new one."""

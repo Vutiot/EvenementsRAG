@@ -21,6 +21,7 @@ _RERANKER_REGISTRY: dict[str, str] = {
     "cohere": "src.retrieval.reranker.CohereReranker",
     "bge": "src.retrieval.reranker.BGEReranker",
     "cross_encoder": "src.retrieval.reranker.CrossEncoderReranker",
+    "flashrank": "src.retrieval.reranker.FlashRankReranker",
 }
 
 

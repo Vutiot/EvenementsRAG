@@ -11,10 +11,13 @@ import {
   TECHNIQUE_OPTIONS,
   SPARSE_TYPE_OPTIONS,
   FUSION_OPTIONS,
-  TOP_K_OPTIONS,
+  RETRIEVER_K_OPTIONS,
+  RERANK_TOP_K_OPTIONS,
   LLM_MODELS,
   MAX_TOKENS_OPTIONS,
   EMBEDDING_DIMENSION_MAP,
+  RERANKER_TYPE_OPTIONS,
+  RERANKER_MODEL_OPTIONS,
 } from "../../constants/paramOptions";
 
 // ── Helpers ──────────────────────────────────────────────────────────
@@ -244,11 +247,11 @@ export default function ParameterModal({
                 onChange={(v) => handleChange("retrieval.technique", v)}
               />
               <ParamChips
-                label="Top K Chunks"
-                options={TOP_K_OPTIONS}
-                value={effective("generation.top_k_chunks") as number}
-                presetValue={preset("generation.top_k_chunks") as number}
-                onChange={(v) => handleChange("generation.top_k_chunks", v)}
+                label="Top K"
+                options={RETRIEVER_K_OPTIONS}
+                value={effective("retrieval.top_k") as number}
+                presetValue={preset("retrieval.top_k") as number}
+                onChange={(v) => handleChange("retrieval.top_k", v)}
               />
               {technique === "hybrid" && (
                 <>
@@ -282,6 +285,48 @@ export default function ParameterModal({
               )}
             </div>
 
+            {/* Reranking */}
+            <div className="space-y-3 mt-4">
+              <h4 className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
+                Reranking
+              </h4>
+              <ParamChips
+                label="Reranker"
+                options={RERANKER_TYPE_OPTIONS}
+                value={effective("reranker.type") as string}
+                presetValue={preset("reranker.type") as string}
+                onChange={(v) => {
+                  handleChange("reranker.type", v);
+                  if (v === "none") {
+                    handleChange("reranker.model_name", null);
+                  } else {
+                    const models = RERANKER_MODEL_OPTIONS[v as string];
+                    if (models?.[0]) {
+                      handleChange("reranker.model_name", models[0].value);
+                    }
+                  }
+                }}
+              />
+              {(effective("reranker.type") as string) !== "none" && (
+                <>
+                  <ParamChips
+                    label="Model"
+                    options={RERANKER_MODEL_OPTIONS[effective("reranker.type") as string] ?? []}
+                    value={effective("reranker.model_name") as string}
+                    presetValue={preset("reranker.model_name") as string}
+                    onChange={(v) => handleChange("reranker.model_name", v)}
+                  />
+                  <ParamChips
+                    label="Top K Rerank"
+                    options={RERANK_TOP_K_OPTIONS}
+                    value={effective("generation.top_k_chunks") as number}
+                    presetValue={preset("generation.top_k_chunks") as number}
+                    onChange={(v) => handleChange("generation.top_k_chunks", v)}
+                  />
+                </>
+              )}
+            </div>
+
             {/* Generation */}
             <div className="space-y-3 mt-4">
               <h4 className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
@@ -292,7 +337,15 @@ export default function ParameterModal({
                 options={LLM_MODELS}
                 value={effective("generation.model") as string}
                 presetValue={preset("generation.model") as string}
-                onChange={(v) => handleChange("generation.model", v)}
+                onChange={(v) => {
+                  if (v === "__none__") {
+                    handleChange("generation.model", "__none__");
+                    handleChange("generation.enabled", false);
+                  } else {
+                    handleChange("generation.model", v);
+                    handleChange("generation.enabled", true);
+                  }
+                }}
               />
               <ParamSlider
                 label="Temperature"

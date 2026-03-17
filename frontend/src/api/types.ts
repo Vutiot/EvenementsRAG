@@ -247,6 +247,7 @@ export interface BenchmarkConfig {
 export interface HighlightedChunk {
   chunk_id: string;
   highlighted_content: string;
+  relevance?: "exact_answer" | "related" | "not_relevant";
 }
 
 export interface HighlightChunksResponse {
