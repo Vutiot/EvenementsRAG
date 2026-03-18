@@ -71,6 +71,28 @@ QUESTION_TAXONOMY = {
     "analytical": 0.10,
 }
 
+VALID_QUESTION_TYPES: frozenset[str] = frozenset(QUESTION_TAXONOMY.keys())
+
+
+def validate_question_type(question: dict, target_type: str) -> bool:
+    """Validate and normalise the ``type`` field of a generated question.
+
+    Returns ``True`` if the question is usable (type was valid or was
+    force-corrected to *target_type*).  Returns ``False`` when the type is
+    missing, empty, or garbage — the caller should discard the question and
+    retry.
+
+    Side-effect: when the type is valid but doesn't match *target_type*,
+    the question dict is mutated in-place to use *target_type*.
+    """
+    qtype = question.get("type")
+    if not qtype or not isinstance(qtype, str) or qtype.strip() not in VALID_QUESTION_TYPES:
+        return False
+    qtype = qtype.strip()
+    if qtype != target_type:
+        question["type"] = target_type
+    return True
+
 
 class QuestionGenerator:
     """Generates evaluation questions from document chunks using LLM."""
@@ -319,16 +341,25 @@ class QuestionGenerator:
 
             questions = json.loads(response_text)
 
-            # Validate and enrich questions
+            # Validate type and enrich questions
+            valid_questions = []
             for q in questions:
+                if not validate_question_type(q, target_type):
+                    logger.warning(
+                        "Dropping question with invalid type %r (target=%s)",
+                        q.get("type"),
+                        target_type,
+                    )
+                    continue
                 q["source_chunk_id"] = chunk["chunk_id"]
                 q["source_chunk_index"] = chunk.get("chunk_index", 0)
                 q["source_article"] = chunk["article_title"]
                 q["source_article_id"] = chunk["article_id"]
                 q["generated_at"] = datetime.now().isoformat()
                 q["model"] = self.model
+                valid_questions.append(q)
 
-            return questions
+            return valid_questions
 
         except json.JSONDecodeError as e:
             logger.error(

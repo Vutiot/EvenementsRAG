@@ -1,6 +1,6 @@
 """Response/request models for the EvenementsRAG API."""
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class HealthResponse(BaseModel):
@@ -149,6 +149,18 @@ class DatasetCategoryConfig(BaseModel):
     prompt: str
     model: str
     count: int
+
+    @field_validator("type")
+    @classmethod
+    def check_type_in_taxonomy(cls, v: str) -> str:
+        from src.evaluation.question_generator import VALID_QUESTION_TYPES
+
+        if v not in VALID_QUESTION_TYPES:
+            raise ValueError(
+                f"Invalid question type {v!r}. "
+                f"Must be one of: {', '.join(sorted(VALID_QUESTION_TYPES))}"
+            )
+        return v
 
 
 class DatasetCreateRequest(BaseModel):

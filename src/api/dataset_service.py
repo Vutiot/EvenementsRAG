@@ -12,6 +12,7 @@ import openai
 from config.settings import settings
 from src.api.dependencies import DATASETS_DIR
 from src.api.schemas import DatasetCategoryConfig, DatasetCreateRequest
+from src.evaluation.question_generator import validate_question_type
 from src.utils.logger import get_logger
 from src.vector_store.qdrant_manager import QdrantManager
 
@@ -412,15 +413,24 @@ Output ONLY the JSON array, no other text:
                     continue
             else:
                 raise
+        valid_questions = []
         for q in questions:
+            if not validate_question_type(q, cat.type):
+                logger.warning(
+                    "Dropping question with invalid type %r (target=%s)",
+                    q.get("type"),
+                    cat.type,
+                )
+                continue
             q["source_chunk_id"] = chunk["chunk_id"]
             q["source_chunk_index"] = chunk.get("chunk_index", 0)
             q["source_article"] = chunk["article_title"]
             q["source_article_id"] = chunk["article_id"]
             q["generated_at"] = datetime.now().isoformat()
             q["model"] = cat.model
+            valid_questions.append(q)
 
-        return questions
+        return valid_questions
 
     @staticmethod
     def _sse(event: str, data: dict) -> str:
