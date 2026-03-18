@@ -4,7 +4,7 @@
 
 EvenementsRAG is a progressive RAG benchmarking system for historical events (WW2), designed to systematically evaluate and compare different RAG techniques, retrieval parameters, and generation configurations. The project has successfully implemented a hybrid RAG baseline with 10k Wikipedia articles and is expanding into comprehensive benchmarking infrastructure with parameterized evaluation and visualization.
 
-**Current State**: Phase 1 baseline (vanilla RAG) and Phase 2 (hybrid RAG + temporal) evaluated on 49 articles. Benchmarking config schema (E1-F1-T1) and runner framework (E1-F1-T2) implemented and unit-tested. Next: result serialization (E1-F1-T3) and metric collection (E1-F2-T1). Goal: Build a complete benchmarking framework with UI to test arbitrary configurations and visualize results.
+**Current State**: All E1–E3 tasks complete except E3-F2-T3 (sweep visualization). Full benchmarking pipeline operational: parameterized runner, metric collection (ROUGE/BERTScore/RAGAS), dataset management with SSE generation, collection management across backends, query tester with prompt pieces and chunk highlighting, benchmark result viewer with metric dashboards, and benchmark run execution with live SSE progress. Next: sweep visualization (E3-F2-T3), results DB (E4-F1-T1), or advanced RAG (E5-F1-T1).
 
 ---
 
@@ -48,6 +48,10 @@ graph TD
   E3F4T2["✅ E3-F4-T2: Dataset Manager UI with editable categories"]
   E3F4T3["✅ E3-F4-T3: Query Tester dataset question picker"]
 
+  E3F5T1["✅ E3-F5-T1: Benchmark run SSE service & endpoint"]
+  E3F5T2["✅ E3-F5-T2: Benchmark Runs UI page"]
+  E3F5T3["✅ E3-F5-T3: Collection Section redesign"]
+
   E4F1T1["🔵 E4-F1-T1: Design results database schema"]
   E4F1T2["⚪ E4-F1-T2: Implement benchmark result caching"]
   E4F1T3["⚪ E4-F1-T3: Add cache invalidation & versioning"]
@@ -86,6 +90,11 @@ graph TD
   E3F4T1 --> E3F4T2
   E3F1T2 --> E3F4T3
 
+  E3F4T1 --> E3F5T1
+  E3F5T1 --> E3F5T2
+  E3F1T3 --> E3F5T2
+  E3F3T2 --> E3F5T3
+
   E3F1T2 --> E4F1T1
   E3F2T1 --> E4F1T1
   E4F1T1 --> E4F1T2
@@ -121,6 +130,9 @@ graph TD
   style E3F4T1 fill:#22c55e
   style E3F4T2 fill:#22c55e
   style E3F4T3 fill:#22c55e
+  style E3F5T1 fill:#22c55e
+  style E3F5T2 fill:#22c55e
+  style E3F5T3 fill:#22c55e
   style E4F1T1 fill:#6b7280
   style E4F1T2 fill:#6b7280
   style E4F1T3 fill:#6b7280
@@ -351,6 +363,26 @@ Web interface for testing individual queries and visualizing benchmark results.
 - effort: S
 - description: Dataset selector in QueryTester sidebar. Loads completed datasets, shows scrollable question list with type badges. Clicking a question populates the query input. Files: `frontend/src/pages/QueryTester.tsx`.
 
+#### E3-F5: Benchmark Run Execution
+
+##### ✅ E3-F5-T1: Benchmark run SSE service & API endpoint
+- blocked_by: [E3-F4-T1]
+- status: done
+- effort: M
+- description: Backend service for benchmark run execution with SSE progress streaming. `BenchmarkService` with threaded worker and `queue.Queue` for SSE bridging (same pattern as dataset generation). `progress_callback` added to `BenchmarkRunner.run_benchmark()` and `ParameterizedBenchmarkRunner.run()`. Service resolves eval dataset path, ensures collection, disables `highlight_chunks`, then delegates to runner. Files: `src/api/benchmark_service.py`, `src/api/routers/benchmark.py`, `src/api/schemas.py` (BenchmarkRunRequest), `src/api/main.py`.
+
+##### ✅ E3-F5-T2: Benchmark Runs UI page
+- blocked_by: [E3-F5-T1, E3-F1-T3]
+- status: done
+- effort: M
+- description: React page with preset/param config, eval dataset selector, live SSE progress bar, cancel support. `RunHistoryTable` with clickable rows navigating to Result Viewer. Files: `frontend/src/pages/BenchmarkRuns.tsx`, `frontend/src/components/benchmarks/RunHistoryTable.tsx`, `frontend/src/api/client.ts` (runBenchmark SSE), `frontend/src/api/types.ts` (Benchmark event types). Navigation: `/runs` route, "Runs" sidebar entry under "Benchmark" group.
+
+##### ✅ E3-F5-T3: Collection Section redesign
+- blocked_by: [E3-F3-T2]
+- status: done
+- effort: M
+- description: Removed Select/Create mode toggle; single unified view with Import button + always-visible param chips + derived collection name with existence indicator (green/amber badge). `CollectionPickerModal` table-based picker (follows `QuestionPickerModal` pattern). `collectionPresetOverride` in ParameterModal makes imported params show as blue baseline chips. Files: `frontend/src/components/config/CollectionPickerModal.tsx` (new), `frontend/src/components/config/CollectionSection.tsx` (rewrite), `frontend/src/components/config/ParameterModal.tsx`.
+
 ---
 
 ### 💾 E4: Results Caching & Database
@@ -556,18 +588,39 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - **Query Tester**: `frontend/src/pages/QueryTester.tsx` — dataset selector dropdown, scrollable question list with type badges, click-to-populate query input
 - **Infrastructure**: `src/vector_store/factory.py` — Qdrant local file storage (`QDRANT_PERSIST_DIR`) when no host/memory override; `.gitignore` — `data/vector_database/` replaces `data/vector_store/`; `scripts/setup_qdrant.sh` — storage path updated
 
+✅ **E3-F4 Refinements — Dataset & Infrastructure**
+- LLM-based chunk relevance gate: filters irrelevant chunks before question generation (retry with new chunk on rejection)
+- Renamed "Datasets" nav → "Evaluations", added `/api/datasets/registry` endpoint for raw dataset → eval dataset mapping
+- Qdrant Docker container-only: `src/api/ensure_qdrant.py` health-check + auto-start via `setup_qdrant.sh`, wired into FastAPI lifespan
+
+✅ **E3-F1 Refinements — Query Tester UX Enhancements**
+- System prompt editor with presets (Historian, Analyst, Researcher, Teacher) + composable prompt pieces (Citation, Relevance, Misc)
+- LLM-based chunk highlighting: classifies chunks as exact_answer/related/not_relevant with 4-tier color coding
+- Eval dataset dropdown + question picker modal with category/difficulty/article columns
+- Category preset system with save/load/delete, global model selector
+- Hash-based deterministic colors for chart categories (replaced random palette)
+- Parameter modal restructured into Dataset → Collection → Pipeline → System Prompt → Results sections
+
+✅ **E3-F5-T1/T2/T3 — Benchmark Run Execution (SSE Service, UI Page, Collection Redesign)**
+- Backend: `BenchmarkService` with threaded SSE progress streaming, `progress_callback` wired through both runner classes, `/api/benchmark/run` endpoint
+- Frontend: `BenchmarkRuns` page with preset/param config, eval dataset selector, live SSE progress bar, cancel support, `RunHistoryTable` with clickable rows → Result Viewer
+- Collection UX: removed Select/Create toggle, replaced with unified Import button + always-visible param chips + derived name with existence indicator (green/amber badge), `CollectionPickerModal` table-based picker, `collectionPresetOverride` in ParameterModal makes imported params show as blue baseline chips
+- Shared utils: extracted `deepMerge`, `setOverridePath`, `countOverrides` to `frontend/src/utils/configHelpers.ts`
+- Extended `ResultFileInfo` with `config_summary` and `avg_recall_at_10`; added Recall@10 to MetricsByTypeChart
+- Navigation: `/runs` route, "Runs" sidebar entry under "Benchmark" group, `hideSections` prop on ParameterModal
+
 ---
 
 ## Summary
 
 | Metric | Value |
 |--------|-------|
-| **Total Tasks** | 39 |
-| **Done** | 26 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3) |
+| **Total Tasks** | 42 |
+| **Done** | 29 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3, E3-F5-T1, E3-F5-T2, E3-F5-T3) |
 | **Ready (no blockers)** | 3 (E3-F2-T3, E4-F1-T1, E5-F1-T1) |
 | **In Progress** | 0 |
 | **Pending** | 10 |
-| **Critical Path Length** | 14 sequential tasks (5 remaining) |
+| **Critical Path Length** | 14 sequential tasks (1 remaining: E3-F2-T3) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
@@ -575,7 +628,7 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 2. E4-F1-T1: Design results database schema
 3. E5-F1-T1: Implement LazyGraphRAG variant
 
-**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) in progress — E3-F1 feature complete (T1–T3 done), E3-F2-T1 done.
+**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) complete — E3-F1, E3-F3, E3-F4, E3-F5 all done; only E3-F2-T3 (sweep visualization) remains.
 
 ---
 
@@ -881,6 +934,28 @@ Rationale: initial card state uses `LLM_MODELS[0]!.value`, so position determine
 
 **Qdrant container-only** (removed embedded and in-memory modes).
 Rationale: Qdrant embedded (`path=`) and in-memory (`:memory:`) modes were removed. The Docker container (`scripts/setup_qdrant.sh`) is now the only supported backend. This simplifies the architecture — `QdrantManager()` always connects to `settings.QDRANT_HOST:QDRANT_PORT`. Persistence is managed by the container's volume mount. `QDRANT_PERSIST_DIR` and `VectorStoreFactory` path-injection logic were removed. Tests skip automatically when no container is running.
+
+### E3-F5-T1 — Benchmark Run SSE Service
+
+**Threaded worker with `queue.Queue` for SSE bridging** (same pattern as dataset generation).
+Rationale: the benchmark runner is synchronous and CPU-heavy. Running it in a background thread and bridging progress events through a queue allows the FastAPI async endpoint to yield SSE events without blocking the event loop. The pattern is proven from E3-F4-T1's dataset generation service.
+
+**`progress_callback` on `BenchmarkRunner.run_benchmark()`** invoked after each `evaluate_question()` call.
+Rationale: fine-grained progress (per-question) gives the frontend accurate progress bars. The callback is optional (defaults to `None`) so existing callers are unaffected.
+
+**Service resolves eval dataset path, ensures collection, disables `highlight_chunks`**, then delegates to `ParameterizedBenchmarkRunner.run()`.
+Rationale: `highlight_chunks` triggers LLM calls per chunk which would double the benchmark time and cost. Benchmarks should measure retrieval + generation quality, not chunk classification.
+
+### E3-F5-T3 — Collection Section Redesign
+
+**Removed Select/Create mode toggle; single unified view** always shows param chips + derived collection name.
+Rationale: the two-mode UI confused users who didn't understand the distinction between selecting an existing collection and creating one with specific parameters. A single view where params always determine the collection name (with existence check) is more intuitive.
+
+**`CollectionPickerModal` follows `QuestionPickerModal` pattern** (backdrop, Escape, table click-to-select).
+Rationale: consistency across modals reduces cognitive overhead. Both modals present tabular data with click-to-select semantics.
+
+**`collectionPresetOverride` state in ParameterModal**: when importing a collection, its parsed params become the new chip baseline (blue) instead of the YAML preset, preventing amber "override" appearance for intentional imports.
+Rationale: without this, importing a collection like `wiki_10k_cs256_co50` would show chunk_size=256 as an "override" (amber) relative to the YAML preset's chunk_size=512, even though the user explicitly chose those params. The override baseline should reflect the user's intent, not the YAML file.
 
 ## Notes
 
