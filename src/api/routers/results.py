@@ -66,10 +66,27 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         total = data.get("total_questions", len(per_q))
         timestamp = None
 
-    # Get recall@5 (keys may be int-strings)
+    # Get recall@5 and recall@10 (keys may be int-strings)
     avg_recall_at_5 = recall_at_k.get("5") or recall_at_k.get(5)
+    avg_recall_at_10 = recall_at_k.get("10") or recall_at_k.get(10)
 
     phase_name = _infer_phase_name(filepath.name, data)
+
+    # Extract config summary for new-format results
+    config_summary = None
+    if is_new_format and "config" in data:
+        c = data["config"]
+        config_summary = {
+            "technique": c.get("retrieval", {}).get("technique"),
+            "chunk_size": c.get("chunking", {}).get("chunk_size"),
+            "embedding_model": c.get("embedding", {}).get("model_name"),
+            "dataset_name": c.get("dataset", {}).get("dataset_name"),
+            "top_k": c.get("retrieval", {}).get("top_k"),
+            "llm_model": c.get("generation", {}).get("model"),
+            "distance_metric": c.get("vector_db", {}).get("distance_metric"),
+        }
+
+    total_wall_time_s = data.get("total_wall_time_s") if is_new_format else None
 
     # Store path relative to RESULTS_DIR so frontend can fetch subdirectory files
     try:
@@ -85,6 +102,9 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         format=fmt,
         avg_mrr=round(avg_mrr, 4),
         avg_recall_at_5=round(avg_recall_at_5, 4) if avg_recall_at_5 is not None else None,
+        avg_recall_at_10=round(avg_recall_at_10, 4) if avg_recall_at_10 is not None else None,
+        total_wall_time_s=round(total_wall_time_s, 2) if total_wall_time_s is not None else None,
+        config_summary=config_summary,
     )
     _file_info_cache[cache_key] = (mtime, info)
     return info

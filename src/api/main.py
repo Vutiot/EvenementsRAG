@@ -10,7 +10,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.ensure_qdrant import ensure_qdrant_running
-from src.api.routers import collections, config, datasets, health, query, results
+from src.api.routers import benchmark, collections, config, datasets, health, query, results
 
 
 @asynccontextmanager
@@ -42,3 +42,4 @@ app.include_router(query.router, prefix="/api", tags=["query"])
 app.include_router(results.router, prefix="/api", tags=["results"])
 app.include_router(collections.router, prefix="/api", tags=["collections"])
 app.include_router(datasets.router, prefix="/api", tags=["datasets"])
+app.include_router(benchmark.router, prefix="/api", tags=["benchmark"])

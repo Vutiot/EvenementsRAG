@@ -28,7 +28,7 @@ Usage:
 import json
 import time
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 from tqdm import tqdm
 
@@ -289,6 +289,7 @@ class BenchmarkRunner:
         collection_name: str,
         phase_name: str = "default",
         max_questions: Optional[int] = None,
+        progress_callback: Optional[Callable[[int, int, Dict], None]] = None,
     ) -> EvaluationResults:
         """
         Run complete benchmark evaluation.
@@ -329,7 +330,7 @@ class BenchmarkRunner:
         per_question_results = []
         total_retrieval_time = 0
 
-        for question in tqdm(questions, desc=f"Evaluating {phase_name}"):
+        for i, question in enumerate(tqdm(questions, desc=f"Evaluating {phase_name}")):
             # Query
             query_result = self.query_for_question(
                 question,
@@ -342,6 +343,9 @@ class BenchmarkRunner:
             per_question_results.append(evaluation)
 
             total_retrieval_time += evaluation["retrieval_time_ms"]
+
+            if progress_callback:
+                progress_callback(i, len(questions), evaluation)
 
         # Aggregate metrics
         all_metrics = [r["metrics"] for r in per_question_results]

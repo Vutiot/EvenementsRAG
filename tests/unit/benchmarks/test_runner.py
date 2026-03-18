@@ -223,6 +223,7 @@ class TestRun:
             collection_name=run_ctx["runner"].config.dataset.collection_name,
             phase_name=run_ctx["runner"].config.name,
             max_questions=5,
+            progress_callback=None,
         )
 
     def test_run_with_questions_file_override(

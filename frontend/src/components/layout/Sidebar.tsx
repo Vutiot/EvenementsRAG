@@ -13,8 +13,9 @@ const NAV_ITEMS = [
     ],
   },
   {
-    group: "Benchmark Results",
+    group: "Benchmark",
     items: [
+      { to: "/runs", label: "Runs" },
       { to: "/benchmarks", label: "Result Viewer" },
       { to: "/metrics", label: "Metric Dashboards" },
       { to: "/sweeps", label: "Sweep Visualizer" },

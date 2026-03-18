@@ -163,7 +163,6 @@ export default function CollectionManager() {
             embeddingModel={embeddingModel}
             distanceMetric={distanceMetric}
             onParamChange={handleParamChange}
-            mode="create"
             backendsAvailable={backendsAvailable}
           />
 

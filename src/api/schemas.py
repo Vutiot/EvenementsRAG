@@ -66,6 +66,9 @@ class ResultFileInfo(BaseModel):
     format: str  # "legacy" | "benchmark_result"
     avg_mrr: float
     avg_recall_at_5: float | None = None
+    avg_recall_at_10: float | None = None
+    total_wall_time_s: float | None = None
+    config_summary: dict | None = None
 
 
 class NormalizedQuestion(BaseModel):
@@ -177,6 +180,12 @@ class DatasetDetail(BaseModel):
     total_questions: int
     categories: list[dict]
     questions: list[dict]
+
+
+class BenchmarkRunRequest(BaseModel):
+    preset: str
+    config_overrides: dict | None = None
+    eval_dataset_id: str
 
 
 class NormalizedBenchmarkResult(BaseModel):

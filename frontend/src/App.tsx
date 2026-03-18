@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/layout/Sidebar";
 import QueryTester from "./pages/QueryTester";
 import BenchmarkViewer from "./pages/BenchmarkViewer";
+import BenchmarkRuns from "./pages/BenchmarkRuns";
 import MetricDashboards from "./pages/MetricDashboards";
 import SweepVisualizer from "./pages/SweepVisualizer";
 import CollectionManager from "./pages/CollectionManager";
@@ -17,6 +18,7 @@ export default function App() {
           <Route path="/query" element={<QueryTester />} />
           <Route path="/collections" element={<CollectionManager />} />
           <Route path="/evaluations" element={<DatasetManager />} />
+          <Route path="/runs" element={<BenchmarkRuns />} />
           <Route path="/benchmarks" element={<BenchmarkViewer />} />
           <Route path="/metrics" element={<MetricDashboards />} />
           <Route path="/sweeps" element={<SweepVisualizer />} />

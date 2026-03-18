@@ -1,7 +1,11 @@
 /** Fetch wrapper for /api/* endpoints. */
 
 import type {
+  BenchmarkCompleteEvent,
   BenchmarkConfig,
+  BenchmarkProgressEvent,
+  BenchmarkRunRequest,
+  BenchmarkStartedEvent,
   CollectionCreateRequest,
   CollectionCreateResponse,
   CollectionListResponse,
@@ -183,6 +187,84 @@ export function generateDataset(
 
   return controller;
 }
+
+// ---------------------------------------------------------------------------
+// Benchmark runs
+// ---------------------------------------------------------------------------
+
+/**
+ * Start a benchmark run via SSE streaming.
+ * Returns an AbortController to cancel the request.
+ */
+export function runBenchmark(
+  request: BenchmarkRunRequest,
+  callbacks: {
+    onStarted: (e: BenchmarkStartedEvent) => void;
+    onProgress: (e: BenchmarkProgressEvent) => void;
+    onComplete: (e: BenchmarkCompleteEvent) => void;
+    onError: (msg: string) => void;
+  },
+): AbortController {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const res = await fetch(`${BASE}/benchmark/run`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        callbacks.onError(`${res.status}: ${text}`);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        callbacks.onError("No response body");
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let currentEvent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            if (currentEvent === "started") callbacks.onStarted(data);
+            else if (currentEvent === "progress") callbacks.onProgress(data);
+            else if (currentEvent === "complete") callbacks.onComplete(data);
+            else if (currentEvent === "error") callbacks.onError(data.message);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if ((err as Error).name !== "AbortError") {
+        callbacks.onError(err instanceof Error ? err.message : String(err));
+      }
+    }
+  })();
+
+  return controller;
+}
+
+// ---------------------------------------------------------------------------
+// Query execution
+// ---------------------------------------------------------------------------
 
 export function executeQuery(
   query: string,

@@ -7,11 +7,12 @@ interface Props {
 const METRIC_KEYS = [
   { key: "recall_at_1", label: "Recall@1" },
   { key: "recall_at_5", label: "Recall@5" },
+  { key: "recall_at_10", label: "Recall@10" },
   { key: "mrr", label: "MRR" },
   { key: "ndcg_at_5", label: "NDCG@5" },
 ];
 
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#8b5cf6"];
+const COLORS = ["#3b82f6", "#10b981", "#ef4444", "#f59e0b", "#8b5cf6"];
 
 export default function MetricsByTypeChart({ metricsByType }: Props) {
   const types = Object.keys(metricsByType);

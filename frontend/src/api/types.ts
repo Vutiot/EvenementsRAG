@@ -33,6 +33,17 @@ export interface ResultFileInfo {
   format: "legacy" | "benchmark_result";
   avg_mrr: number;
   avg_recall_at_5: number | null;
+  avg_recall_at_10: number | null;
+  total_wall_time_s: number | null;
+  config_summary: {
+    technique: string | null;
+    chunk_size: number | null;
+    embedding_model: string | null;
+    dataset_name: string | null;
+    top_k: number | null;
+    llm_model: string | null;
+    distance_metric: string | null;
+  } | null;
 }
 
 /** Single normalized question from a benchmark result */
@@ -241,6 +252,36 @@ export interface BenchmarkConfig {
     distance_metric: string;
     connection_params: Record<string, unknown> | null;
   };
+}
+
+/** Benchmark run types */
+export interface BenchmarkRunRequest {
+  preset: string;
+  config_overrides: Record<string, unknown> | null;
+  eval_dataset_id: string;
+}
+
+export interface BenchmarkStartedEvent {
+  total_questions: number;
+  config_hash: string;
+}
+
+export interface BenchmarkProgressEvent {
+  question_index: number;
+  total_questions: number;
+  question_id: string;
+  question_type: string;
+  retrieval_time_ms: number;
+}
+
+export interface BenchmarkCompleteEvent {
+  filename: string;
+  phase_name: string;
+  total_questions: number;
+  avg_mrr: number;
+  avg_recall_at_5: number;
+  avg_recall_at_10: number;
+  total_wall_time_s: number;
 }
 
 /** Chunk highlighting types */

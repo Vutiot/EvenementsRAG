@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import ParamChips from "./ParamChips";
 import ParamSlider from "./ParamSlider";
-import CollectionSection, { type CollectionMode } from "./CollectionSection";
+import CollectionSection from "./CollectionSection";
 import type { BenchmarkConfig } from "../../api/types";
 import type { ParsedCollectionParams } from "../../constants/paramOptions";
 import {
@@ -69,6 +69,7 @@ interface ParameterModalProps {
   overrides: Record<string, unknown>;
   onOverrideChange: (path: string, value: unknown) => void;
   onReset: () => void;
+  hideSections?: Set<string>;
 }
 
 // ── Component ────────────────────────────────────────────────────────
@@ -80,8 +81,10 @@ export default function ParameterModal({
   overrides,
   onOverrideChange,
   onReset,
+  hideSections,
 }: ParameterModalProps) {
-  const [collectionMode, setCollectionMode] = useState<CollectionMode>("create");
+  // When a collection is imported, stores the imported values as the new preset baseline for chips
+  const [collectionPresetOverride, setCollectionPresetOverride] = useState<Record<string, unknown> | null>(null);
 
   // Close on Escape
   useEffect(() => {
@@ -93,10 +96,10 @@ export default function ParameterModal({
     return () => window.removeEventListener("keydown", handler);
   }, [open, onClose]);
 
-  // Reset collection mode when all overrides are cleared
+  // Clear collection preset override when all overrides are cleared
   useEffect(() => {
     if (Object.keys(overrides).length === 0) {
-      setCollectionMode("create");
+      setCollectionPresetOverride(null);
     }
   }, [overrides]);
 
@@ -157,14 +160,14 @@ export default function ParameterModal({
       handleChange("vector_db.distance_metric", params.distanceMetric);
       const dim = EMBEDDING_DIMENSION_MAP[params.embeddingModel];
       if (dim) handleChange("embedding.dimension", dim);
-    }
-  };
-
-  const handleModeChange = (mode: CollectionMode) => {
-    setCollectionMode(mode);
-    if (mode === "create") {
-      // Clear explicit collection_name when switching to create (ensureCollection will derive it)
-      handleChange("dataset.collection_name", undefined);
+      // Store imported values as the new baseline so chips show blue
+      setCollectionPresetOverride({
+        backend: params.backend,
+        chunkSize: params.chunkSize,
+        chunkOverlap: params.chunkOverlap,
+        embeddingModel: params.embeddingModel,
+        distanceMetric: params.distanceMetric,
+      });
     }
   };
 
@@ -218,17 +221,25 @@ export default function ParameterModal({
               chunkOverlap={effective("chunking.chunk_overlap") as number}
               embeddingModel={effective("embedding.model_name") as string}
               distanceMetric={effective("vector_db.distance_metric") as string}
-              presetValues={{
-                backend: preset("vector_db.backend") as string,
-                chunkSize: preset("chunking.chunk_size") as number,
-                chunkOverlap: preset("chunking.chunk_overlap") as number,
-                embeddingModel: preset("embedding.model_name") as string,
-                distanceMetric: preset("vector_db.distance_metric") as string,
-              }}
+              presetValues={
+                collectionPresetOverride
+                  ? {
+                      backend: collectionPresetOverride.backend as string,
+                      chunkSize: collectionPresetOverride.chunkSize as number,
+                      chunkOverlap: collectionPresetOverride.chunkOverlap as number,
+                      embeddingModel: collectionPresetOverride.embeddingModel as string,
+                      distanceMetric: collectionPresetOverride.distanceMetric as string,
+                    }
+                  : {
+                      backend: preset("vector_db.backend") as string,
+                      chunkSize: preset("chunking.chunk_size") as number,
+                      chunkOverlap: preset("chunking.chunk_overlap") as number,
+                      embeddingModel: preset("embedding.model_name") as string,
+                      distanceMetric: preset("vector_db.distance_metric") as string,
+                    }
+              }
               onParamChange={handleCollectionParamChange}
               onCollectionSelect={handleCollectionSelect}
-              mode={collectionMode}
-              onModeChange={handleModeChange}
             />
           </Section>
 
@@ -347,6 +358,8 @@ export default function ParameterModal({
                   }
                 }}
               />
+              {(effective("generation.model") as string) !== "__none__" && (
+              <>
               <ParamSlider
                 label="Temperature"
                 min={0}
@@ -363,18 +376,23 @@ export default function ParameterModal({
                 presetValue={preset("generation.max_tokens") as number}
                 onChange={(v) => handleChange("generation.max_tokens", v)}
               />
+              </>
+              )}
             </div>
           </Section>
 
-          {/* ── Part 4: System Prompt ── */}
+          {/* ── Part 4: System Prompt (hidden when generation disabled) ── */}
+          {(effective("generation.model") as string) !== "__none__" && (
           <Section title="System Prompt">
             <SystemPromptSection
               currentPrompt={(effective("generation.system_prompt") as string) ?? ""}
               onPromptChange={(v) => handleChange("generation.system_prompt", v)}
             />
           </Section>
+          )}
 
-          {/* ── Part 5: Results ── */}
+          {/* ── Part 5: Results (hidden when generation disabled) ── */}
+          {!hideSections?.has("Results") && (effective("generation.model") as string) !== "__none__" && (
           <Section title="Results">
             <div className="flex items-center justify-between">
               <div>
@@ -404,6 +422,7 @@ export default function ParameterModal({
               </button>
             </div>
           </Section>
+          )}
         </div>
 
         {/* Footer */}

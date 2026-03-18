@@ -21,7 +21,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
+from typing import Callable, Dict, List, Optional
 
 from src.benchmarks.config import BenchmarkConfig
 from src.evaluation.benchmark_runner import BenchmarkRunner
@@ -215,6 +215,7 @@ class ParameterizedBenchmarkRunner:
         questions_file: Optional[Path] = None,
         max_questions: Optional[int] = None,
         output_dir=None,
+        progress_callback: Optional[Callable[[int, int, Dict], None]] = None,
     ) -> BenchmarkResult:
         """Run a full benchmark and return a BenchmarkResult.
 
@@ -265,6 +266,7 @@ class ParameterizedBenchmarkRunner:
             collection_name=self.config.dataset.collection_name,
             phase_name=self.config.name,
             max_questions=max_questions,
+            progress_callback=progress_callback,
         )
 
         # Work on a mutable copy of per-question results
