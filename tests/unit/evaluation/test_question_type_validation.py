@@ -4,7 +4,6 @@ import json
 from unittest.mock import MagicMock, patch
 
 import pytest
-from pydantic import ValidationError
 
 from src.evaluation.question_generator import (
     VALID_QUESTION_TYPES,
@@ -168,13 +167,13 @@ class TestDatasetCategoryConfigValidator:
         )
         assert cfg.type == "factual"
 
-    def test_invalid_type_rejected(self):
+    def test_any_type_accepted(self):
         from src.api.schemas import DatasetCategoryConfig
 
-        with pytest.raises(ValidationError, match="Invalid question type"):
-            DatasetCategoryConfig(
-                type="unknown", prompt="p", model="m", count=1
-            )
+        cfg = DatasetCategoryConfig(
+            type="unknown", prompt="p", model="m", count=1
+        )
+        assert cfg.type == "unknown"
 
     @pytest.mark.parametrize("qtype", sorted(VALID_QUESTION_TYPES))
     def test_all_taxonomy_types_accepted_in_schema(self, qtype: str):

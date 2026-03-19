@@ -957,6 +957,14 @@ Rationale: consistency across modals reduces cognitive overhead. Both modals pre
 **`collectionPresetOverride` state in ParameterModal**: when importing a collection, its parsed params become the new chip baseline (blue) instead of the YAML preset, preventing amber "override" appearance for intentional imports.
 Rationale: without this, importing a collection like `wiki_10k_cs256_co50` would show chunk_size=256 as an "override" (amber) relative to the YAML preset's chunk_size=512, even though the user explicitly chose those params. The override baseline should reflect the user's intent, not the YAML file.
 
+### Dataset Generation — Remove LLM Type Validation
+
+**Removed `validate_question_type` from dataset generation; assign `cat.type` directly as metadata.**
+Rationale: the LLM sometimes returns unexpected `type` values (e.g. `"unknown"`) in its JSON response, causing valid questions to be dropped. Since the category type is already known from `DatasetCategoryConfig`, asking the LLM to echo it back and then validating the echo is redundant. Removing the `"type"` field from the LLM prompt JSON template and assigning `cat.type` directly eliminates this failure mode.
+
+**Removed `check_type_in_taxonomy` validator from `DatasetCategoryConfig` schema.**
+Rationale: the validator blocked `Query_Styles` preset types (`well_redacted`, `grammar_typos`, etc.) that are valid category types but not in `VALID_QUESTION_TYPES`. Since the type field is user-provided metadata (not a taxonomy constraint), any string should be accepted.
+
 ## Notes
 
 - Tasks marked ✅ are **done**
