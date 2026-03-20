@@ -268,7 +268,7 @@ Implements parameterized testing across all dimensions: datasets, vector DBs, ch
 - blocked_by: [E1-F2-T2]
 - status: done
 - effort: M
-- agent_hint: Add top_k_chunks, top_k_articles, llm_model, prompt_template to config. Support LLM model switching (free OpenRouter models). Benchmark generation quality & latency.
+- agent_hint: Add top_k_chunks, top_k_articles, llm_model, prompt_template to config. Support LLM model switching (NVIDIA API models). Benchmark generation quality & latency.
 - description: Make generation configurable: top_k_chunks, top_k_articles, LLM model selection, prompt templates. Measure impact on answer quality and latency.
 
 ---
@@ -349,7 +349,7 @@ Web interface for testing individual queries and visualizing benchmark results.
 - blocked_by: [E3-F3-T2]
 - status: done
 - effort: L
-- description: Backend service for dataset CRUD (list/detail/delete) and SSE-streaming question generation. Uses OpenRouter LLM to generate categorized evaluation questions from collection chunks. Files: `src/api/routers/datasets.py`, `src/api/dataset_service.py`, `src/api/schemas.py` (DatasetCreateRequest, DatasetInfo, DatasetDetail), `src/api/dependencies.py` (DATASETS_DIR, QDRANT_PERSIST_DIR), `src/api/main.py` (router registration).
+- description: Backend service for dataset CRUD (list/detail/delete) and SSE-streaming question generation. Uses NVIDIA API LLM to generate categorized evaluation questions from collection chunks. Files: `src/api/routers/datasets.py`, `src/api/dataset_service.py`, `src/api/schemas.py` (DatasetCreateRequest, DatasetInfo, DatasetDetail), `src/api/dependencies.py` (DATASETS_DIR, QDRANT_PERSIST_DIR), `src/api/main.py` (router registration).
 
 ##### ✅ E3-F4-T2: Dataset Manager UI with editable categories
 - blocked_by: [E3-F4-T1]
@@ -580,7 +580,7 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - **Unit tests**: `tests/unit/benchmarks/` — 39 tests, 98% coverage on `config.py`, 90% on `runner.py`
 
 ✅ **E3-F4-T1/T2/T3 – Dataset Management (API, UI, Query Tester Integration)**
-- **Backend**: `src/api/routers/datasets.py` + `src/api/dataset_service.py` — SSE streaming generation, CRUD endpoints (list/detail/delete), OpenRouter LLM question generation with per-category prompts
+- **Backend**: `src/api/routers/datasets.py` + `src/api/dataset_service.py` — SSE streaming generation, CRUD endpoints (list/detail/delete), NVIDIA API LLM question generation with per-category prompts
 - **Schemas**: `src/api/schemas.py` — DatasetCreateRequest, DatasetCategoryConfig, DatasetInfo, DatasetDetail, DatasetListResponse
 - **Frontend**: `frontend/src/pages/DatasetManager.tsx` — card-based category editor with editable type names (inline `<input>` replacing static badges), add/delete cards, counter-based stable React keys, Nemotron Nano 30B default, live SSE progress, expandable dataset detail view with question tables
 - **API client**: `frontend/src/api/client.ts` — `generateDataset()` SSE stream parser, `getDatasets()`, `getDataset()`, `deleteDataset()`
@@ -678,8 +678,8 @@ Rationale: `query()` bundles retrieval + generation into one call with no way to
 **`_filter_top_k_articles()` module-level helper** (not a method).
 Rationale: Pure function that can be unit-tested in isolation without instantiating a runner. Ranks articles by their highest-scored chunk, then keeps all chunks belonging to the top-k articles — preserves multi-chunk context per article rather than naively truncating by rank.
 
-**`OPENROUTER_FREE_MODELS` constant** at module level in `config.py`.
-Rationale: Centralises the list of free models for `model_sweep()` and makes it trivially importable in tests and scripts without constructing a config object.
+**`NVIDIA_MODELS` constant** at module level in `config.py`.
+Rationale: Centralises the list of NVIDIA API models for `model_sweep()` and makes it trivially importable in tests and scripts without constructing a config object.
 
 ### E1-F1-T3 — Result serialization & auto-save
 
@@ -759,10 +759,10 @@ Rationale: the summary shape evolves as new metric types are added (RAGAS in E1-
 Rationale: RAGAS has complex setup (LLM, embeddings, RunConfig, EvaluationDataset construction) that would bloat MetricsCollector. MetricsCollector delegates via `compute_ragas_metrics()` → `_ensure_ragas_evaluator()` → `RagasEvaluator.evaluate()`.
 
 **`ragas_evaluator_model` separate from `generation.model`**.
-Rationale: the evaluator LLM should be at least as capable as the model being benchmarked. Defaulting to `mistral-small-3.1-24b-instruct:free` allows free-tier evaluation while the benchmarked model can be anything.
+Rationale: the evaluator LLM should be at least as capable as the model being benchmarked. Defaulting to `mistral-small-4-119b-2603` via NVIDIA API allows evaluation while the benchmarked model can be anything.
 
 **`ragas_max_workers=1` default**.
-Rationale: OpenRouter free tier ~16 req/min. Serial execution prevents rate limit errors. Users can increase to 8 with paid keys.
+Rationale: Serial execution prevents rate limit errors. Users can increase to 8 with higher-tier API keys.
 
 **Local sentence-transformers for RAGAS embeddings** via `langchain-huggingface` wrapping `all-MiniLM-L6-v2`.
 Rationale: free, fast, no API key needed. Uses the same model as the project's default embeddings.
@@ -858,7 +858,7 @@ Rationale: the RAG pipeline (embedding, vector search, LLM call) is synchronous.
 ### E3-F1-T3 — Root-Level Dynamic Preset for Model Switching
 
 **Two-file pattern: `default.yaml` + `user-config.yaml`** (with YAML merging in code).
-Rationale: Users want to change the LLM model (via `.env`'s `OPENROUTER_MODEL`) and test it in queries without modifying version-controlled preset files. The `default.yaml` preset provides a stable base (version-controlled), while `user-config.yaml` (gitignored) allows users to override specific fields. Deep-merge at load time means users only specify changed fields — no need to repeat all 100+ config lines.
+Rationale: Users want to change the LLM model (via `.env`'s `NVIDIA_MODEL`) and test it in queries without modifying version-controlled preset files. The `default.yaml` preset provides a stable base (version-controlled), while `user-config.yaml` (gitignored) allows users to override specific fields. Deep-merge at load time means users only specify changed fields — no need to repeat all 100+ config lines.
 
 **Merge applied only to "default" preset at API load time** (`BenchmarkConfig.load_with_user_overrides()`).
 Rationale: other presets (phase1, phase2, sweeps) are experimental and fixed by design — they should not be affected by user overrides. Only the "default" preset is intended for interactive, user-facing queries.

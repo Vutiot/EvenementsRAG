@@ -4,18 +4,18 @@
 #
 # To use a different model from your .env:
 #   1. Edit the generation.model line below (uncomment it)
-#   2. Set it to the model you want (e.g., from OPENROUTER_MODEL in .env)
+#   2. Set it to the model you want (e.g., from NVIDIA_MODEL in .env)
 #   3. Restart the backend
 #
 # Example (uncomment to use):
 # generation:
-#   model: meta-llama/llama-3.3-70b-instruct:free
+#   model: meta/llama-3.3-70b-instruct
 #   temperature: 0.5
 #   max_tokens: 3000
 #
 # You can override any field from default.yaml here. Only include the fields you want to change.
 # Example - uncomment to override the model:
 generation:
-  model: nvidia/nemotron-3-nano-30b-a3b:free
+  model: mistralai/mistral-small-4-119b-2603
   temperature: 0.5
   max_tokens: 3000

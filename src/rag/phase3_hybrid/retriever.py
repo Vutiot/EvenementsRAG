@@ -117,18 +117,14 @@ class HybridRetriever(BaseRAG):
         if llm_client:
             self.llm_client = llm_client
         else:
-            if not settings.OPENROUTER_API_KEY:
+            if not settings.NVIDIA_API_KEY:
                 logger.warning(
-                    "OpenRouter API key not set. Generation will fail. "
-                    "Set OPENROUTER_API_KEY in .env file."
+                    "NVIDIA API key not set. Generation will fail. "
+                    "Set NVIDIA_API_KEY in .env file."
                 )
             self.llm_client = openai.OpenAI(
-                api_key=settings.OPENROUTER_API_KEY,
-                base_url=settings.OPENROUTER_BASE_URL,
-                default_headers={
-                    "HTTP-Referer": "http://localhost:8000",
-                    "X-Title": "EvenementsRAG",
-                },
+                api_key=settings.NVIDIA_API_KEY,
+                base_url=settings.NVIDIA_BASE_URL,
             )
 
         logger.info(
@@ -206,7 +202,7 @@ class HybridRetriever(BaseRAG):
             {"role": "user", "content": prompt},
         ]
 
-        # DEBUG: print exact payload sent to OpenRouter
+        # DEBUG: print exact payload sent to LLM
         print("=" * 60)
         print(f"[DEBUG LLM CALL] model={llm_model}")
         print(f"[DEBUG LLM CALL] temperature={temperature}, max_tokens={max_tokens}")

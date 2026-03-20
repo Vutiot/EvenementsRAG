@@ -20,9 +20,9 @@ evaluation:
   - 10
 generation:
   enabled: true
-  llm_provider: openrouter
+  llm_provider: nvidia
   max_tokens: 2000
-  model: mistralai/mistral-small-3.1-24b-instruct:free
+  model: mistralai/mistral-small-4-119b-2603
   temperature: 0.0
   top_k_chunks: 5
 name: wiki_em_bge_base

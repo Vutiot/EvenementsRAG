@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Generate evaluation questions from document chunks using OpenRouter Mistral Small.
+Generate evaluation questions from document chunks using NVIDIA API.
 
 This script samples chunks from Qdrant and uses LLM to generate diverse questions
 across different taxonomic categories.
@@ -95,7 +95,7 @@ Question Type Distribution:
         "-m",
         type=str,
         default=settings.QUESTION_GEN_MODEL,
-        help=f"OpenRouter model to use (default: {settings.QUESTION_GEN_MODEL})",
+        help=f"NVIDIA model to use (default: {settings.QUESTION_GEN_MODEL})",
     )
 
     parser.add_argument(
@@ -130,14 +130,14 @@ def main():
     print_header()
 
     # Check API key
-    if not settings.OPENROUTER_API_KEY:
-        logger.error("OpenRouter API key not set!")
-        print("❌ Error: OPENROUTER_API_KEY not found in environment")
+    if not settings.NVIDIA_API_KEY:
+        logger.error("NVIDIA API key not set!")
+        print("❌ Error: NVIDIA_API_KEY not found in environment")
         print()
-        print("Please set your OpenRouter API key:")
-        print("  1. Get a free API key from https://openrouter.ai/")
+        print("Please set your NVIDIA API key:")
+        print("  1. Get an API key from https://build.nvidia.com/")
         print("  2. Add to your .env file:")
-        print("     OPENROUTER_API_KEY=your_key_here")
+        print("     NVIDIA_API_KEY=your_key_here")
         print()
         sys.exit(1)
 

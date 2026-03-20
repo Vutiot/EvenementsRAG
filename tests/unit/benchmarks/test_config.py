@@ -14,7 +14,7 @@ import pytest
 from pydantic import ValidationError
 
 from src.benchmarks.config import (
-    OPENROUTER_FREE_MODELS,
+    NVIDIA_MODELS,
     BenchmarkConfig,
     ChunkingConfig,
     DatasetConfig,
@@ -356,15 +356,15 @@ class TestGenerationSweeps:
         configs = vanilla_config.model_sweep()
         assert len(configs) == 3
 
-    def test_model_sweep_uses_openrouter_free_models(self, vanilla_config):
+    def test_model_sweep_uses_nvidia_models(self, vanilla_config):
         configs = vanilla_config.model_sweep()
         models = [c.generation.model for c in configs]
-        assert models == OPENROUTER_FREE_MODELS
+        assert models == NVIDIA_MODELS
 
-    def test_model_sweep_forces_openrouter_provider(self, vanilla_config):
+    def test_model_sweep_forces_nvidia_provider(self, vanilla_config):
         configs = vanilla_config.model_sweep()
         for cfg in configs:
-            assert cfg.generation.llm_provider == "openrouter"
+            assert cfg.generation.llm_provider == "nvidia"
 
     def test_model_sweep_names_contain_model_prefix(self, vanilla_config):
         configs = vanilla_config.model_sweep()
@@ -389,7 +389,7 @@ class TestEvaluationConfigRagas:
         assert len(cfg.ragas_metrics) == 12
         assert "faithfulness" in cfg.ragas_metrics
         assert "answer_relevancy" in cfg.ragas_metrics
-        assert cfg.ragas_evaluator_model == "mistralai/mistral-small-3.1-24b-instruct:free"
+        assert cfg.ragas_evaluator_model == "mistralai/mistral-small-4-119b-2603"
         assert cfg.ragas_max_workers == 1
         assert cfg.ragas_timeout == 180
 
@@ -420,7 +420,7 @@ class TestLoadWithUserOverrides:
         base_path = Path("config/benchmarks/default.yaml")
         cfg = BenchmarkConfig.load_with_user_overrides(base_path)
         assert cfg.name == "default"
-        assert cfg.generation.model == "mistralai/mistral-small-3.1-24b-instruct:free"
+        assert cfg.generation.model == "mistralai/mistral-small-4-119b-2603"
 
     def test_load_with_empty_user_config_file(self, tmp_path):
         """Loading with empty user config file (no content) returns base config."""
@@ -430,7 +430,7 @@ class TestLoadWithUserOverrides:
 
         cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
         assert cfg.name == "default"
-        assert cfg.generation.model == "mistralai/mistral-small-3.1-24b-instruct:free"
+        assert cfg.generation.model == "mistralai/mistral-small-4-119b-2603"
 
     def test_load_with_single_field_override(self, tmp_path):
         """User config overrides a single field in base config."""
@@ -459,8 +459,8 @@ class TestLoadWithUserOverrides:
         assert cfg.generation.model == "custom-model:free"
         assert cfg.generation.temperature == 0.5
         assert cfg.generation.max_tokens == 1000
-        # Other generation fields should remain unchanged
-        assert cfg.generation.top_k_chunks == 5
+        # Other generation fields should remain unchanged (from default.yaml)
+        assert cfg.generation.top_k_chunks == 3
 
     def test_load_with_nested_override(self, tmp_path):
         """User config can override nested fields across different sections."""
@@ -485,14 +485,14 @@ class TestLoadWithUserOverrides:
 
         cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
         assert cfg.name == "default"
-        assert cfg.generation.model == "mistralai/mistral-small-3.1-24b-instruct:free"
+        assert cfg.generation.model == "mistralai/mistral-small-4-119b-2603"
 
     def test_load_with_none_user_path(self):
         """If user_config_path is None, returns base config."""
         base_path = Path("config/benchmarks/default.yaml")
         cfg = BenchmarkConfig.load_with_user_overrides(base_path, None)
         assert cfg.name == "default"
-        assert cfg.generation.model == "mistralai/mistral-small-3.1-24b-instruct:free"
+        assert cfg.generation.model == "mistralai/mistral-small-4-119b-2603"
 
     def test_load_preserves_config_hash_on_no_override(self, tmp_path):
         """Config hash should be the same if user config doesn't override anything."""

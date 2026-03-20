@@ -117,9 +117,9 @@ export const RERANKER_MODEL_OPTIONS: Record<string, { value: string; label: stri
 
 export const LLM_MODELS: { value: string; label: string }[] = [
   { value: "__none__", label: "None" },
-  { value: "mistralai/mistral-small-3.1-24b-instruct:free", label: "Mistral" },
-  { value: "meta-llama/llama-3.1-8b-instruct:free", label: "Llama" },
-  { value: "google/gemma-2-9b-it:free", label: "Gemma" },
+  { value: "mistralai/mistral-small-4-119b-2603", label: "Mistral Small 4 119B" },
+  { value: "google/gemma-3-27b-it", label: "Gemma 3 27B" },
+  { value: "meta/llama-3.3-70b-instruct", label: "Llama 3.3 70B" },
 ];
 
 export const MAX_TOKENS_OPTIONS = [

@@ -117,9 +117,9 @@ All configuration is managed through environment variables in `.env` file:
 ### Required API Keys
 
 ```bash
-# OpenRouter (Recommended - Free Mistral models available)
-# Get your free key from: https://openrouter.ai/keys
-OPENROUTER_API_KEY=your_key_here
+# NVIDIA API (Recommended)
+# Get your key from: https://build.nvidia.com/
+NVIDIA_API_KEY=your_key_here
 
 # OR use other providers (optional):
 # Anthropic (for Claude models)
@@ -132,11 +132,11 @@ OPENAI_API_KEY=your_key_here
 ### Key Configuration Options
 
 ```bash
-# LLM Provider (openrouter, anthropic, or openai)
-LLM_PROVIDER=openrouter
+# LLM Provider (nvidia, anthropic, or openai)
+LLM_PROVIDER=nvidia
 
-# OpenRouter model (free Mistral model)
-OPENROUTER_MODEL=mistralai/mistral-small-3.1-24b-instruct:free
+# NVIDIA API model
+NVIDIA_MODEL=mistralai/mistral-small-4-119b-2603
 
 # Embedding Model
 EMBEDDING_MODEL=sentence-transformers/all-MiniLM-L6-v2
@@ -267,7 +267,7 @@ See [`docs/question_types_taxonomy.md`](docs/question_types_taxonomy.md) for com
 - **Qdrant**: Vector database for embeddings
 - **sentence-transformers**: Embedding generation
 - **LangChain**: LLM orchestration
-- **OpenRouter (Mistral)**: LLM generation (free tier available)
+- **NVIDIA API**: LLM generation (Mistral, Gemma, Llama models)
 - **Alternative LLMs**: Anthropic Claude / OpenAI GPT (optional)
 
 ### NLP & Processing
@@ -321,7 +321,7 @@ MIT License (to be added)
 ## Acknowledgments
 
 - Wikipedia for historical data
-- OpenRouter for free LLM access
+- NVIDIA for API access to open models
 - Mistral AI for open models
 - Qdrant team for vector database
 - LangChain community

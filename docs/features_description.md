@@ -8,7 +8,7 @@
 
 - **Centralized Pydantic Settings** (`config/settings.py`): All settings loaded from `.env` with type validation, defaults, and computed properties
 - **Period Configuration** (`config/periods/world_war_2.yaml`): YAML-based domain config with seed articles (75+), Wikipedia categories (6 major + 30 subcategories), entity types (30+), geographic regions (5 theaters), crawl parameters (depth, rate limits, parallelism), and validation rules
-- **Multi-provider LLM support**: OpenRouter (default, free Mistral models), Anthropic (Claude), OpenAI (GPT) — switchable via `LLM_PROVIDER` env var
+- **Multi-provider LLM support**: NVIDIA API (default, Mistral/Gemma/Llama models), Anthropic (Claude), OpenAI (GPT) — switchable via `LLM_PROVIDER` env var
 - **All parameters environment-injectable**: API keys, Qdrant connection, embedding model, chunk sizes, retrieval weights, evaluation thresholds
 
 ---
@@ -76,7 +76,7 @@
 
 ### Phase 1 — Vanilla RAG (`src/rag/phase1_vanilla/retriever.py`) — **IMPLEMENTED**
 - Pure semantic search via Qdrant cosine similarity
-- LLM generation via OpenAI-compatible API (OpenRouter default)
+- LLM generation via OpenAI-compatible API (NVIDIA API default)
 - Historian-persona prompt template with context injection
 - Temperature=0.0 for deterministic output, max_tokens=2000
 - Fallback to context summary on LLM error
@@ -204,12 +204,12 @@ The system supports two evaluation granularities documented in `docs/chunk_vs_ar
 **Class: QuestionGenerator**
 
 **Initialization**:
-- `api_key`: OpenRouter API key (from settings)
-- `model`: defaults to `settings.QUESTION_GEN_MODEL` (mistralai/mistral-small-3.1-24b-instruct:free)
-- `base_url`: OpenRouter base URL
+- `api_key`: NVIDIA API key (from settings)
+- `model`: defaults to `settings.QUESTION_GEN_MODEL` (mistralai/mistral-small-4-119b-2603)
+- `base_url`: NVIDIA API base URL
 - `qdrant_manager`: optional QdrantManager instance
 - `skip_api_init`: for testing without API
-- Uses OpenAI SDK client pointed at OpenRouter endpoint
+- Uses OpenAI SDK client pointed at NVIDIA API endpoint
 
 **6-Type Question Taxonomy** with target distribution:
 ```
@@ -469,7 +469,7 @@ analytical:     10% — "Summarize", "Why significant?", synthesis
 - **Runtime**: Python 3.10+, Poetry dependency management
 - **Vector DB**: Qdrant (Docker, cloud, or in-memory)
 - **Embeddings**: sentence-transformers (all-MiniLM-L6-v2, 384-dim)
-- **LLM**: OpenRouter (free Mistral), Anthropic Claude, OpenAI GPT via OpenAI SDK
+- **LLM**: NVIDIA API (Mistral, Gemma, Llama), Anthropic Claude, OpenAI GPT via OpenAI SDK
 - **NLP**: spaCy (NER), dateparser/datefinder, rank-bm25, tiktoken, Wikipedia API, BeautifulSoup4
 - **Evaluation**: RAGAS, BERTScore, ROUGE
 - **Graph (planned)**: NetworkX (dev), Neo4j (prod), pyvis (visualization)

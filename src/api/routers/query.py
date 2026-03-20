@@ -161,12 +161,8 @@ async def highlight_chunks(request: HighlightChunksRequest):
     generation_time_ms or any generation metrics.
     """
     client = openai.AsyncOpenAI(
-        api_key=settings.OPENROUTER_API_KEY,
-        base_url=settings.OPENROUTER_BASE_URL,
-        default_headers={
-            "HTTP-Referer": "http://localhost:8000",
-            "X-Title": "EvenementsRAG",
-        },
+        api_key=settings.NVIDIA_API_KEY,
+        base_url=settings.NVIDIA_BASE_URL,
     )
 
     tasks = [

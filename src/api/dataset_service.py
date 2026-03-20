@@ -194,10 +194,10 @@ class DatasetService:
             yield self._sse("error", {"message": "No chunks found in collection."})
             return
 
-        # Init OpenAI client (OpenRouter)
+        # Init OpenAI client (NVIDIA API)
         client = openai.OpenAI(
-            api_key=settings.OPENROUTER_API_KEY,
-            base_url=settings.OPENROUTER_BASE_URL,
+            api_key=settings.NVIDIA_API_KEY,
+            base_url=settings.NVIDIA_BASE_URL,
         )
 
         start_time = time.time()

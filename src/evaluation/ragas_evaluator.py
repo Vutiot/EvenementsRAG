@@ -110,7 +110,7 @@ def _load_ragas_metrics() -> Dict[str, Any]:
 
 
 def _build_evaluator_llm(eval_config: EvaluationConfig):
-    """Create LLM for RAGAS evaluation via LangChain + OpenRouter."""
+    """Create LLM for RAGAS evaluation via LangChain + NVIDIA API."""
     try:
         from langchain_openai import ChatOpenAI
     except ImportError as exc:
@@ -123,8 +123,8 @@ def _build_evaluator_llm(eval_config: EvaluationConfig):
 
     llm = ChatOpenAI(
         model=eval_config.ragas_evaluator_model,
-        openai_api_key=settings.OPENROUTER_API_KEY,
-        openai_api_base=settings.OPENROUTER_BASE_URL,
+        openai_api_key=settings.NVIDIA_API_KEY,
+        openai_api_base=settings.NVIDIA_BASE_URL,
         temperature=0,
     )
 

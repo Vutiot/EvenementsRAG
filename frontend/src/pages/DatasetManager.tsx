@@ -114,11 +114,9 @@ const BUILTIN_PRESETS: CategoryPreset[] = [
 // ── Constants ────────────────────────────────────────────────────────
 
 const LLM_MODELS = [
-  { value: "nvidia/nemotron-3-nano-30b-a3b:free", label: "Nemotron Nano 30B (free)" },
-  { value: "mistralai/mistral-small-3.1-24b-instruct:free", label: "Mistral Small 3.1 (free)" },
-  { value: "google/gemma-3-4b-it:free", label: "Gemma 3 4B (free)" },
-  { value: "meta-llama/llama-4-scout:free", label: "Llama 4 Scout (free)" },
-  { value: "qwen/qwen3-8b:free", label: "Qwen 3 8B (free)" },
+  { value: "mistralai/mistral-small-4-119b-2603", label: "Mistral Small 4 119B" },
+  { value: "google/gemma-3-27b-it", label: "Gemma 3 27B" },
+  { value: "meta/llama-3.3-70b-instruct", label: "Llama 3.3 70B" },
 ];
 
 const LOCALSTORAGE_KEY = "evalCategoryPresets";

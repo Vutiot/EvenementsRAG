@@ -68,9 +68,9 @@ class Settings(BaseSettings):
         description="OpenAI API key for GPT models",
     )
 
-    OPENROUTER_API_KEY: str = Field(
+    NVIDIA_API_KEY: str = Field(
         default="",
-        description="OpenRouter API key for accessing various models",
+        description="NVIDIA API key for accessing models via build.nvidia.com",
     )
 
     # ========================================================================
@@ -131,8 +131,8 @@ class Settings(BaseSettings):
     # ========================================================================
     # LLM Configuration
     # ========================================================================
-    LLM_PROVIDER: Literal["anthropic", "openai", "openrouter"] = Field(
-        default="openrouter",
+    LLM_PROVIDER: Literal["anthropic", "openai", "nvidia"] = Field(
+        default="nvidia",
         description="LLM provider to use",
     )
 
@@ -146,14 +146,14 @@ class Settings(BaseSettings):
         description="OpenAI model identifier",
     )
 
-    OPENROUTER_MODEL: str = Field(
-        default="mistralai/mistral-small-3.1-24b-instruct:free",
-        description="OpenRouter model identifier",
+    NVIDIA_MODEL: str = Field(
+        default="mistralai/mistral-small-4-119b-2603",
+        description="NVIDIA API model identifier",
     )
 
-    OPENROUTER_BASE_URL: str = Field(
-        default="https://openrouter.ai/api/v1",
-        description="OpenRouter API base URL",
+    NVIDIA_BASE_URL: str = Field(
+        default="https://integrate.api.nvidia.com/v1",
+        description="NVIDIA API base URL",
     )
 
     LLM_TEMPERATURE: float = Field(
@@ -177,8 +177,8 @@ class Settings(BaseSettings):
             return self.ANTHROPIC_MODEL
         elif self.LLM_PROVIDER == "openai":
             return self.OPENAI_MODEL
-        else:  # openrouter
-            return self.OPENROUTER_MODEL
+        else:  # nvidia
+            return self.NVIDIA_MODEL
 
     # ========================================================================
     # Graph Database (Phase 4)
@@ -339,7 +339,7 @@ class Settings(BaseSettings):
 
     # Question generation LLM settings
     QUESTION_GEN_MODEL: str = Field(
-        default="mistralai/mistral-small-3.1-24b-instruct:free",
+        default="mistralai/mistral-small-4-119b-2603",
         description="Model for automated question generation",
     )
 
@@ -439,9 +439,9 @@ class Settings(BaseSettings):
             raise ValueError(
                 "OPENAI_API_KEY must be set when using LLM_PROVIDER='openai'"
             )
-        if self.LLM_PROVIDER == "openrouter" and not self.OPENROUTER_API_KEY:
+        if self.LLM_PROVIDER == "nvidia" and not self.NVIDIA_API_KEY:
             raise ValueError(
-                "OPENROUTER_API_KEY must be set when using LLM_PROVIDER='openrouter'"
+                "NVIDIA_API_KEY must be set when using LLM_PROVIDER='nvidia'"
             )
 
     def get_qdrant_config(self) -> dict:

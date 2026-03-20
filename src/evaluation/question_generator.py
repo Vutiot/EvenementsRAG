@@ -1,5 +1,5 @@
 """
-Automated question generation for evaluation using OpenRouter Mistral Small.
+Automated question generation for evaluation using NVIDIA API.
 
 Generates diverse questions from document chunks with taxonomic variety:
 - Factual (25%)
@@ -109,25 +109,25 @@ class QuestionGenerator:
         Initialize question generator.
 
         Args:
-            api_key: OpenRouter API key (default: from settings)
+            api_key: NVIDIA API key (default: from settings)
             model: Model to use (default: from settings)
-            base_url: API base URL (default: OpenRouter)
+            base_url: API base URL (default: NVIDIA API)
             qdrant_manager: QdrantManager instance for loading chunks
             skip_api_init: Skip API client initialization (for testing)
         """
-        self.api_key = api_key or settings.OPENROUTER_API_KEY
+        self.api_key = api_key or settings.NVIDIA_API_KEY
         self.model = model or settings.QUESTION_GEN_MODEL
-        self.base_url = base_url or settings.OPENROUTER_BASE_URL
+        self.base_url = base_url or settings.NVIDIA_BASE_URL
         self.qdrant = qdrant_manager
         self.client = None
 
         if not skip_api_init:
             if not self.api_key:
                 raise ValueError(
-                    "OpenRouter API key not set. Set OPENROUTER_API_KEY in .env file."
+                    "NVIDIA API key not set. Set NVIDIA_API_KEY in .env file."
                 )
 
-            # Initialize OpenAI client with OpenRouter endpoint
+            # Initialize OpenAI client with NVIDIA API endpoint
             self.client = openai.OpenAI(
                 api_key=self.api_key,
                 base_url=self.base_url,

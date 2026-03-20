@@ -28,9 +28,9 @@ reranker:
 
 generation:
   enabled: true
-  llm_provider: openrouter
+  llm_provider: nvidia
   max_tokens: 512
-  model: nvidia/nemotron-3-nano-30b-a3b:free
+  model: mistralai/mistral-small-4-119b-2603
   temperature: 0.0
   top_k_chunks: 3
 

@@ -28,9 +28,9 @@ reranker:
 
 generation:
   enabled: true
-  llm_provider: openrouter
+  llm_provider: nvidia
   max_tokens: 2000
-  model: meta-llama/llama-3.1-8b-instruct:free
+  model: meta/llama-3.3-70b-instruct
   temperature: 0.0
   top_k_chunks: 5
   top_k_articles: null

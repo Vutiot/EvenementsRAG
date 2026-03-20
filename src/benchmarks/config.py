@@ -136,16 +136,16 @@ class RerankerConfig(BaseModel):
         return self
 
 
-OPENROUTER_FREE_MODELS: list[str] = [
-    "mistralai/mistral-small-3.1-24b-instruct:free",
-    "meta-llama/llama-3.1-8b-instruct:free",
-    "google/gemma-2-9b-it:free",
+NVIDIA_MODELS: list[str] = [
+    "mistralai/mistral-small-4-119b-2603",
+    "google/gemma-3-27b-it",
+    "meta/llama-3.3-70b-instruct",
 ]
 
 
 class GenerationConfig(BaseModel):
-    llm_provider: Literal["anthropic", "openai", "openrouter"] = "openrouter"
-    model: str = "mistralai/mistral-small-3.1-24b-instruct:free"
+    llm_provider: Literal["anthropic", "openai", "nvidia"] = "nvidia"
+    model: str = "mistralai/mistral-small-4-119b-2603"
     temperature: float = Field(0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(2000, ge=1, le=8000)
     top_k_chunks: int = Field(5, ge=1, le=20)
@@ -184,7 +184,7 @@ class EvaluationConfig(BaseModel):
         "answer_correctness", "harmfulness", "maliciousness",
         "coherence", "correctness", "conciseness",
     ])
-    ragas_evaluator_model: str = "mistralai/mistral-small-3.1-24b-instruct:free"
+    ragas_evaluator_model: str = "mistralai/mistral-small-4-119b-2603"
     ragas_max_workers: int = Field(1, ge=1, le=8)
     ragas_timeout: int = Field(180, ge=30, le=600)
 
@@ -528,12 +528,12 @@ class BenchmarkConfig(BaseModel):
         return configs
 
     def model_sweep(self) -> list["BenchmarkConfig"]:
-        """Return 3 configs, one per OPENROUTER_FREE_MODELS."""
+        """Return 3 configs, one per NVIDIA_MODELS."""
         configs = []
-        for model in OPENROUTER_FREE_MODELS:
+        for model in NVIDIA_MODELS:
             sanitized = model.replace("/", "_").replace(":", "_").replace(".", "_").replace("-", "_")
             gen = self.generation.model_copy(
-                update={"model": model, "llm_provider": "openrouter"}
+                update={"model": model, "llm_provider": "nvidia"}
             )
             configs.append(self.model_copy(update={
                 "name": f"{self.name}_model_{sanitized}",

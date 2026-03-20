@@ -78,7 +78,7 @@ class TestGetPreset:
         assert response.status_code == 200
         data = response.json()
         assert data["name"] == "default"
-        assert data["generation"]["model"] == "mistralai/mistral-small-3.1-24b-instruct:free"
+        assert data["generation"]["model"] == "mistralai/mistral-small-4-119b-2603"
 
     def test_get_preset_phase1(self, client):
         """GET /presets/phase1_vanilla.yaml returns phase1 config."""
@@ -153,7 +153,7 @@ class TestGetPreset:
             assert response.status_code == 200
             data = response.json()
             # phase1_vanilla should use its own model, not the user override
-            assert data["generation"]["model"] == "mistralai/mistral-small-3.1-24b-instruct:free"
+            assert data["generation"]["model"] == "mistralai/mistral-small-4-119b-2603"
 
         finally:
             # Restore original content
