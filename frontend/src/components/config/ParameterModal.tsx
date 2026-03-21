@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import ParamChips from "./ParamChips";
 import ParamSlider from "./ParamSlider";
 import CollectionSection from "./CollectionSection";
+import PresetSelector from "./PresetSelector";
 import type { BenchmarkConfig } from "../../api/types";
 import type { ParsedCollectionParams } from "../../constants/paramOptions";
 import {
@@ -65,11 +66,13 @@ const PROMPT_PIECES = [
 interface ParameterModalProps {
   open: boolean;
   onClose: () => void;
-  baseConfig: BenchmarkConfig;
+  baseConfig: BenchmarkConfig | null;
   overrides: Record<string, unknown>;
   onOverrideChange: (path: string, value: unknown) => void;
   onReset: () => void;
   hideSections?: Set<string>;
+  selectedPreset?: string;
+  onPresetChange?: (filename: string) => void;
 }
 
 // ── Component ────────────────────────────────────────────────────────
@@ -82,6 +85,8 @@ export default function ParameterModal({
   onOverrideChange,
   onReset,
   hideSections,
+  selectedPreset,
+  onPresetChange,
 }: ParameterModalProps) {
   // When a collection is imported, stores the imported values as the new preset baseline for chips
   const [collectionPresetOverride, setCollectionPresetOverride] = useState<Record<string, unknown> | null>(null);
@@ -105,7 +110,8 @@ export default function ParameterModal({
 
   if (!open) return null;
 
-  const base = baseConfig as unknown as Record<string, unknown>;
+  const hasConfig = baseConfig != null;
+  const base = (baseConfig ?? {}) as unknown as Record<string, unknown>;
 
   /** Get effective value (override wins, else base). */
   function effective(path: string): unknown {
@@ -183,7 +189,7 @@ export default function ParameterModal({
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Tune Parameters</h2>
+          <h2 className="text-lg font-semibold text-gray-900">Configure Pipeline</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition p-1"
@@ -197,6 +203,27 @@ export default function ParameterModal({
 
         {/* Body */}
         <div className="px-6 pb-4 space-y-5">
+          {/* ── Part 0: Preset ── */}
+          {onPresetChange && (
+            <Section title="Preset">
+              <PresetSelector selected={selectedPreset ?? ""} onSelect={onPresetChange} />
+              <button
+                type="button"
+                onClick={() => onPresetChange("default.yaml")}
+                className="mt-2 text-xs text-blue-600 hover:text-blue-800 transition"
+              >
+                Reset to default
+              </button>
+            </Section>
+          )}
+
+          {!hasConfig && (
+            <p className="text-sm text-gray-400 text-center py-8">
+              Select a preset above to configure parameters.
+            </p>
+          )}
+
+          {hasConfig && (<>
           {/* ── Part 1: Dataset ── */}
           <Section title="Dataset">
             <ParamChips
@@ -423,6 +450,7 @@ export default function ParameterModal({
             </div>
           </Section>
           )}
+          </>)}
         </div>
 
         {/* Footer */}

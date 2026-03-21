@@ -11,7 +11,7 @@ embedding:
   model_name: sentence-transformers/all-MiniLM-L6-v2
 
 chunking:
-  chunk_overlap: 50
+  chunk_overlap: 128
   chunk_size: 512
 
 retrieval:
@@ -20,17 +20,17 @@ retrieval:
   rerank_k: 20
   sparse_weight: 0.3
   technique: vanilla
-  top_k: 10
+  top_k: 100
 
 reranker:
-  model_name: null
-  type: none
+  model_name: cross-encoder/ms-marco-MiniLM-L-12-v2
+  type: cross_encoder
 
 generation:
   enabled: true
   llm_provider: nvidia
   max_tokens: 512
-  model: mistralai/mistral-small-4-119b-2603
+  model: nvidia/nemotron-3-nano-30b-a3b
   temperature: 0.0
   top_k_chunks: 3
 
