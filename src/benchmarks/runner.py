@@ -131,6 +131,9 @@ class BenchmarkResult:
         print(f"Avg MRR     : {r.avg_mrr:.3f}")
         for k, ndcg in r.avg_ndcg.items():
             print(f"Avg NDCG@{k}  : {ndcg:.3f}")
+        if r.avg_doc_precision_at_k:
+            print(f"Doc P@5     : {r.avg_doc_precision_at_k.get(5, 0.0):.3f}")
+            print(f"Doc MRR     : {r.avg_doc_mrr:.3f}")
         has_gen = any(
             entry.get("generated_answer") is not None
             for entry in self.per_question_full
@@ -296,6 +299,7 @@ class ParameterizedBenchmarkRunner:
                 self.config.evaluation.compute_rouge
                 or self.config.evaluation.compute_bert_score
                 or self.config.evaluation.compute_ragas
+                or self.config.evaluation.compute_context_precision
             )
         )
         if needs_questions:
@@ -312,6 +316,13 @@ class ParameterizedBenchmarkRunner:
 
         if self.config.generation.enabled and self.config.evaluation.compute_ragas:
             collector.compute_ragas_metrics(per_q, questions_by_id)
+
+        if (
+            self.config.generation.enabled
+            and self.config.evaluation.compute_context_precision
+            and not self.config.evaluation.compute_ragas
+        ):
+            collector.compute_context_precision_only(per_q, questions_by_id)
 
         collector.compute_latency_metrics(per_q)
 

@@ -401,6 +401,27 @@ class BenchmarkRunner:
                     hits.append(m.chunk_hit_at_10)
             avg_chunk_hit_at_k[k] = sum(hits) / len(hits) if hits else 0.0
 
+        # Aggregate document-level precision
+        avg_doc_precision_at_k = {}
+        for k in self.k_values:
+            vals = [getattr(m, f"doc_precision_at_{k}", 0.0) for m in all_metrics]
+            avg_doc_precision_at_k[k] = sum(vals) / len(vals) if vals else 0.0
+
+        # Aggregate document-level recall
+        avg_doc_recall_at_k = {}
+        for k in self.k_values:
+            vals = [getattr(m, f"doc_recall_at_{k}", 0.0) for m in all_metrics]
+            avg_doc_recall_at_k[k] = sum(vals) / len(vals) if vals else 0.0
+
+        # Document MRR
+        avg_doc_mrr_val = sum(m.doc_mrr for m in all_metrics) / len(all_metrics) if all_metrics else 0.0
+
+        # Aggregate chunk-level precision
+        avg_chunk_precision_at_k = {}
+        for k in self.k_values:
+            vals = [getattr(m, f"chunk_precision_at_{k}", 0.0) for m in all_metrics]
+            avg_chunk_precision_at_k[k] = sum(vals) / len(vals) if vals else 0.0
+
         # Compute per-type metrics
         metrics_by_type = compute_metrics_by_type(per_question_results)
 
@@ -416,6 +437,10 @@ class BenchmarkRunner:
             avg_ndcg=avg_ndcg,
             avg_article_hit_at_k=avg_article_hit_at_k,
             avg_chunk_hit_at_k=avg_chunk_hit_at_k,
+            avg_doc_precision_at_k=avg_doc_precision_at_k,
+            avg_doc_recall_at_k=avg_doc_recall_at_k,
+            avg_doc_mrr=avg_doc_mrr_val,
+            avg_chunk_precision_at_k=avg_chunk_precision_at_k,
             metrics_by_type=metrics_by_type,
             per_question_metrics=per_question_results,
             total_questions=len(questions),
@@ -524,6 +549,20 @@ class BenchmarkRunner:
             print("\n--- Chunk-Level Hit Rate (Binary: Found THE EXACT chunk?) ---")
             for k, hit_rate in results.avg_chunk_hit_at_k.items():
                 print(f"  Chunk Hit@{k}:  {hit_rate:.1%} ({hit_rate * results.total_questions:.0f}/{results.total_questions})")
+
+        if results.avg_doc_precision_at_k:
+            print("\n--- Document-Level Precision ---")
+            for k, prec in results.avg_doc_precision_at_k.items():
+                print(f"  Doc Precision@{k}: {prec:.3f}")
+            for k, rec in results.avg_doc_recall_at_k.items():
+                print(f"  Doc Recall@{k}:    {rec:.3f}")
+            if results.avg_doc_mrr > 0:
+                print(f"  Doc MRR:           {results.avg_doc_mrr:.3f}")
+
+        if results.avg_chunk_precision_at_k:
+            print("\n--- Chunk-Level Precision ---")
+            for k, prec in results.avg_chunk_precision_at_k.items():
+                print(f"  Chunk Precision@{k}: {prec:.3f}")
 
         print(f"\nQuestions with Recall@5 >= {settings.EVALUATION_MIN_RECALL_AT_5:.1%}: "
               f"{results.questions_with_recall_at_5_gt_50}/{results.total_questions}")

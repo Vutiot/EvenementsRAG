@@ -573,7 +573,40 @@ export default function ParameterModal({
           </Section>
           )}
 
-          {/* ── Part 5: Results (hidden when generation disabled) ── */}
+          {/* ── Part 5: Evaluation Metrics (visible when generation enabled) ── */}
+          {(effective("generation.model") as string) !== "__none__" && (
+          <Section title="Evaluation">
+            <div className="flex items-center justify-between">
+              <div>
+                <span className="text-sm font-medium text-gray-700">LLM Context Precision</span>
+                <p className="text-xs text-gray-400">RAGAS context_precision (requires LLM calls)</p>
+              </div>
+              <button
+                onClick={() =>
+                  handleChange(
+                    "evaluation.compute_context_precision",
+                    !(effective("evaluation.compute_context_precision") as boolean),
+                  )
+                }
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  (effective("evaluation.compute_context_precision") as boolean)
+                    ? "bg-blue-600"
+                    : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    (effective("evaluation.compute_context_precision") as boolean)
+                      ? "translate-x-6"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
+          </Section>
+          )}
+
+          {/* ── Part 6: Results (hidden when generation disabled) ── */}
           {!hideSections?.has("Results") && (effective("generation.model") as string) !== "__none__" && (
           <Section title="Results">
             <div className="flex items-center justify-between">

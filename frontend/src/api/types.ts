@@ -94,6 +94,10 @@ export interface NormalizedBenchmarkResult {
   avg_ndcg: Record<string, number>;
   avg_article_hit_at_k: Record<string, number> | null;
   avg_chunk_hit_at_k: Record<string, number> | null;
+  avg_doc_precision_at_k: Record<string, number> | null;
+  avg_doc_recall_at_k: Record<string, number> | null;
+  avg_doc_mrr: number | null;
+  avg_chunk_precision_at_k: Record<string, number> | null;
   metrics_by_type: Record<string, Record<string, number>>;
   per_question: NormalizedQuestion[];
   total_questions: number;
@@ -258,6 +262,7 @@ export interface BenchmarkConfig {
   evaluation: {
     k_values: number[];
     compute_ragas: boolean;
+    compute_context_precision: boolean;
     compute_bert_score: boolean;
     compute_rouge: boolean;
     ragas_metrics: string[];

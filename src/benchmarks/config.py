@@ -175,6 +175,7 @@ _KNOWN_RAGAS_METRICS: set[str] = {
 class EvaluationConfig(BaseModel):
     k_values: list[int] = [1, 3, 5, 10]
     compute_ragas: bool = False
+    compute_context_precision: bool = False
     compute_bert_score: bool = False
     compute_rouge: bool = True
 
