@@ -92,6 +92,7 @@ class BenchmarkResult:
     per_question_full: list      # retrieval + optional generated_answer per question
     total_wall_time_s: float = 0.0
     metrics_summary: dict = field(default_factory=dict)
+    eval_dataset_name: str | None = None
 
     def to_dict(self) -> dict:
         """Serialize to a plain dictionary."""
@@ -104,6 +105,7 @@ class BenchmarkResult:
             "per_question_full": self.per_question_full,
             "total_wall_time_s": self.total_wall_time_s,
             "metrics_summary": self.metrics_summary,
+            **({"eval_dataset_name": self.eval_dataset_name} if self.eval_dataset_name else {}),
         }
 
     def to_json(self, path=None) -> str:
@@ -216,6 +218,7 @@ class ParameterizedBenchmarkRunner:
         max_questions: Optional[int] = None,
         output_dir=None,
         progress_callback: Optional[Callable[[int, int, Dict], None]] = None,
+        eval_dataset_name: Optional[str] = None,
     ) -> BenchmarkResult:
         """Run a full benchmark and return a BenchmarkResult.
 
@@ -321,6 +324,7 @@ class ParameterizedBenchmarkRunner:
             per_question_full=per_q,
             total_wall_time_s=time.time() - wall_start,
             metrics_summary=collector.get_summary(),
+            eval_dataset_name=eval_dataset_name,
         )
 
         if output_dir is not None:

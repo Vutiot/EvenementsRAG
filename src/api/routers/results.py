@@ -79,14 +79,36 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         config_summary = {
             "technique": c.get("retrieval", {}).get("technique"),
             "chunk_size": c.get("chunking", {}).get("chunk_size"),
+            "chunk_overlap": c.get("chunking", {}).get("chunk_overlap"),
             "embedding_model": c.get("embedding", {}).get("model_name"),
             "dataset_name": c.get("dataset", {}).get("dataset_name"),
             "top_k": c.get("retrieval", {}).get("top_k"),
             "llm_model": c.get("generation", {}).get("model"),
             "distance_metric": c.get("vector_db", {}).get("distance_metric"),
+            "backend": c.get("vector_db", {}).get("backend"),
+            "reranker_type": c.get("reranker", {}).get("type"),
+            "reranker_model": c.get("reranker", {}).get("model_name"),
+            "rerank_top_k": c.get("retrieval", {}).get("rerank_k"),
+            "sparse_weight": c.get("retrieval", {}).get("sparse_weight"),
+            "sparse_type": c.get("retrieval", {}).get("sparse_type"),
+            "fusion_method": c.get("retrieval", {}).get("fusion_method"),
         }
 
     total_wall_time_s = data.get("total_wall_time_s") if is_new_format else None
+
+    # Extract sweep metadata if present (populated by E6-F3 sweep runs)
+    sweep_meta = None
+    if is_new_format:
+        sm = data.get("sweep_meta")
+        if sm and isinstance(sm, dict):
+            sweep_meta = sm
+
+    # Extract run name and eval dataset name
+    run_name = None
+    eval_dataset_name = None
+    if is_new_format:
+        run_name = data.get("config", {}).get("name")
+        eval_dataset_name = data.get("eval_dataset_name")
 
     # Store path relative to RESULTS_DIR so frontend can fetch subdirectory files
     try:
@@ -105,6 +127,9 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         avg_recall_at_10=round(avg_recall_at_10, 4) if avg_recall_at_10 is not None else None,
         total_wall_time_s=round(total_wall_time_s, 2) if total_wall_time_s is not None else None,
         config_summary=config_summary,
+        sweep_meta=sweep_meta,
+        run_name=run_name,
+        eval_dataset_name=eval_dataset_name,
     )
     _file_info_cache[cache_key] = (mtime, info)
     return info

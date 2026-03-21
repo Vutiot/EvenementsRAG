@@ -79,10 +79,10 @@ graph TD
   style E6F4T1 fill:#3b82f6
   style E6F4T2 fill:#6b7280
   style E6F4T3 fill:#6b7280
-  style E6F5T1 fill:#3b82f6
-  style E6F5T2 fill:#6b7280
-  style E6F5T3 fill:#6b7280
-  style E6F5T4 fill:#6b7280
+  style E6F5T1 fill:#22c55e
+  style E6F5T2 fill:#22c55e
+  style E6F5T3 fill:#22c55e
+  style E6F5T4 fill:#22c55e
   style E6F6T1 fill:#6b7280
   style E6F6T2 fill:#6b7280
 ```
@@ -208,28 +208,28 @@ Merge Query, Benchmark, and Sweep interfaces into a single Testing page with sha
 
 ##### E6-F5-T1: RunHistoryTable column expansion
 - blocked_by: [E6-F1-T3]
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Overhaul `RunHistoryTable.tsx`. New columns in order: Status (icon), Name (sticky first data column), Type (bench/sweep badge), Timestamp, Dataset, Eval Dataset, Technique, Chunk Size, Chunk Overlap, Embedding Model, Distance Metric, Backend, Top K, Reranker Type, Reranker Model, Rerank Top K, Sparse Weight, Sparse Type, Fusion Method, MRR, R@5, R@10, Time. Name column: `position: sticky; left: 0; z-index: 10` with white background and right shadow. Table container: `overflow-x-auto`. All parameter values: `font-mono text-xs`. Extend backend `GET /api/results` to include chunk_overlap, embedding_model, distance_metric, backend, reranker_type, reranker_model, rerank_top_k, sparse_weight, sparse_type, fusion_method in config_summary. Update `frontend/src/api/types.ts` `ResultFileInfo.config_summary` type.
 - description: Expand run history table with all tunable benchmark parameters as columns. Name column sticky on left with horizontal scroll. Backend must expose additional config fields in result summaries.
 
 ##### E6-F5-T2: Sweep collapse/expand rows
 - blocked_by: [E6-F5-T1]
-- status: pending
+- status: done
 - effort: L
 - agent_hint: Backend `GET /api/results` must return a `sweep_meta` field on `ResultFileInfo` for sweep results containing `{sweep_id, child_filenames: string[], swept_params: Record<string, any[]>}`. A sweep parent row is identified by `sweep_meta != null`. Frontend in RunHistoryTable: detect sweep parents. Render with (1) chevron icon in Name cell rotating on click, (2) swept parameter cells show stacked values (`flex flex-col gap-0.5`, each value on own line), (3) metric cells show "---", (4) subtitle "N configs" under name. Use `useState<Set<string>>` for `expandedSweeps`. When expanded, render child rows with: `bg-gray-50/50` background, sequential index (#1, #2...) in Name cell, full parameter values, actual metric values. Last child row: `border-b-2 border-gray-200`. Follow `inspiration/run_history_feature_spec.md` for full spec.
 - description: Implement collapsible sweep rows per run_history_feature_spec.md. Parent rows show stacked values for swept params, dash for metrics, expand to reveal child rows with individual results.
 
 ##### E6-F5-T3: Best performer highlight & sticky Name column
 - blocked_by: [E6-F5-T2]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: When rendering expanded child rows, compute max MRR among all children. Child with highest MRR gets metric cells (MRR, R@5, R@10, Time) styled with `text-green-600 font-semibold`. If multiple tie, highlight all. Add small green trophy icon next to best child's index. For sticky Name column: ensure `left-0` sticky works with expand/collapse child rows too. Add thin right shadow on sticky column: `shadow-[2px_0_5px_-2px_rgba(0,0,0,0.1)]`. Use /frontend skill for design.
 - description: Highlight best-performing child in each sweep by MRR with green styling. Polish sticky Name column with shadow for visual separation during horizontal scroll.
 
 ##### E6-F5-T4: Run naming & eval dataset column
 - blocked_by: [E6-F5-T3]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: Add "benchmark name" concept. Backend in `BenchmarkService.run_benchmark()`: accept optional `name` field on `BenchmarkRunRequest`. Default = `{collection_name}_{timestamp}` (e.g. `wiki_10k_qdrant_cs512_co128_minilm_l6_cosine_20260321T1430`). Save name in result JSON. Similarly for `SweepRunRequest`. Frontend: add optional name input in TestingPage benchmark/sweep execution area (text input, placeholder: "Run name (optional)"). In RunHistoryTable, display this name in Name column (fall back to collection_name + timestamp). For "Eval Dataset" column: backend includes `eval_dataset_name` in result JSON (resolved from `eval_dataset_id` during run). Update `ResultFileInfo` and types accordingly.
 - description: Add user-defined run naming and eval dataset name column. Defaults generate meaningful names from collection + timestamp.
@@ -362,3 +362,12 @@ Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 - **RunHistoryTable stays at /runs**: TestingPage's benchmark mode shows a completion message with Link to `/runs` instead of embedding the table. Keeps the page focused on execution.
 - **ParameterModal hideSections**: Computed from current `mode` — query mode shows "Results" section (highlight toggle), benchmark/sweep hides it.
 - **Sidebar subtitle**: Added optional `subtitle` field to NavSection for the "Testing" group description.
+
+### E6-F5: Run History Table Overhaul (completed 2026-03-21)
+- **config_summary expanded to 15 fields**: Added chunk_overlap, backend, reranker_type, reranker_model, rerank_top_k, sparse_weight, sparse_type, fusion_method to the backend `_parse_file_info()` extraction and frontend `ResultFileInfo.config_summary` type. Kept as untyped `dict | None` on the Pydantic model for flexibility.
+- **Sticky Name column**: Uses `position: sticky; left: 0; z-index: 10` with `boxShadow` for the right edge. Header cell gets `z-20` to layer above body cells. Background color must be set explicitly on sticky cells (overridden per row type with `!bg-*` for active/error/child rows).
+- **Sweep rows forward-compatible**: Backend passes through `sweep_meta` from result JSON if present; frontend has full parent/child grouping with expand/collapse. No sweep data exists until E6-F3, but the structure is ready.
+- **Best performer computed at render time**: `buildDisplayRows()` finds max MRR among sweep children and marks `isBest` flag. Green styling (trophy icon + `text-green-600 font-semibold`) on metric cells. Ties highlighted equally; all-zero groups skipped.
+- **eval_dataset_name stored in result JSON**: Added as a top-level field in the BenchmarkResult JSON (not inside config) since the eval dataset is an external input, not a config parameter. Resolved from dataset JSON `name` field at run time in `BenchmarkService`.
+- **Run naming**: Optional `name` field on `BenchmarkRunRequest` overrides `config.name` before the runner executes. The config name becomes the `phase_name` in results, so user-provided names propagate naturally through the existing save path.
+- **Component decomposition**: RunHistoryTable split into `NormalRow`, `SweepParentRow`, `SweepChildRow` subcomponents + `ParamCell` helper for DRY parameter rendering with optional `sweptValues` stacked display.

@@ -75,6 +75,7 @@ export default function TestingPage() {
   const [benchPhase, setBenchPhase] = useState<BenchPhase>("idle");
   const [activeRun, setActiveRun] = useState<ActiveRun | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
+  const [runName, setRunName] = useState("");
 
   // ── Computed values ───────────────────────────────────────────────
   const overrideCount = useMemo(() => countOverrides(overrides), [overrides]);
@@ -308,6 +309,7 @@ export default function TestingPage() {
         preset,
         config_overrides: Object.keys(finalOverrides).length > 0 ? finalOverrides : null,
         eval_dataset_id: selectedDatasetId,
+        ...(runName ? { name: runName } : {}),
       },
       {
         onStarted: (e) => {
@@ -322,6 +324,7 @@ export default function TestingPage() {
         onComplete: () => {
           setActiveRun(null);
           setBenchPhase("complete");
+          setRunName("");
         },
         onError: (msg) => {
           setActiveRun({ status: "error", progress: { current: 0, total: 0 }, error: msg });
@@ -332,7 +335,7 @@ export default function TestingPage() {
     );
 
     setAbortController(controller);
-  }, [preset, effectiveConfig, selectedDatasetId, overrides, overrideCount]);
+  }, [preset, effectiveConfig, selectedDatasetId, overrides, overrideCount, runName]);
 
   const handleBenchmarkCancel = useCallback(() => {
     abortController?.abort();
@@ -533,6 +536,21 @@ export default function TestingPage() {
                         </option>
                       ))}
                     </select>
+                  </div>
+
+                  <div className="flex-1">
+                    <label className="block text-xs font-medium text-gray-500 mb-1">
+                      Run Name <span className="text-gray-400">(optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      value={runName}
+                      onChange={(e) => setRunName(e.target.value)}
+                      placeholder="Auto-generated if empty"
+                      className="w-full rounded border-gray-300 bg-white px-3 py-2 text-sm shadow-sm
+                                 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                      disabled={isBenchRunning}
+                    />
                   </div>
 
                   <div className="shrink-0 pt-5">
