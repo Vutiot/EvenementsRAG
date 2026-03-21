@@ -318,6 +318,61 @@ export interface QueryStreamCompleteEvent {
   generation_time_ms: number;
 }
 
+/** Sweep run types */
+export interface SweepRunRequest {
+  preset: string;
+  sweep_params: Record<string, unknown[]>;
+  eval_dataset_id: string;
+  name?: string;
+  config_overrides?: Record<string, unknown> | null;
+}
+
+export interface SweepStartedEvent {
+  sweep_id: string;
+  total_configs: number;
+  total_questions_per_config: number;
+  sweep_name: string;
+}
+
+export interface SweepConfigStartedEvent {
+  config_index: number;
+  total_configs: number;
+  config_hash: string;
+  params: Record<string, unknown>;
+  collection_name: string;
+}
+
+export interface SweepConfigProgressEvent {
+  config_index: number;
+  total_configs: number;
+  question_index: number;
+  total_questions: number;
+  question_id: string;
+  question_type: string;
+  retrieval_time_ms: number;
+}
+
+export interface SweepConfigCompleteEvent {
+  config_index: number;
+  total_configs: number;
+  status: "ok" | "error";
+  filename?: string;
+  error?: string;
+  params: Record<string, unknown>;
+  avg_mrr?: number;
+  avg_recall_at_5?: number;
+  avg_recall_at_10?: number;
+  total_wall_time_s?: number;
+}
+
+export interface SweepCompleteEvent {
+  sweep_id: string;
+  total_configs: number;
+  completed_configs: number;
+  result_files: string[];
+  meta_filename: string;
+}
+
 /** Chunk highlighting types */
 export interface HighlightedChunk {
   chunk_id: string;

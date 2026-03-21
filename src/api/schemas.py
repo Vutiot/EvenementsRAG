@@ -193,6 +193,14 @@ class BenchmarkRunRequest(BaseModel):
     name: str | None = None  # Optional user-provided run name
 
 
+class SweepRunRequest(BaseModel):
+    preset: str
+    sweep_params: dict[str, list]
+    eval_dataset_id: str
+    name: str | None = None
+    config_overrides: dict | None = None
+
+
 class NormalizedBenchmarkResult(BaseModel):
     filename: str
     format: str

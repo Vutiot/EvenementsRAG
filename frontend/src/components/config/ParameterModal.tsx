@@ -1,7 +1,8 @@
 /** Centered modal for tuning RAG pipeline parameters — 5-section structure. */
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import ParamChips from "./ParamChips";
+import MultiSelectChips from "./MultiSelectChips";
 import ParamSlider from "./ParamSlider";
 import CollectionSection from "./CollectionSection";
 import PresetSelector from "./PresetSelector";
@@ -11,6 +12,7 @@ import {
   DATASET_OPTIONS,
   TECHNIQUE_OPTIONS,
   SPARSE_TYPE_OPTIONS,
+  SPARSE_WEIGHT_OPTIONS,
   FUSION_OPTIONS,
   RETRIEVER_K_OPTIONS,
   RERANK_TOP_K_OPTIONS,
@@ -19,7 +21,13 @@ import {
   EMBEDDING_DIMENSION_MAP,
   RERANKER_TYPE_OPTIONS,
   RERANKER_MODEL_OPTIONS,
+  CHUNK_SIZE_OPTIONS,
+  CHUNK_OVERLAP_VALUES,
+  EMBEDDING_MODELS,
+  DISTANCE_OPTIONS,
+  BACKEND_OPTIONS,
 } from "../../constants/paramOptions";
+import { computeSweepCombinations } from "../../utils/configHelpers";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -73,6 +81,7 @@ interface ParameterModalProps {
   hideSections?: Set<string>;
   selectedPreset?: string;
   onPresetChange?: (filename: string) => void;
+  multiSelect?: boolean;
 }
 
 // ── Component ────────────────────────────────────────────────────────
@@ -87,6 +96,7 @@ export default function ParameterModal({
   hideSections,
   selectedPreset,
   onPresetChange,
+  multiSelect = false,
 }: ParameterModalProps) {
   // When a collection is imported, stores the imported values as the new preset baseline for chips
   const [collectionPresetOverride, setCollectionPresetOverride] = useState<Record<string, unknown> | null>(null);
@@ -107,6 +117,11 @@ export default function ParameterModal({
       setCollectionPresetOverride(null);
     }
   }, [overrides]);
+
+  const combinationCount = useMemo(
+    () => (multiSelect ? computeSweepCombinations(overrides) : 1),
+    [overrides, multiSelect],
+  );
 
   if (!open) return null;
 
@@ -132,6 +147,26 @@ export default function ParameterModal({
       onOverrideChange(path, undefined);
     } else {
       onOverrideChange(path, value);
+    }
+  }
+
+  // ── Multi-select helpers ──
+
+  /** Get effective value as array for multi-select mode. */
+  function effectiveArray<T>(path: string): T[] {
+    const overrideVal = getPath(overrides, path);
+    if (Array.isArray(overrideVal)) return overrideVal as T[];
+    const pv = getPath(base, path);
+    return [pv as T];
+  }
+
+  /** Handle array change: if [presetVal], remove override; else set array. */
+  function handleArrayChange(path: string, values: unknown[]) {
+    const presetVal = preset(path);
+    if (values.length === 1 && values[0] === presetVal) {
+      onOverrideChange(path, undefined);
+    } else {
+      onOverrideChange(path, values);
     }
   }
 
@@ -177,6 +212,13 @@ export default function ParameterModal({
     }
   };
 
+  // Overlap options filtered by chunk size (single-select only)
+  const overlapOptions = CHUNK_OVERLAP_VALUES.map((v) => ({
+    value: v,
+    label: String(v),
+    disabled: !multiSelect && v >= (effective("chunking.chunk_size") as number),
+  }));
+
   return (
     // Backdrop
     <div
@@ -189,7 +231,9 @@ export default function ParameterModal({
       <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[85vh] overflow-y-auto mx-4">
         {/* Header */}
         <div className="flex items-center justify-between px-6 pt-5 pb-3">
-          <h2 className="text-lg font-semibold text-gray-900">Configure Pipeline</h2>
+          <h2 className="text-lg font-semibold text-gray-900">
+            {multiSelect ? "Sweep Parameters" : "Configure Pipeline"}
+          </h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition p-1"
@@ -241,33 +285,74 @@ export default function ParameterModal({
 
           {/* ── Part 2: Collection ── */}
           <Section title="Collection">
-            <CollectionSection
-              datasetName={effective("dataset.dataset_name") as string}
-              backend={effective("vector_db.backend") as string}
-              chunkSize={effective("chunking.chunk_size") as number}
-              chunkOverlap={effective("chunking.chunk_overlap") as number}
-              embeddingModel={effective("embedding.model_name") as string}
-              distanceMetric={effective("vector_db.distance_metric") as string}
-              presetValues={
-                collectionPresetOverride
-                  ? {
-                      backend: collectionPresetOverride.backend as string,
-                      chunkSize: collectionPresetOverride.chunkSize as number,
-                      chunkOverlap: collectionPresetOverride.chunkOverlap as number,
-                      embeddingModel: collectionPresetOverride.embeddingModel as string,
-                      distanceMetric: collectionPresetOverride.distanceMetric as string,
-                    }
-                  : {
-                      backend: preset("vector_db.backend") as string,
-                      chunkSize: preset("chunking.chunk_size") as number,
-                      chunkOverlap: preset("chunking.chunk_overlap") as number,
-                      embeddingModel: preset("embedding.model_name") as string,
-                      distanceMetric: preset("vector_db.distance_metric") as string,
-                    }
-              }
-              onParamChange={handleCollectionParamChange}
-              onCollectionSelect={handleCollectionSelect}
-            />
+            {multiSelect ? (
+              /* Sweep mode: direct multi-select chips, no import/derived name */
+              <div className="space-y-3">
+                <ParamChips
+                  label="Backend"
+                  options={BACKEND_OPTIONS}
+                  value={effective("vector_db.backend") as string}
+                  presetValue={preset("vector_db.backend") as string}
+                  onChange={(v) => handleChange("vector_db.backend", v)}
+                />
+                <MultiSelectChips
+                  label="Chunk Size"
+                  options={CHUNK_SIZE_OPTIONS}
+                  values={effectiveArray<number>("chunking.chunk_size")}
+                  presetValue={preset("chunking.chunk_size") as number}
+                  onChange={(vs) => handleArrayChange("chunking.chunk_size", vs)}
+                />
+                <MultiSelectChips
+                  label="Overlap"
+                  options={overlapOptions}
+                  values={effectiveArray<number>("chunking.chunk_overlap")}
+                  presetValue={preset("chunking.chunk_overlap") as number}
+                  onChange={(vs) => handleArrayChange("chunking.chunk_overlap", vs)}
+                />
+                <MultiSelectChips
+                  label="Embedding"
+                  options={EMBEDDING_MODELS}
+                  values={effectiveArray<string>("embedding.model_name")}
+                  presetValue={preset("embedding.model_name") as string}
+                  onChange={(vs) => handleArrayChange("embedding.model_name", vs)}
+                />
+                <MultiSelectChips
+                  label="Distance"
+                  options={DISTANCE_OPTIONS}
+                  values={effectiveArray<string>("vector_db.distance_metric")}
+                  presetValue={preset("vector_db.distance_metric") as string}
+                  onChange={(vs) => handleArrayChange("vector_db.distance_metric", vs)}
+                />
+              </div>
+            ) : (
+              <CollectionSection
+                datasetName={effective("dataset.dataset_name") as string}
+                backend={effective("vector_db.backend") as string}
+                chunkSize={effective("chunking.chunk_size") as number}
+                chunkOverlap={effective("chunking.chunk_overlap") as number}
+                embeddingModel={effective("embedding.model_name") as string}
+                distanceMetric={effective("vector_db.distance_metric") as string}
+                presetValues={
+                  collectionPresetOverride
+                    ? {
+                        backend: collectionPresetOverride.backend as string,
+                        chunkSize: collectionPresetOverride.chunkSize as number,
+                        chunkOverlap: collectionPresetOverride.chunkOverlap as number,
+                        embeddingModel: collectionPresetOverride.embeddingModel as string,
+                        distanceMetric: collectionPresetOverride.distanceMetric as string,
+                      }
+                    : {
+                        backend: preset("vector_db.backend") as string,
+                        chunkSize: preset("chunking.chunk_size") as number,
+                        chunkOverlap: preset("chunking.chunk_overlap") as number,
+                        embeddingModel: preset("embedding.model_name") as string,
+                        distanceMetric: preset("vector_db.distance_metric") as string,
+                      }
+                }
+                onParamChange={handleCollectionParamChange}
+                onCollectionSelect={handleCollectionSelect}
+              />
+            )}
           </Section>
 
           {/* ── Part 3: Pipeline ── */}
@@ -277,48 +362,97 @@ export default function ParameterModal({
               <h4 className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
                 Retrieval
               </h4>
-              <ParamChips
-                label="Technique"
-                options={TECHNIQUE_OPTIONS}
-                value={effective("retrieval.technique") as string}
-                presetValue={preset("retrieval.technique") as string}
-                onChange={(v) => handleChange("retrieval.technique", v)}
-              />
-              <ParamChips
-                label="Top K"
-                options={RETRIEVER_K_OPTIONS}
-                value={effective("retrieval.top_k") as number}
-                presetValue={preset("retrieval.top_k") as number}
-                onChange={(v) => handleChange("retrieval.top_k", v)}
-              />
-              {technique === "hybrid" && (
+              {multiSelect ? (
                 <>
-                  <ParamSlider
-                    label="Sparse Weight"
-                    min={0}
-                    max={1}
-                    step={0.05}
-                    value={effective("retrieval.sparse_weight") as number}
-                    presetValue={preset("retrieval.sparse_weight") as number}
-                    onChange={(v) => {
-                      handleChange("retrieval.sparse_weight", v);
-                      handleChange("retrieval.dense_weight", +(1 - v).toFixed(2));
-                    }}
+                  <MultiSelectChips
+                    label="Technique"
+                    options={TECHNIQUE_OPTIONS}
+                    values={effectiveArray<string>("retrieval.technique")}
+                    presetValue={preset("retrieval.technique") as string}
+                    onChange={(vs) => handleArrayChange("retrieval.technique", vs)}
+                  />
+                  <MultiSelectChips
+                    label="Top K"
+                    options={RETRIEVER_K_OPTIONS}
+                    values={effectiveArray<number>("retrieval.top_k")}
+                    presetValue={preset("retrieval.top_k") as number}
+                    onChange={(vs) => handleArrayChange("retrieval.top_k", vs)}
+                  />
+                  {/* Show hybrid params if hybrid is among selected techniques */}
+                  {(Array.isArray(effective("retrieval.technique"))
+                    ? (effective("retrieval.technique") as string[]).includes("hybrid")
+                    : technique === "hybrid") && (
+                    <>
+                      <MultiSelectChips
+                        label="Sparse Weight"
+                        options={SPARSE_WEIGHT_OPTIONS}
+                        values={effectiveArray<number>("retrieval.sparse_weight")}
+                        presetValue={preset("retrieval.sparse_weight") as number}
+                        onChange={(vs) => handleArrayChange("retrieval.sparse_weight", vs)}
+                      />
+                      <MultiSelectChips
+                        label="Sparse Type"
+                        options={SPARSE_TYPE_OPTIONS}
+                        values={effectiveArray<string>("retrieval.sparse_type")}
+                        presetValue={(preset("retrieval.sparse_type") ?? "bm25") as string}
+                        onChange={(vs) => handleArrayChange("retrieval.sparse_type", vs)}
+                      />
+                      <MultiSelectChips
+                        label="Fusion"
+                        options={FUSION_OPTIONS}
+                        values={effectiveArray<string>("retrieval.fusion_method")}
+                        presetValue={preset("retrieval.fusion_method") as string}
+                        onChange={(vs) => handleArrayChange("retrieval.fusion_method", vs)}
+                      />
+                    </>
+                  )}
+                </>
+              ) : (
+                <>
+                  <ParamChips
+                    label="Technique"
+                    options={TECHNIQUE_OPTIONS}
+                    value={effective("retrieval.technique") as string}
+                    presetValue={preset("retrieval.technique") as string}
+                    onChange={(v) => handleChange("retrieval.technique", v)}
                   />
                   <ParamChips
-                    label="Sparse Type"
-                    options={SPARSE_TYPE_OPTIONS}
-                    value={(effective("retrieval.sparse_type") ?? "bm25") as string}
-                    presetValue={(preset("retrieval.sparse_type") ?? "bm25") as string}
-                    onChange={(v) => handleChange("retrieval.sparse_type", v)}
+                    label="Top K"
+                    options={RETRIEVER_K_OPTIONS}
+                    value={effective("retrieval.top_k") as number}
+                    presetValue={preset("retrieval.top_k") as number}
+                    onChange={(v) => handleChange("retrieval.top_k", v)}
                   />
-                  <ParamChips
-                    label="Fusion"
-                    options={FUSION_OPTIONS}
-                    value={effective("retrieval.fusion_method") as string}
-                    presetValue={preset("retrieval.fusion_method") as string}
-                    onChange={(v) => handleChange("retrieval.fusion_method", v)}
-                  />
+                  {technique === "hybrid" && (
+                    <>
+                      <ParamSlider
+                        label="Sparse Weight"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={effective("retrieval.sparse_weight") as number}
+                        presetValue={preset("retrieval.sparse_weight") as number}
+                        onChange={(v) => {
+                          handleChange("retrieval.sparse_weight", v);
+                          handleChange("retrieval.dense_weight", +(1 - v).toFixed(2));
+                        }}
+                      />
+                      <ParamChips
+                        label="Sparse Type"
+                        options={SPARSE_TYPE_OPTIONS}
+                        value={(effective("retrieval.sparse_type") ?? "bm25") as string}
+                        presetValue={(preset("retrieval.sparse_type") ?? "bm25") as string}
+                        onChange={(v) => handleChange("retrieval.sparse_type", v)}
+                      />
+                      <ParamChips
+                        label="Fusion"
+                        options={FUSION_OPTIONS}
+                        value={effective("retrieval.fusion_method") as string}
+                        presetValue={preset("retrieval.fusion_method") as string}
+                        onChange={(v) => handleChange("retrieval.fusion_method", v)}
+                      />
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -328,39 +462,60 @@ export default function ParameterModal({
               <h4 className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
                 Reranking
               </h4>
-              <ParamChips
-                label="Reranker"
-                options={RERANKER_TYPE_OPTIONS}
-                value={effective("reranker.type") as string}
-                presetValue={preset("reranker.type") as string}
-                onChange={(v) => {
-                  handleChange("reranker.type", v);
-                  if (v === "none") {
-                    handleChange("reranker.model_name", null);
-                  } else {
-                    const models = RERANKER_MODEL_OPTIONS[v as string];
-                    if (models?.[0]) {
-                      handleChange("reranker.model_name", models[0].value);
-                    }
-                  }
-                }}
-              />
-              {(effective("reranker.type") as string) !== "none" && (
+              {multiSelect ? (
                 <>
-                  <ParamChips
-                    label="Model"
-                    options={RERANKER_MODEL_OPTIONS[effective("reranker.type") as string] ?? []}
-                    value={effective("reranker.model_name") as string}
-                    presetValue={preset("reranker.model_name") as string}
-                    onChange={(v) => handleChange("reranker.model_name", v)}
+                  <MultiSelectChips
+                    label="Reranker"
+                    options={RERANKER_TYPE_OPTIONS}
+                    values={effectiveArray<string>("reranker.type")}
+                    presetValue={preset("reranker.type") as string}
+                    onChange={(vs) => handleArrayChange("reranker.type", vs)}
                   />
-                  <ParamChips
+                  <MultiSelectChips
                     label="Top K Rerank"
                     options={RERANK_TOP_K_OPTIONS}
-                    value={effective("generation.top_k_chunks") as number}
+                    values={effectiveArray<number>("generation.top_k_chunks")}
                     presetValue={preset("generation.top_k_chunks") as number}
-                    onChange={(v) => handleChange("generation.top_k_chunks", v)}
+                    onChange={(vs) => handleArrayChange("generation.top_k_chunks", vs)}
                   />
+                </>
+              ) : (
+                <>
+                  <ParamChips
+                    label="Reranker"
+                    options={RERANKER_TYPE_OPTIONS}
+                    value={effective("reranker.type") as string}
+                    presetValue={preset("reranker.type") as string}
+                    onChange={(v) => {
+                      handleChange("reranker.type", v);
+                      if (v === "none") {
+                        handleChange("reranker.model_name", null);
+                      } else {
+                        const models = RERANKER_MODEL_OPTIONS[v as string];
+                        if (models?.[0]) {
+                          handleChange("reranker.model_name", models[0].value);
+                        }
+                      }
+                    }}
+                  />
+                  {(effective("reranker.type") as string) !== "none" && (
+                    <>
+                      <ParamChips
+                        label="Model"
+                        options={RERANKER_MODEL_OPTIONS[effective("reranker.type") as string] ?? []}
+                        value={effective("reranker.model_name") as string}
+                        presetValue={preset("reranker.model_name") as string}
+                        onChange={(v) => handleChange("reranker.model_name", v)}
+                      />
+                      <ParamChips
+                        label="Top K Rerank"
+                        options={RERANK_TOP_K_OPTIONS}
+                        value={effective("generation.top_k_chunks") as number}
+                        presetValue={preset("generation.top_k_chunks") as number}
+                        onChange={(v) => handleChange("generation.top_k_chunks", v)}
+                      />
+                    </>
+                  )}
                 </>
               )}
             </div>
@@ -449,6 +604,13 @@ export default function ParameterModal({
               </button>
             </div>
           </Section>
+          )}
+          {/* ── Sweep combination counter ── */}
+          {multiSelect && (
+            <div className="rounded-lg bg-blue-50 border border-blue-200 px-4 py-2.5 text-sm text-blue-800 flex items-center justify-between">
+              <span className="font-medium">Sweep Combinations</span>
+              <span className="font-mono text-lg font-bold">{combinationCount}</span>
+            </div>
           )}
           </>)}
         </div>

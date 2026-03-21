@@ -21,6 +21,12 @@ import type {
   PresetInfo,
   QueryResult,
   ResultFileInfo,
+  SweepCompleteEvent,
+  SweepConfigCompleteEvent,
+  SweepConfigProgressEvent,
+  SweepConfigStartedEvent,
+  SweepRunRequest,
+  SweepStartedEvent,
 } from "./types";
 
 const BASE = "/api";
@@ -249,6 +255,98 @@ export function runBenchmark(
             else if (currentEvent === "progress") callbacks.onProgress(data);
             else if (currentEvent === "complete") callbacks.onComplete(data);
             else if (currentEvent === "error") callbacks.onError(data.message);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if ((err as Error).name !== "AbortError") {
+        callbacks.onError(err instanceof Error ? err.message : String(err));
+      }
+    }
+  })();
+
+  return controller;
+}
+
+// ---------------------------------------------------------------------------
+// Sweep runs
+// ---------------------------------------------------------------------------
+
+/**
+ * Start a sweep run (cartesian product of params) via SSE streaming.
+ * Returns an AbortController to cancel the request.
+ */
+export function runSweep(
+  request: SweepRunRequest,
+  callbacks: {
+    onSweepStarted: (e: SweepStartedEvent) => void;
+    onConfigStarted: (e: SweepConfigStartedEvent) => void;
+    onConfigProgress: (e: SweepConfigProgressEvent) => void;
+    onConfigComplete: (e: SweepConfigCompleteEvent) => void;
+    onSweepComplete: (e: SweepCompleteEvent) => void;
+    onError: (msg: string) => void;
+  },
+): AbortController {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const res = await fetch(`${BASE}/benchmark/sweep`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        callbacks.onError(`${res.status}: ${text}`);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        callbacks.onError("No response body");
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let currentEvent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            switch (currentEvent) {
+              case "sweep_started":
+                callbacks.onSweepStarted(data);
+                break;
+              case "config_started":
+                callbacks.onConfigStarted(data);
+                break;
+              case "config_progress":
+                callbacks.onConfigProgress(data);
+                break;
+              case "config_complete":
+                callbacks.onConfigComplete(data);
+                break;
+              case "sweep_complete":
+                callbacks.onSweepComplete(data);
+                break;
+              case "error":
+                callbacks.onError(data.message);
+                break;
+            }
           }
         }
       }

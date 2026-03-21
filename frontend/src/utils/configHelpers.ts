@@ -72,3 +72,60 @@ export function countOverrides(obj: Record<string, unknown>): number {
   }
   return count;
 }
+
+/** Compute cartesian product size from overrides that contain arrays. */
+export function computeSweepCombinations(overrides: Record<string, unknown>): number {
+  let product = 1;
+  function walk(obj: Record<string, unknown>) {
+    for (const v of Object.values(obj)) {
+      if (Array.isArray(v) && v.length > 1) {
+        product *= v.length;
+      } else if (v != null && typeof v === "object" && !Array.isArray(v)) {
+        walk(v as Record<string, unknown>);
+      }
+    }
+  }
+  walk(overrides);
+  return product;
+}
+
+/** Split overrides into sweep_params (array values) and scalar config_overrides. */
+export function extractSweepParams(overrides: Record<string, unknown>): {
+  sweepParams: Record<string, unknown[]>;
+  configOverrides: Record<string, unknown>;
+} {
+  const sweepParams: Record<string, unknown[]> = {};
+  const configOverrides: Record<string, unknown> = {};
+
+  function walk(obj: Record<string, unknown>, prefix: string) {
+    for (const [key, val] of Object.entries(obj)) {
+      const path = prefix ? `${prefix}.${key}` : key;
+      if (Array.isArray(val)) {
+        if (val.length > 1) {
+          sweepParams[path] = val;
+        } else if (val.length === 1) {
+          configOverrides[path] = val[0];
+        }
+      } else if (val != null && typeof val === "object") {
+        walk(val as Record<string, unknown>, path);
+      } else {
+        configOverrides[path] = val;
+      }
+    }
+  }
+  walk(overrides, "");
+
+  // Restructure configOverrides from flat dotted paths to nested object
+  const nested: Record<string, unknown> = {};
+  for (const [path, val] of Object.entries(configOverrides)) {
+    const parts = path.split(".");
+    let cur: Record<string, unknown> = nested;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!(parts[i] as string in cur)) cur[parts[i] as string] = {};
+      cur = cur[parts[i] as string] as Record<string, unknown>;
+    }
+    cur[parts[parts.length - 1] as string] = val;
+  }
+
+  return { sweepParams, configOverrides: nested };
+}

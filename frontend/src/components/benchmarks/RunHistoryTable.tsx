@@ -114,13 +114,15 @@ function buildDisplayRows(results: ResultFileInfo[]): DisplayRow[] {
       const maxMrr = Math.max(...mrrs);
       const hasBest = maxMrr > 0;
       for (let i = 0; i < children.length; i++) {
+        const child = children[i];
+        if (!child) continue;
         rows.push({
           kind: "sweep_child",
-          result: children[i],
+          result: child,
           parentSweepId: r.sweep_meta.sweep_id,
           childIndex: i,
           isLast: i === children.length - 1,
-          isBest: hasBest && (children[i].avg_mrr ?? 0) === maxMrr,
+          isBest: hasBest && (child.avg_mrr ?? 0) === maxMrr,
         });
       }
     } else {
