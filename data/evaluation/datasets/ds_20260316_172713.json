@@ -1,0 +1,157 @@
+{
+  "id": "ds_20260316_172713",
+  "name": "Query_Styles_wiki_10k_qdrant_cs512_co256_minilm_l6_cosine_9q2",
+  "created_at": "2026-03-16T17:27:13.404289",
+  "status": "completed",
+  "collection_name": "wiki_10k_qdrant_cs512_co256_minilm_l6_cosine",
+  "total_questions": 7,
+  "categories": [
+    {
+      "type": "well_redacted",
+      "prompt": "Generate a well-written, grammatically correct question that a knowledgeable user might ask about the passage. Use proper sentence structure and precise vocabulary.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 3,
+      "generated": 3
+    },
+    {
+      "type": "grammar_typos",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally introduce 1-2 grammar mistakes or typos into the question itself (e.g. missing articles, wrong verb tense, swapped letters). The passage content is correct; only the question text should contain errors.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "name_misspelling",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally misspell one person name, place name, or organization in the question itself (e.g. 'Churchil' instead of 'Churchill', 'Stalinrad' instead of 'Stalingrad'). The passage content is correct; only the question text should have the misspelling.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 0
+    },
+    {
+      "type": "date_place_errors",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally use a slightly wrong date or place in the question itself (e.g. off by one year, wrong city). The passage content is correct; only the question text should contain the factual error.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "keywords",
+      "prompt": "Generate a keyword-only query (no sentence structure) about the passage. Use 3-6 relevant keywords separated by spaces, like a search engine query. Example: 'Battle Stalingrad casualties 1942 German'.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "telegraphic",
+      "prompt": "Generate a very short, telegraphic question about the passage using minimal words (5-10 words max). Drop articles, pronouns, and auxiliary verbs. Example: 'Who led D-Day invasion?' or 'Casualties Battle of Bulge?'.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 0
+    },
+    {
+      "type": "fragmented_french",
+      "prompt": "Generate a question about the passage written in broken or approximate French, as if by a non-native speaker mixing French and English. Example: 'Qui a gagné la battle de Midway et pourquoi c'était important?'. The question should still be answerable from the English passage.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    }
+  ],
+  "questions": [
+    {
+      "question": "How many distinct playable civilizations are available at the start of a Civilization II game, and what are the two categories they fall into?",
+      "type": "well_redacted",
+      "difficulty": "easy",
+      "expected_answer_hint": "State the total count (21) and note that they can be historical or custom-named.",
+      "source_chunk_id": "b91b777c-e320-747f-2945-9a929d9fab83",
+      "source_chunk_index": 1,
+      "source_article": "Civilization II",
+      "source_article_id": "223491",
+      "generated_at": "2026-03-16T17:27:19.237467",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q001"
+    },
+    {
+      "question": "What factors led the Canadian government to decline financial support for the Alaska Highway project in the 1930s, and how did U.S. diplomatic initiatives aim to overcome this resistance?",
+      "type": "well_redacted",
+      "difficulty": "medium",
+      "expected_answer_hint": "identify the economic, political, and military concerns cited, and reference the 1933–1936 diplomatic proposals and Roosevelt's 1936 speech",
+      "source_chunk_id": "54631d93-b550-e070-6b62-7262e9428e96",
+      "source_chunk_index": 1,
+      "source_article": "Alaska Highway",
+      "source_article_id": "240433",
+      "generated_at": "2026-03-16T17:27:24.571479",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q002"
+    },
+    {
+      "question": "Which unit served as the Air Traffic Control Command for Africa at the Agedabia Airfield Complex during April 1941 and again from January to February 1942?",
+      "type": "well_redacted",
+      "difficulty": "easy",
+      "expected_answer_hint": "The name of the Air Traffic Control Command Africa unit",
+      "source_chunk_id": "bbbb3043-2cc2-141f-e5b3-4fe17b6b7f76",
+      "source_chunk_index": 4,
+      "source_article": "Agedabia Airfield Complex",
+      "source_article_id": "79074893",
+      "generated_at": "2026-03-16T17:27:29.283451",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q003"
+    },
+    {
+      "question": "When did the Japanese paratroopers captured P.1?",
+      "type": "grammar_typos",
+      "difficulty": "easy",
+      "expected_answer_hint": "the date of the capture",
+      "source_chunk_id": "7c86d28e-3c1c-5480-5024-e5ff1c9d6a33",
+      "source_chunk_index": 4,
+      "source_article": "Battle of Palembang",
+      "source_article_id": "8874691",
+      "generated_at": "2026-03-16T17:27:38.702050",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q004"
+    },
+    {
+      "question": "What happened to Eddie Slovik on October 10, 1944, in Paris, France, and why was he tried for desertion?",
+      "type": "date_place_errors",
+      "difficulty": "medium",
+      "expected_answer_hint": "the correct date is October 9, 1944, and the location is near Elbeuf, France",
+      "source_chunk_id": "6c525d1f-3693-86da-c0e9-f98c4f3a875c",
+      "source_chunk_index": 2,
+      "source_article": "Eddie Slovik",
+      "source_article_id": "62368",
+      "generated_at": "2026-03-16T17:28:07.030719",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q005"
+    },
+    {
+      "question": "Attu Island 1945 Japanese incendiary balloons",
+      "type": "keywords",
+      "difficulty": "easy",
+      "expected_answer_hint": "",
+      "source_chunk_id": "f14a8ff9-9a39-aec4-6fab-2b687f247b18",
+      "source_chunk_index": 5,
+      "source_article": "Attu Island",
+      "source_article_id": "226214",
+      "generated_at": "2026-03-16T17:28:12.459185",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q006"
+    },
+    {
+      "question": "Qui a été appointed Executive Director de UNFPA en August 2025?",
+      "type": "fragmented_french",
+      "difficulty": "medium",
+      "expected_answer_hint": "Diene Keita and August 2025",
+      "source_chunk_id": "d5801b83-31ba-8ce7-a3ee-8e2a094bd7d1",
+      "source_chunk_index": 0,
+      "source_article": "Diene Keita",
+      "source_article_id": "64446971",
+      "generated_at": "2026-03-16T17:28:37.558291",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q007"
+    }
+  ],
+  "metadata": {
+    "total_generated": 7,
+    "unique_articles": 7,
+    "generation_time_s": 84.1
+  }
+}

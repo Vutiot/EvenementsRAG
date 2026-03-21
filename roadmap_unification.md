@@ -69,9 +69,9 @@ graph TD
   style E6F1T1 fill:#22c55e
   style E6F1T2 fill:#22c55e
   style E6F1T3 fill:#22c55e
-  style E6F2T1 fill:#3b82f6
-  style E6F2T2 fill:#6b7280
-  style E6F2T3 fill:#6b7280
+  style E6F2T1 fill:#22c55e
+  style E6F2T2 fill:#22c55e
+  style E6F2T3 fill:#22c55e
   style E6F3T1 fill:#3b82f6
   style E6F3T2 fill:#6b7280
   style E6F3T3 fill:#6b7280
@@ -126,21 +126,21 @@ Merge Query, Benchmark, and Sweep interfaces into a single Testing page with sha
 
 ##### E6-F2-T1: Remove preset sidebar, center the interface
 - blocked_by: [E6-F1-T3]
-- status: ready
+- status: done
 - effort: S
 - agent_hint: In TestingPage, use a centered single-column layout (`max-w-3xl mx-auto`) instead of the 4/8 grid split from QueryTester/BenchmarkRuns. Remove `PresetSelector` and `ConfigSummary` from the main page. Replace with a single "New Config" button (`rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm` with gear icon) that opens the ParameterModal. Show a compact config summary badge row below the button (e.g. "wiki_10k | cs512 | MiniLM-L6 | vanilla | Top K 100 | CrossEncoder rerank 20 | Nemotron") using small gray chips for at-a-glance active config. Use /frontend skill for design.
 - description: Remove the left-column preset selector and config summary panel. Replace with a single "New Config" button and inline config badge summary. Centers the main content area for a cleaner layout.
 
 ##### E6-F2-T2: Preset as first dropdown inside modal
 - blocked_by: [E6-F2-T1]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: Modify `ParameterModal.tsx`: add a "Preset" section as the FIRST section (before Dataset). Embed `PresetSelector` dropdown there. When user selects a preset, it loads the config via `getPresetConfig()` and resets all overrides. Add a "Start from scratch" option that loads the default config without preset file. The modal title changes from "Tune Parameters" to "Configure Pipeline". Wire `onPresetChange` callback so TestingPage receives the new baseConfig.
 - description: Move preset selection from the main page into the ParameterModal as the first section. Simplifies the main interface while keeping preset functionality accessible. Modal becomes the single entry point for all configuration.
 
 ##### E6-F2-T3: Default config & scroll-to-top on execute
 - blocked_by: [E6-F2-T2]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: In TestingPage, initialize `baseConfig` by calling `getPresetConfig("default.yaml")` on mount (or fall back to hardcoded defaults). The default must produce collection name `wiki_10k_qdrant_cs512_co128_minilm_l6_cosine` with: `retrieval.top_k=100`, `reranker.type="cross_encoder"`, `reranker.model_name="cross-encoder/ms-marco-MiniLM-L-12-v2"`, `reranker.top_k=20`, `generation.model="nvidia/nemotron-3-nano-30b-a3b"`, `generation.enabled=true`. Create `config/benchmarks/default.yaml` if it does not exist. Also implement scroll-to-top: in handleExecute (all three modes), call `window.scrollTo({top: 0, behavior: 'smooth'})` before starting execution.
 - description: Load a sensible default configuration on page mount so users can start testing immediately. Default uses the most common collection parameters. Add scroll-to-top behavior on execution start.
@@ -362,3 +362,11 @@ Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 - **RunHistoryTable stays at /runs**: TestingPage's benchmark mode shows a completion message with Link to `/runs` instead of embedding the table. Keeps the page focused on execution.
 - **ParameterModal hideSections**: Computed from current `mode` — query mode shows "Results" section (highlight toggle), benchmark/sweep hides it.
 - **Sidebar subtitle**: Added optional `subtitle` field to NavSection for the "Testing" group description.
+
+### E6-F2: Simplified Configuration Interface (completed 2026-03-21)
+- **Centered single-column layout**: Replaced 4/8 grid with `max-w-3xl mx-auto`. ConfigSummary and PresetSelector removed from main page — config state shown via compact `ConfigBadges` chip row.
+- **ConfigBadges component**: New `frontend/src/components/config/ConfigBadges.tsx` renders inline chips (dataset, chunk_size, chunk_overlap, embedding model, technique, top_k, reranker info, LLM model) from `BenchmarkConfig`.
+- **Preset inside modal**: PresetSelector moved into ParameterModal as first "Preset" section. Prop named `selectedPreset` to avoid collision with local `preset()` helper function. Modal title changed to "Configure Pipeline".
+- **Nullable baseConfig**: ParameterModal's `baseConfig` prop changed to `BenchmarkConfig | null`. When null, only the Preset section renders with a placeholder message. Enables opening the modal before any config is loaded.
+- **Default auto-load**: `useEffect` on mount calls `handlePresetChange("default.yaml")` so users can start testing immediately. Default preset updated: cs512/co128, top_k=100, cross_encoder reranker, Nemotron 30B.
+- **Scroll-to-top**: `window.scrollTo({ top: 0, behavior: "smooth" })` added to both `handleQueryExecute` and `handleBenchmarkRun` after guard checks.

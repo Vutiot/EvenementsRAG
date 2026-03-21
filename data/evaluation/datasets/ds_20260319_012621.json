@@ -1,0 +1,65 @@
+{
+  "id": "ds_20260319_012621",
+  "name": "Query_Styles_wiki_10k_qdrant_cs512_co256_minilm_l6_cosine_100q",
+  "created_at": "2026-03-19T01:26:21.417002",
+  "status": "generating",
+  "collection_name": "wiki_10k_qdrant_cs512_co256_minilm_l6_cosine",
+  "total_questions": 100,
+  "categories": [
+    {
+      "type": "well_redacted",
+      "prompt": "Generate a well-written, grammatically correct question that a knowledgeable user might ask about the passage. Use proper sentence structure and precise vocabulary.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 30,
+      "generated": 0
+    },
+    {
+      "type": "grammar_typos",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally introduce 1-2 grammar mistakes or typos into the question itself (e.g. missing articles, wrong verb tense, swapped letters). The passage content is correct; only the question text should contain errors.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 15,
+      "generated": 0
+    },
+    {
+      "type": "name_misspelling",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally misspell one person name, place name, or organization in the question itself (e.g. 'Churchil' instead of 'Churchill', 'Stalinrad' instead of 'Stalingrad'). The passage content is correct; only the question text should have the misspelling.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 15,
+      "generated": 0
+    },
+    {
+      "type": "date_place_errors",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally use a slightly wrong date or place in the question itself (e.g. off by one year, wrong city). The passage content is correct; only the question text should contain the factual error.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 10,
+      "generated": 0
+    },
+    {
+      "type": "keywords",
+      "prompt": "Generate a keyword-only query (no sentence structure) about the passage. Use 3-6 relevant keywords separated by spaces, like a search engine query. Example: 'Battle Stalingrad casualties 1942 German'.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 10,
+      "generated": 0
+    },
+    {
+      "type": "telegraphic",
+      "prompt": "Generate a very short, telegraphic question about the passage using minimal words (5-10 words max). Drop articles, pronouns, and auxiliary verbs. Example: 'Who led D-Day invasion?' or 'Casualties Battle of Bulge?'.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 10,
+      "generated": 0
+    },
+    {
+      "type": "fragmented_french",
+      "prompt": "Generate a question about the passage written in broken or approximate French, as if by a non-native speaker mixing French and English. Example: 'Qui a gagné la battle de Midway et pourquoi c'était important?'. The question should still be answerable from the English passage.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 10,
+      "generated": 0
+    }
+  ],
+  "questions": [],
+  "metadata": {
+    "total_generated": 0,
+    "unique_articles": 0,
+    "generation_time_s": 0.0
+  }
+}

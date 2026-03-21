@@ -1,0 +1,167 @@
+{
+  "id": "ds_20260316_173517",
+  "name": "Query_Styles_wiki_10k_qdrant_cs512_co256_minilm_l6_cosine_9q3",
+  "created_at": "2026-03-16T17:35:17.858002",
+  "status": "completed",
+  "collection_name": "wiki_10k_qdrant_cs512_co256_minilm_l6_cosine",
+  "total_questions": 8,
+  "categories": [
+    {
+      "type": "well_redacted",
+      "prompt": "Generate a well-written, grammatically correct question that a knowledgeable user might ask about the passage. Use proper sentence structure and precise vocabulary.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 3,
+      "generated": 3
+    },
+    {
+      "type": "grammar_typos",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally introduce 1-2 grammar mistakes or typos into the question itself (e.g. missing articles, wrong verb tense, swapped letters). The passage content is correct; only the question text should contain errors.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "name_misspelling",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally misspell one person name, place name, or organization in the question itself (e.g. 'Churchil' instead of 'Churchill', 'Stalinrad' instead of 'Stalingrad'). The passage content is correct; only the question text should have the misspelling.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "date_place_errors",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally use a slightly wrong date or place in the question itself (e.g. off by one year, wrong city). The passage content is correct; only the question text should contain the factual error.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 0
+    },
+    {
+      "type": "keywords",
+      "prompt": "Generate a keyword-only query (no sentence structure) about the passage. Use 3-6 relevant keywords separated by spaces, like a search engine query. Example: 'Battle Stalingrad casualties 1942 German'.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "telegraphic",
+      "prompt": "Generate a very short, telegraphic question about the passage using minimal words (5-10 words max). Drop articles, pronouns, and auxiliary verbs. Example: 'Who led D-Day invasion?' or 'Casualties Battle of Bulge?'.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "fragmented_french",
+      "prompt": "Generate a question about the passage written in broken or approximate French, as if by a non-native speaker mixing French and English. Example: 'Qui a gagné la battle de Midway et pourquoi c'était important?'. The question should still be answerable from the English passage.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    }
+  ],
+  "questions": [
+    {
+      "question": "Which high‑ranking Romanian official did Zissu persuade to accept mass emigration as a solution to the \"Jewish Question\"?",
+      "type": "well_redacted",
+      "difficulty": "medium",
+      "expected_answer_hint": "the Deputy Premier who negotiated the emigration deal",
+      "source_chunk_id": "8e761a4c-f88d-0908-1c45-908751d33d44",
+      "source_chunk_index": 17,
+      "source_article": "A. L. Zissu",
+      "source_article_id": "47474806",
+      "generated_at": "2026-03-16T17:35:23.693285",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q001"
+    },
+    {
+      "question": "Based on the passage, what contradictory information is presented about Claude Nicholson's death, and how do his",
+      "source_chunk_id": "4b621955-d20e-5aa4-4281-d65a5f2e674c",
+      "source_chunk_index": 3,
+      "source_article": "Claude Nicholson (British Army officer)",
+      "source_article_id": "56147642",
+      "generated_at": "2026-03-16T17:35:28.529678",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q002"
+    },
+    {
+      "question": "Which Israeli military commander was assigned to lead the operations to 'clean out' the area around Mishmar HaEmek, and what specific directive was given to his forces?",
+      "type": "well_redacted",
+      "difficulty": "hard",
+      "expected_answer_hint": "Name of the commander and the phrase \"clean out\" the region",
+      "source_chunk_id": "6974f5a3-c3dd-a7cd-a23c-ecf24851d569",
+      "source_chunk_index": 19,
+      "source_article": "1947–1948 civil war in Mandatory Palestine",
+      "source_article_id": "10639341",
+      "generated_at": "2026-03-16T17:35:36.936282",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q003"
+    },
+    {
+      "question": "What book did Arthur D. Morse write that discuss the US response to the Holocast?",
+      "type": "grammar_typos",
+      "difficulty": "easy",
+      "expected_answer_hint": "The title of Morse's best‑selling Holocaust book",
+      "source_chunk_id": "a77fa7ad-c0ff-4093-95bb-b704808b0fc8",
+      "source_chunk_index": 1,
+      "source_article": "Arthur D. Morse",
+      "source_article_id": "12969329",
+      "generated_at": "2026-03-16T17:35:50.838421",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q004"
+    },
+    {
+      "question": "How many Jewish slave laborers did Cowerd save during World War II?",
+      "type": "name_misspelling",
+      "difficulty": "easy",
+      "expected_answer_hint": "400",
+      "source_chunk_id": "84c0d0b4-b833-cc16-c40a-d0661c7bd748",
+      "source_chunk_index": 2,
+      "source_article": "Charles Coward",
+      "source_article_id": "7263466",
+      "generated_at": "2026-03-16T17:35:59.718680",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q005"
+    },
+    {
+      "question": "Stepinac pastoral letter 1945 NDH criticism",
+      "type": "keywords",
+      "difficulty": "medium",
+      "expected_answer_hint": "names, dates, and actions related to Stepinac's criticism of Communists and the NDH",
+      "source_chunk_id": "2f327f02-93b4-5f23-199d-232ecf8074cf",
+      "source_chunk_index": 46,
+      "source_article": "Aloysius Stepinac",
+      "source_article_id": "789610",
+      "generated_at": "2026-03-16T17:36:35.675364",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q006"
+    },
+    {
+      "question": "Soviet fighter assessment German Luftwaffe?",
+      "type": "telegraphic",
+      "difficulty": "easy",
+      "expected_answer_hint": "German view of Soviet I‑16 and other aircraft",
+      "source_chunk_id": "0ae25b5d-a6cc-cb6e-db98-9f1104b389ad",
+      "source_chunk_index": 18,
+      "source_article": "Aerial warfare during Operation Barbarossa",
+      "source_article_id": "31990697",
+      "generated_at": "2026-03-16T17:36:46.155652",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q007"
+    },
+    {
+      "question": "Quelle infantry brigade a participé à l'invasion of Yugoslavia in 1941?",
+      "type": "fragmented_french",
+      "difficulty": "easy",
+      "expected_answer_hint": "the name of the brigade",
+      "source_chunk_id": "ba6252fd-304b-b029-429d-ce5c59fe981e",
+      "source_chunk_index": 0,
+      "source_article": "14th Infantry Brigade (Hungary)",
+      "source_article_id": "42269970",
+      "generated_at": "2026-03-16T17:36:56.564206",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q008"
+    }
+  ],
+  "metadata": {
+    "total_generated": 8,
+    "unique_articles": 8,
+    "generation_time_s": 98.6
+  }
+}

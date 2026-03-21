@@ -1,0 +1,77 @@
+{
+  "id": "ds_20260316_174027",
+  "name": "Query_Styles_wiki_10k_qdrant_cs512_co256_minilm_l6_cosine_9q4",
+  "created_at": "2026-03-16T17:40:27.870246",
+  "status": "completed",
+  "collection_name": "wiki_10k_qdrant_cs512_co256_minilm_l6_cosine",
+  "total_questions": 3,
+  "categories": [
+    {
+      "type": "grammar_typos",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally introduce 1-2 grammar mistakes or typos into the question itself (e.g. missing articles, wrong verb tense, swapped letters). The passage content is correct; only the question text should contain errors.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "name_misspelling",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally misspell one person name, place name, or organization in the question itself (e.g. 'Churchil' instead of 'Churchill', 'Stalinrad' instead of 'Stalingrad'). The passage content is correct; only the question text should have the misspelling.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "date_place_errors",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally use a slightly wrong date or place in the question itself (e.g. off by one year, wrong city). The passage content is correct; only the question text should contain the factual error.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    }
+  ],
+  "questions": [
+    {
+      "question": "How many Japanese were estmated to have been killed during the counter-attack?",
+      "type": "grammar_typos",
+      "difficulty": "easy",
+      "expected_answer_hint": "a number between six and eight",
+      "source_chunk_id": "7826bc1a-4411-e3cf-0bc6-162e527750bd",
+      "source_chunk_index": 5,
+      "source_article": "Battle of Tsimba Ridge",
+      "source_article_id": "25416243",
+      "generated_at": "2026-03-16T17:40:33.823895",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q001"
+    },
+    {
+      "question": "Where was the 3/15 Squadrdron stationed?",
+      "type": "name_misspelling",
+      "difficulty": "easy",
+      "expected_answer_hint": "the name of the estate where the 3/15 Squadron was located",
+      "source_chunk_id": "2b74b3c5-4bef-760a-15b7-a710dafb352b",
+      "source_chunk_index": 7,
+      "source_article": "15th Greater Poland Light Artillery Regiment",
+      "source_article_id": "78370493",
+      "generated_at": "2026-03-16T17:40:45.462550",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q002"
+    },
+    {
+      "question": "When did the Action of 6 June 1943 occur?",
+      "type": "date_place_errors",
+      "difficulty": "easy",
+      "expected_answer_hint": "the correct date is 6 June 1942",
+      "source_chunk_id": "23a0baa8-50c7-2d62-562c-856aeaa48066",
+      "source_chunk_index": 2,
+      "source_article": "Action of 6 June 1942",
+      "source_article_id": "30057202",
+      "generated_at": "2026-03-16T17:40:50.127416",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q003"
+    }
+  ],
+  "metadata": {
+    "total_generated": 3,
+    "unique_articles": 3,
+    "generation_time_s": 22.0
+  }
+}

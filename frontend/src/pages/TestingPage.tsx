@@ -2,9 +2,8 @@ import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import ModeSwitcher from "../components/testing/ModeSwitcher";
 import type { TestingMode } from "../components/testing/ModeSwitcher";
-import PresetSelector from "../components/config/PresetSelector";
-import ConfigSummary from "../components/config/ConfigSummary";
 import ParameterModal from "../components/config/ParameterModal";
+import ConfigBadges from "../components/config/ConfigBadges";
 import QuestionPickerModal from "../components/config/QuestionPickerModal";
 import ChunkList from "../components/results/ChunkList";
 import StreamingAnswer from "../components/results/StreamingAnswer";
@@ -133,6 +132,11 @@ export default function TestingPage() {
       .catch(() => {});
   }, []);
 
+  // Auto-load default preset on mount
+  useEffect(() => {
+    handlePresetChange("default.yaml");
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   // Reset eval selection when filtered list changes
   useEffect(() => {
     if (selectedDatasetId && !filteredDatasets.some((ds) => ds.id === selectedDatasetId)) {
@@ -206,6 +210,7 @@ export default function TestingPage() {
 
   const handleQueryExecute = useCallback(async () => {
     if (!query.trim() || !preset || !effectiveConfig) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     // Abort any previous streaming request
     streamControllerRef.current?.abort();
@@ -322,6 +327,7 @@ export default function TestingPage() {
 
   const handleBenchmarkRun = useCallback(async () => {
     if (!preset || !effectiveConfig || !selectedDatasetId) return;
+    window.scrollTo({ top: 0, behavior: "smooth" });
 
     setBenchPhase("ensuring");
     setError(null);
@@ -395,47 +401,10 @@ export default function TestingPage() {
     setActiveRun(null);
   }, [abortController]);
 
-  // ── Shared config panel (reused across modes) ─────────────────────
-
-  const renderConfigPanel = () => (
-    <div className="col-span-4 space-y-4">
-      <PresetSelector selected={preset} onSelect={handlePresetChange} />
-
-      {baseConfig && (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setParamsOpen(true)}
-            className="flex items-center gap-1.5 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-            </svg>
-            Parameters
-            {overrideCount > 0 && (
-              <span className="bg-amber-100 text-amber-700 rounded-full text-xs px-1.5 py-0.5 font-medium">
-                {overrideCount}
-              </span>
-            )}
-          </button>
-          {overrideCount > 0 && (
-            <button
-              onClick={handleResetOverrides}
-              className="text-xs text-amber-600 hover:text-amber-800 transition"
-            >
-              Reset ({overrideCount})
-            </button>
-          )}
-        </div>
-      )}
-
-      <ConfigSummary config={effectiveConfig} />
-    </div>
-  );
-
   // ── Render ────────────────────────────────────────────────────────
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <div className="p-6 max-w-3xl mx-auto">
       {/* Page header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900">Testing</h1>
@@ -445,15 +414,41 @@ export default function TestingPage() {
         <div className="mt-4 flex justify-center">
           <ModeSwitcher mode={mode} onModeChange={handleModeChange} />
         </div>
+
+        {/* Config bar */}
+        <div className="mt-4 flex flex-col items-center gap-2">
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setParamsOpen(true)}
+              className="flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.94-1.11.94h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+              </svg>
+              Configure Pipeline
+              {overrideCount > 0 && (
+                <span className="bg-amber-100 text-amber-700 rounded-full text-xs px-1.5 py-0.5 font-medium">
+                  {overrideCount}
+                </span>
+              )}
+            </button>
+            {overrideCount > 0 && (
+              <button
+                onClick={handleResetOverrides}
+                className="text-xs text-amber-600 hover:text-amber-800 transition"
+              >
+                Reset ({overrideCount})
+              </button>
+            )}
+          </div>
+          <ConfigBadges config={effectiveConfig} />
+        </div>
       </div>
 
       {/* ── Query Mode ─────────────────────────────────────────────── */}
       {mode === "query" && (
-        <div key="query" className="animate-fade-in-up">
-          <div className="grid grid-cols-12 gap-6">
-            {renderConfigPanel()}
-
-            <div className="col-span-8 space-y-4">
+        <div key="query" className="animate-fade-in-up space-y-4">
               {/* Query input */}
               <div className="rounded border border-gray-200 bg-white p-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -499,7 +494,7 @@ export default function TestingPage() {
                   </div>
                   <button
                     onClick={handleQueryExecute}
-                    disabled={queryPhase !== "idle" || !query.trim() || !preset}
+                    disabled={queryPhase !== "idle" || !query.trim() || !effectiveConfig}
                     className="rounded bg-blue-600 px-4 py-2 text-sm font-medium text-white
                                hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                                transition-colors shrink-0"
@@ -568,18 +563,12 @@ export default function TestingPage() {
                   )}
                 </div>
               )}
-            </div>
-          </div>
         </div>
       )}
 
       {/* ── Benchmark Mode ─────────────────────────────────────────── */}
       {mode === "benchmark" && (
-        <div key="benchmark" className="animate-fade-in-up">
-          <div className="grid grid-cols-12 gap-6">
-            {renderConfigPanel()}
-
-            <div className="col-span-8 space-y-4">
+        <div key="benchmark" className="animate-fade-in-up space-y-4">
               <div className="rounded border border-gray-200 bg-white p-4">
                 <div className="flex items-center gap-3">
                   <div className="flex-1">
@@ -614,7 +603,7 @@ export default function TestingPage() {
                     ) : (
                       <button
                         onClick={handleBenchmarkRun}
-                        disabled={!preset || !selectedDatasetId}
+                        disabled={!effectiveConfig || !selectedDatasetId}
                         className="rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white
                                    hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                                    transition-colors"
@@ -674,8 +663,6 @@ export default function TestingPage() {
                   {error}
                 </div>
               )}
-            </div>
-          </div>
         </div>
       )}
 
@@ -691,17 +678,17 @@ export default function TestingPage() {
       )}
 
       {/* ── Shared modals ──────────────────────────────────────────── */}
-      {baseConfig && (
-        <ParameterModal
-          open={paramsOpen}
-          onClose={() => setParamsOpen(false)}
-          baseConfig={baseConfig}
-          overrides={overrides}
-          onOverrideChange={handleOverrideChange}
-          onReset={handleResetOverrides}
-          hideSections={hideSections}
-        />
-      )}
+      <ParameterModal
+        open={paramsOpen}
+        onClose={() => setParamsOpen(false)}
+        baseConfig={baseConfig}
+        overrides={overrides}
+        onOverrideChange={handleOverrideChange}
+        onReset={handleResetOverrides}
+        hideSections={hideSections}
+        selectedPreset={preset}
+        onPresetChange={handlePresetChange}
+      />
 
       <QuestionPickerModal
         open={questionPickerOpen}

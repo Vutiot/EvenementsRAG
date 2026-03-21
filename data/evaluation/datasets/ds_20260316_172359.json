@@ -1,0 +1,154 @@
+{
+  "id": "ds_20260316_172359",
+  "name": "Query_Styles_wiki_10k_qdrant_cs512_co256_minilm_l6_cosine_9q",
+  "created_at": "2026-03-16T17:23:59.518087",
+  "status": "completed",
+  "collection_name": "wiki_10k_qdrant_cs512_co256_minilm_l6_cosine",
+  "total_questions": 7,
+  "categories": [
+    {
+      "type": "well_redacted",
+      "prompt": "Generate a well-written, grammatically correct question that a knowledgeable user might ask about the passage. Use proper sentence structure and precise vocabulary.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 3,
+      "generated": 3
+    },
+    {
+      "type": "grammar_typos",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally introduce 1-2 grammar mistakes or typos into the question itself (e.g. missing articles, wrong verb tense, swapped letters). The passage content is correct; only the question text should contain errors.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "name_misspelling",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally misspell one person name, place name, or organization in the question itself (e.g. 'Churchil' instead of 'Churchill', 'Stalinrad' instead of 'Stalingrad'). The passage content is correct; only the question text should have the misspelling.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "date_place_errors",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally use a slightly wrong date or place in the question itself (e.g. off by one year, wrong city). The passage content is correct; only the question text should contain the factual error.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 0
+    },
+    {
+      "type": "keywords",
+      "prompt": "Generate a keyword-only query (no sentence structure) about the passage. Use 3-6 relevant keywords separated by spaces, like a search engine query. Example: 'Battle Stalingrad casualties 1942 German'.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    },
+    {
+      "type": "telegraphic",
+      "prompt": "Generate a very short, telegraphic question about the passage using minimal words (5-10 words max). Drop articles, pronouns, and auxiliary verbs. Example: 'Who led D-Day invasion?' or 'Casualties Battle of Bulge?'.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 0
+    },
+    {
+      "type": "fragmented_french",
+      "prompt": "Generate a question about the passage written in broken or approximate French, as if by a non-native speaker mixing French and English. Example: 'Qui a gagné la battle de Midway et pourquoi c'était important?'. The question should still be answerable from the English passage.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 1,
+      "generated": 1
+    }
+  ],
+  "questions": [
+    {
+      "question": "According to Mayer, what was the primary target of Hitler's war, and how did he describe the original German plan regarding Soviet Jews?",
+      "type": "well_redacted",
+      "difficulty": "medium",
+      "expected_answer_hint": "the Soviet Union as the main target and deportation of Soviet Jews to a reservation behind the Urals",
+      "source_chunk_id": "f8d132f0-c8a9-c091-3ebf-c1facf779523",
+      "source_chunk_index": 4,
+      "source_article": "Arno J. Mayer",
+      "source_article_id": "1922385",
+      "generated_at": "2026-03-16T17:24:04.861572",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q001"
+    },
+    {
+      "question": "Why did",
+      "source_chunk_id": "62be6479-ccf1-fd60-b143-ed744655864c",
+      "source_chunk_index": 24,
+      "source_article": "Diplomatic history of World War II",
+      "source_article_id": "39743540",
+      "generated_at": "2026-03-16T17:24:10.536668",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q002"
+    },
+    {
+      "question": "What were the legal outcomes for Lieutenant Wolfgang Lehnigk‑Emden following the Caiazzo massacre?",
+      "type": "well_redacted",
+      "difficulty": "medium",
+      "expected_answer_hint": "Mention his in‑absentia life sentence, German trial, conviction, release because of the statute of limitations, and that he was not extradited",
+      "source_chunk_id": "1e6e3438-f2aa-fa2a-3da5-d355f400d41a",
+      "source_chunk_index": 0,
+      "source_article": "Caiazzo massacre",
+      "source_article_id": "58553318",
+      "generated_at": "2026-03-16T17:24:21.026194",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q003"
+    },
+    {
+      "question": "When did Ben-Gurion returned as minister of deffence in 1955?",
+      "type": "grammar_typos",
+      "difficulty": "easy",
+      "expected_answer_hint": "1",
+      "source_chunk_id": "190004e2-2b28-5f11-dcca-d99003765b8d",
+      "source_chunk_index": 1,
+      "source_article": "David Ben-Gurion",
+      "source_article_id": "67765",
+      "generated_at": "2026-03-16T17:24:35.482905",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q004"
+    },
+    {
+      "question": "What was the stance of the Chuch in Germany towards racism?",
+      "type": "name_misspelling",
+      "difficulty": "easy",
+      "expected_answer_hint": "condemnation of racism",
+      "source_chunk_id": "97a39066-0aaa-12d9-e351-78d6f0ad390a",
+      "source_chunk_index": 45,
+      "source_article": "Catholic resistance to Nazi Germany",
+      "source_article_id": "40676800",
+      "generated_at": "2026-03-16T17:24:40.912852",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q005"
+    },
+    {
+      "question": "Doolittle Raid B-25 museum exhibits",
+      "type": "keywords",
+      "difficulty": "medium",
+      "expected_answer_hint": "list of museums and artifacts related to the Doolittle Raid",
+      "source_chunk_id": "8554027b-16a2-480f-9862-62f77d81e922",
+      "source_chunk_index": 23,
+      "source_article": "Doolittle Raid",
+      "source_article_id": "159895",
+      "generated_at": "2026-03-16T17:25:18.499005",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q006"
+    },
+    {
+      "question": "Quel est le nom de la Beth Medrash Govoha que Kotler a créé aux USA?",
+      "type": "fragmented_french",
+      "difficulty": "easy",
+      "expected_answer_hint": "the name of the yeshiva he founded",
+      "source_chunk_id": "0b181104-ca62-e1f9-6478-4f1aa9c4f693",
+      "source_chunk_index": 0,
+      "source_article": "Aharon Kotler",
+      "source_article_id": "274402",
+      "generated_at": "2026-03-16T17:25:44.758580",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q007"
+    }
+  ],
+  "metadata": {
+    "total_generated": 7,
+    "unique_articles": 7,
+    "generation_time_s": 105.1
+  }
+}

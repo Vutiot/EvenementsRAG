@@ -1,0 +1,181 @@
+{
+  "id": "ds_20260316_174058",
+  "name": "Query_Styles_wiki_10k_qdrant_cs512_co256_minilm_l6_cosine_9q4",
+  "created_at": "2026-03-16T17:40:58.770135",
+  "status": "completed",
+  "collection_name": "wiki_10k_qdrant_cs512_co256_minilm_l6_cosine",
+  "total_questions": 11,
+  "categories": [
+    {
+      "type": "grammar_typos",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally introduce 1-2 grammar mistakes or typos into the question itself (e.g. missing articles, wrong verb tense, swapped letters). The passage content is correct; only the question text should contain errors.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 4,
+      "generated": 4
+    },
+    {
+      "type": "name_misspelling",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally misspell one person name, place name, or organization in the question itself (e.g. 'Churchil' instead of 'Churchill', 'Stalinrad' instead of 'Stalingrad'). The passage content is correct; only the question text should have the misspelling.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 4,
+      "generated": 4
+    },
+    {
+      "type": "date_place_errors",
+      "prompt": "Based on the passage content, write a question that a user would ask to find this information — but intentionally use a slightly wrong date or place in the question itself (e.g. off by one year, wrong city). The passage content is correct; only the question text should contain the factual error.",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "count": 3,
+      "generated": 3
+    }
+  ],
+  "questions": [
+    {
+      "question": "Which aeracraft did the ZNDH receive from Italy in 1942?",
+      "type": "grammar_typos",
+      "difficulty": "easy",
+      "expected_answer_hint": "Caproni Ca.311 M medium bombers",
+      "source_chunk_id": "33b6dc8f-b230-87da-584c-d553ccec6e8f",
+      "source_chunk_index": 5,
+      "source_article": "Air Force of the Independent State of Croatia",
+      "source_article_id": "14176354",
+      "generated_at": "2026-03-16T17:41:05.551082",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q001"
+    },
+    {
+      "question": "On what date did Soviets recapture Kurst?",
+      "type": "grammar_typos",
+      "difficulty": "medium",
+      "expected_answer_hint": "the date when Kursk was retaken by Soviet forces",
+      "source_chunk_id": "a1620801-7a84-bc3a-f0be-158b7f552c6b",
+      "source_chunk_index": 2,
+      "source_article": "Battle of Kursk",
+      "source_article_id": "33102",
+      "generated_at": "2026-03-16T17:41:10.956175",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q002"
+    },
+    {
+      "question": "What is ISBN of the book titled The German Defeat in the East?",
+      "type": "grammar_typos",
+      "difficulty": "easy",
+      "expected_answer_hint": "a 10‑digit ISBN number",
+      "source_chunk_id": "63e191b5-e9b6-a351-4659-b5937f6365c3",
+      "source_chunk_index": 8,
+      "source_article": "Battle of Debrecen",
+      "source_article_id": "2184583",
+      "generated_at": "2026-03-16T17:41:16.719250",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q003"
+    },
+    {
+      "question": "What were the responsibilites of the Chief of the General Staff during the Second World War?",
+      "type": "grammar_typos",
+      "difficulty": "easy",
+      "expected_answer_hint": "describe the key duties of the Chief during WWII",
+      "source_chunk_id": "de225270-865f-bff3-cc14-7279d0f81325",
+      "source_chunk_index": 1,
+      "source_article": "Chief of the General Staff (United Kingdom)",
+      "source_article_id": "691314",
+      "generated_at": "2026-03-16T17:41:22.208054",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q004"
+    },
+    {
+      "question": "When was the reinforced concrete sub-station building commenced at Charters Towes to house a 25 KVA diesel electric generating plant?",
+      "type": "name_misspelling",
+      "difficulty": "easy",
+      "expected_answer_hint": "June 1943",
+      "source_chunk_id": "0bf0d339-314c-3686-51f7-e92c74f8464b",
+      "source_chunk_index": 5,
+      "source_article": "Breddan Aerodrome",
+      "source_article_id": "17661043",
+      "generated_at": "2026-03-16T17:41:29.481803",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q005"
+    },
+    {
+      "question": "When did the King's Afican Rifles enter Fianarantsoa?",
+      "type": "name_misspelling",
+      "difficulty": "easy",
+      "expected_answer_hint": "the date when they entered F",
+      "source_chunk_id": "c6edc6af-1337-2e99-0701-708a6782ce26",
+      "source_chunk_index": 11,
+      "source_article": "Battle of Madagascar",
+      "source_article_id": "1622242",
+      "generated_at": "2026-03-16T17:41:38.581454",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q006"
+    },
+    {
+      "question": "What lessons did naval staffs around the globe draw from the Battle of the Yallu River (1894)?",
+      "type": "name_misspelling",
+      "difficulty": "medium",
+      "expected_answer_hint": "the battle occurred in 1894 on the Yalu River",
+      "source_chunk_id": "8b7637c1-c948-8c8c-9134-d23399d3bace",
+      "source_chunk_index": 11,
+      "source_article": "Battle of the Yalu River (1894)",
+      "source_article_id": "251028",
+      "generated_at": "2026-03-16T17:41:45.153246",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q007"
+    },
+    {
+      "question": "Which artists, including Picaso, Dalí, Ernst, Klee, Léger and Miró, were mentioned as creators of degenerate art?",
+      "type": "name_misspelling",
+      "difficulty": "easy",
+      "expected_answer_hint": "a list of artists that includes the misspelled name",
+      "source_chunk_id": "b7b631ff-01a5-16c3-caee-02fa040f86ab",
+      "source_chunk_index": 10,
+      "source_article": "Degenerate art",
+      "source_article_id": "174872",
+      "generated_at": "2026-03-16T17:42:01.941959",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q008"
+    },
+    {
+      "question": "In which year did Belgium first adopt a large‑scale immigration program that brought in 22,000 displaced persons near the end of 1946?",
+      "type": "date_place_errors",
+      "difficulty": "easy",
+      "expected_answer_hint": "1947",
+      "source_chunk_id": "4e65ac0c-018d-6b95-583c-b71980a80ca8",
+      "source_chunk_index": 8,
+      "source_article": "Displaced persons camps in post–World War II Europe",
+      "source_article_id": "2929122",
+      "generated_at": "2026-03-16T17:42:07.209088",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q009"
+    },
+    {
+      "question": "According to the passage, in which year did Mussolini deliver the speech that contains the \"stick policy\" quote about Slavic peoples, if the speech is mistakenly dated to 1919?",
+      "type": "date_place_errors",
+      "difficulty": "medium",
+      "expected_answer_hint": "the correct year is 1920",
+      "source_chunk_id": "fe3de625-a5ab-0ab9-af51-b9cb6c16a20f",
+      "source_chunk_index": 14,
+      "source_article": "Benito Mussolini",
+      "source_article_id": "19283178",
+      "generated_at": "2026-03-16T17:42:29.485401",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q010"
+    },
+    {
+      "question": "When was the city council formed to reconstruct the city of Livorno in 1945?",
+      "type": "date_place_errors",
+      "difficulty": "easy",
+      "expected_answer_hint": "the correct date is 18 October 1944",
+      "source_chunk_id": "2b24c6cd-38e7-fe3f-81fa-4d2dabee8b64",
+      "source_chunk_index": 5,
+      "source_article": "Bombing of Livorno in World War II",
+      "source_article_id": "63176363",
+      "generated_at": "2026-03-16T17:42:35.486792",
+      "model": "nvidia/nemotron-3-nano-30b-a3b:free",
+      "id": "gen_q011"
+    }
+  ],
+  "metadata": {
+    "total_generated": 11,
+    "unique_articles": 11,
+    "generation_time_s": 96.4
+  }
+}
