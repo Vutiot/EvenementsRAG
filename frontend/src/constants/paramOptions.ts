@@ -119,7 +119,7 @@ export const LLM_MODELS: { value: string; label: string }[] = [
   { value: "__none__", label: "None" },
   { value: "mistralai/mistral-small-4-119b-2603", label: "Mistral Small 4 119B" },
   { value: "google/gemma-3-27b-it", label: "Gemma 3 27B" },
-  { value: "meta/llama-3.3-70b-instruct", label: "Llama 3.3 70B" },
+  { value: "nvidia/nemotron-3-nano-30b-a3b", label: "Nemotron 30B" },
 ];
 
 export const MAX_TOKENS_OPTIONS = [
