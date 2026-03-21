@@ -1,12 +1,11 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
-import { Link } from "react-router-dom";
 import ModeSwitcher from "../components/testing/ModeSwitcher";
 import type { TestingMode } from "../components/testing/ModeSwitcher";
 import ParameterModal from "../components/config/ParameterModal";
 import ConfigBadges from "../components/config/ConfigBadges";
-import PresetSelector from "../components/config/PresetSelector";
-import ConfigSummary from "../components/config/ConfigSummary";
 import QuestionPickerModal from "../components/config/QuestionPickerModal";
+import ExecutionPanel from "../components/testing/ExecutionPanel";
+import CollectionPreview from "../components/testing/CollectionPreview";
 import ChunkList from "../components/results/ChunkList";
 import StreamingAnswer from "../components/results/StreamingAnswer";
 import LatencyBreakdown from "../components/results/LatencyBreakdown";
@@ -18,12 +17,14 @@ import {
   getDatasets,
   getDataset,
   getDatasetRegistry,
+  getCollections,
   highlightChunks,
   runBenchmark,
   runSweep,
 } from "../api/client";
 import type {
   BenchmarkConfig,
+  CollectionInfo,
   DatasetInfo,
   DatasetQuestion,
   DatasetRegistryEntry,
@@ -38,25 +39,11 @@ import {
   computeSweepCombinations,
   extractSweepParams,
 } from "../utils/configHelpers";
+import type { BenchPhase, SweepPhase, ActiveRun, SweepProgress } from "../components/testing/types";
 
 // ── Types ─────────────────────────────────────────────────────────────
 
 type QueryPhase = "idle" | "ensuring" | "querying";
-type BenchPhase = "idle" | "ensuring" | "running" | "complete";
-type SweepPhase = "idle" | "running" | "complete";
-
-interface ActiveRun {
-  status: "running" | "complete" | "error";
-  progress: { current: number; total: number };
-  error?: string;
-}
-
-interface SweepProgress {
-  configIndex: number;
-  totalConfigs: number;
-  questionIndex: number;
-  totalQuestions: number;
-}
 
 // ── Component ─────────────────────────────────────────────────────────
 
@@ -107,6 +94,9 @@ export default function TestingPage() {
   const [sweepProgress, setSweepProgress] = useState<SweepProgress | null>(null);
   const [sweepResults, setSweepResults] = useState<SweepConfigCompleteEvent[]>([]);
   const [sweepAbort, setSweepAbort] = useState<AbortController | null>(null);
+
+  // ── Collection preview state (sweep) ────────────────────────────
+  const [existingCollections, setExistingCollections] = useState<CollectionInfo[]>([]);
 
   // ── Computed values ───────────────────────────────────────────────
   const overrideCount = useMemo(() => countOverrides(overrides), [overrides]);
@@ -183,6 +173,14 @@ export default function TestingPage() {
       setIsQueryEdited(query !== pickedQuestion.question);
     }
   }, [query, pickedQuestion]);
+
+  // Fetch existing collections for sweep collection preview
+  useEffect(() => {
+    if (mode !== "sweep") return;
+    getCollections()
+      .then((r) => setExistingCollections(r.collections))
+      .catch(() => {});
+  }, [mode, effectiveConfig]);
 
   // ── Shared handlers ───────────────────────────────────────────────
 
@@ -452,6 +450,7 @@ export default function TestingPage() {
         sweep_params: sweepParams,
         eval_dataset_id: selectedDatasetId,
         config_overrides: Object.keys(configOverrides).length > 0 ? configOverrides : null,
+        ...(runName ? { name: runName } : {}),
       },
       {
         onSweepStarted: (e) => {
@@ -482,6 +481,7 @@ export default function TestingPage() {
         },
         onSweepComplete: () => {
           setSweepPhase("complete");
+          setRunName("");
         },
         onError: (msg) => {
           setError(msg);
@@ -491,50 +491,13 @@ export default function TestingPage() {
     );
 
     setSweepAbort(controller);
-  }, [preset, selectedDatasetId, overrides]);
+  }, [preset, selectedDatasetId, overrides, runName]);
 
   const handleSweepCancel = useCallback(() => {
     sweepAbort?.abort();
     setSweepPhase("idle");
     setSweepProgress(null);
   }, [sweepAbort]);
-
-  // ── Shared config panel (reused across modes) ─────────────────────
-
-  const renderConfigPanel = () => (
-    <div className="col-span-4 space-y-4">
-      <PresetSelector selected={preset} onSelect={handlePresetChange} />
-
-      {baseConfig && (
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setParamsOpen(true)}
-            className="flex items-center gap-1.5 border border-gray-300 rounded-lg px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition"
-          >
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 6h9.75M10.5 6a1.5 1.5 0 1 1-3 0m3 0a1.5 1.5 0 1 0-3 0M3.75 6H7.5m3 12h9.75m-9.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-3.75 0H7.5m9-6h3.75m-3.75 0a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m-9.75 0h9.75" />
-            </svg>
-            {mode === "sweep" ? "Sweep Parameters" : "Parameters"}
-            {overrideCount > 0 && (
-              <span className="bg-amber-100 text-amber-700 rounded-full text-xs px-1.5 py-0.5 font-medium">
-                {overrideCount}
-              </span>
-            )}
-          </button>
-          {overrideCount > 0 && (
-            <button
-              onClick={handleResetOverrides}
-              className="text-xs text-amber-600 hover:text-amber-800 transition"
-            >
-              Reset ({overrideCount})
-            </button>
-          )}
-        </div>
-      )}
-
-      <ConfigSummary config={effectiveConfig} />
-    </div>
-  );
 
   // ── Render ────────────────────────────────────────────────────────
 
@@ -578,6 +541,11 @@ export default function TestingPage() {
             )}
           </div>
           <ConfigBadges config={effectiveConfig} />
+          {mode === "sweep" && combinationCount > 1 && (
+            <span className="inline-flex items-center gap-1 bg-blue-100 text-blue-700 rounded-full px-2.5 py-0.5 text-xs font-medium">
+              {combinationCount} configs
+            </span>
+          )}
         </div>
       </div>
 
@@ -704,287 +672,59 @@ export default function TestingPage() {
       {/* ── Benchmark Mode ─────────────────────────────────────────── */}
       {mode === "benchmark" && (
         <div key="benchmark" className="animate-fade-in-up space-y-4">
-              <div className="rounded border border-gray-200 bg-white p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">
-                      Eval Dataset
-                    </label>
-                    <select
-                      value={selectedDatasetId}
-                      onChange={(e) => setSelectedDatasetId(e.target.value)}
-                      className="w-full rounded border-gray-300 bg-white px-3 py-2 text-sm shadow-sm
-                                 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                      disabled={isBenchRunning}
-                    >
-                      <option value="">Select eval dataset...</option>
-                      {filteredDatasets.map((ds) => (
-                        <option key={ds.id} value={ds.id}>
-                          {ds.name} ({ds.total_questions} questions)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">
-                      Run Name <span className="text-gray-400">(optional)</span>
-                    </label>
-                    <input
-                      type="text"
-                      value={runName}
-                      onChange={(e) => setRunName(e.target.value)}
-                      placeholder="Auto-generated if empty"
-                      className="w-full rounded border-gray-300 bg-white px-3 py-2 text-sm shadow-sm
-                                 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                      disabled={isBenchRunning}
-                    />
-                  </div>
-
-                  <div className="shrink-0 pt-5">
-                    {isBenchRunning ? (
-                      <button
-                        onClick={handleBenchmarkCancel}
-                        className="rounded bg-red-600 px-5 py-2 text-sm font-medium text-white
-                                   hover:bg-red-700 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleBenchmarkRun}
-                        disabled={!effectiveConfig || !selectedDatasetId}
-                        className="rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white
-                                   hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
-                                   transition-colors"
-                      >
-                        Run Benchmark
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Progress bar */}
-                {activeRun && activeRun.status === "running" && activeRun.progress.total > 0 && (
-                  <div className="mt-3">
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-500 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${(activeRun.progress.current / activeRun.progress.total) * 100}%`,
-                          }}
-                        />
-                      </div>
-                      <span className="text-xs text-gray-500 whitespace-nowrap font-mono">
-                        {activeRun.progress.current}/{activeRun.progress.total}
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-400 mt-1">
-                      {benchPhase === "ensuring"
-                        ? "Preparing collection..."
-                        : `Evaluating questions... (${Math.round(
-                            (activeRun.progress.current / activeRun.progress.total) * 100
-                          )}%)`}
-                    </p>
-                  </div>
-                )}
-
-                {benchPhase === "ensuring" && (
-                  <div className="mt-3 flex items-center gap-2">
-                    <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                    <span className="text-sm text-gray-500">Preparing collection...</span>
-                  </div>
-                )}
-
-                {benchPhase === "complete" && (
-                  <p className="mt-3 text-sm text-green-600">
-                    Benchmark completed. View results in{" "}
-                    <Link to="/runs" className="underline hover:text-green-700">
-                      Run History
-                    </Link>.
-                  </p>
-                )}
-              </div>
-
-              {/* Error */}
-              {error && mode === "benchmark" && (
-                <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
+          <ExecutionPanel
+            mode="benchmark"
+            filteredDatasets={filteredDatasets}
+            selectedDatasetId={selectedDatasetId}
+            onDatasetChange={(id) => setSelectedDatasetId(id)}
+            runName={runName}
+            onRunNameChange={setRunName}
+            isRunning={isBenchRunning}
+            onRun={handleBenchmarkRun}
+            onCancel={handleBenchmarkCancel}
+            disabled={!effectiveConfig || !selectedDatasetId}
+            benchPhase={benchPhase}
+            activeRun={activeRun}
+          />
+          {error && mode === "benchmark" && (
+            <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
         </div>
       )}
 
       {/* ── Sweep Mode ─────────────────────────────────────────────── */}
       {mode === "sweep" && (
-        <div key="sweep" className="animate-fade-in-up">
-          <div className="grid grid-cols-12 gap-6">
-            {renderConfigPanel()}
-
-            <div className="col-span-8 space-y-4">
-              <div className="rounded border border-gray-200 bg-white p-4">
-                <div className="flex items-center gap-3">
-                  <div className="flex-1">
-                    <label className="block text-xs font-medium text-gray-500 mb-1">
-                      Eval Dataset
-                    </label>
-                    <select
-                      value={selectedDatasetId}
-                      onChange={(e) => setSelectedDatasetId(e.target.value)}
-                      className="w-full rounded border-gray-300 bg-white px-3 py-2 text-sm shadow-sm
-                                 focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                      disabled={isSweepRunning}
-                    >
-                      <option value="">Select eval dataset...</option>
-                      {filteredDatasets.map((ds) => (
-                        <option key={ds.id} value={ds.id}>
-                          {ds.name} ({ds.total_questions} questions)
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div className="shrink-0 pt-5">
-                    {isSweepRunning ? (
-                      <button
-                        onClick={handleSweepCancel}
-                        className="rounded bg-red-600 px-5 py-2 text-sm font-medium text-white
-                                   hover:bg-red-700 transition-colors"
-                      >
-                        Cancel
-                      </button>
-                    ) : (
-                      <button
-                        onClick={handleSweepRun}
-                        disabled={!preset || !selectedDatasetId}
-                        className="rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white
-                                   hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
-                                   transition-colors"
-                      >
-                        Run Sweep ({combinationCount} config{combinationCount !== 1 ? "s" : ""})
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Two-level progress */}
-                {sweepProgress && isSweepRunning && (
-                  <div className="mt-3 space-y-2">
-                    {/* Config-level progress */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                        <span>Configs</span>
-                        <span className="font-mono">
-                          {sweepResults.length}/{sweepProgress.totalConfigs}
-                        </span>
-                      </div>
-                      <div className="h-3 bg-gray-200 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-600 rounded-full transition-all duration-300"
-                          style={{
-                            width: `${(sweepResults.length / sweepProgress.totalConfigs) * 100}%`,
-                          }}
-                        />
-                      </div>
-                    </div>
-                    {/* Question-level progress */}
-                    <div>
-                      <div className="flex items-center justify-between text-xs text-gray-400 mb-1">
-                        <span>
-                          Config {sweepProgress.configIndex} of {sweepProgress.totalConfigs}
-                        </span>
-                        <span className="font-mono">
-                          {sweepProgress.questionIndex}/{sweepProgress.totalQuestions}
-                        </span>
-                      </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-blue-400 rounded-full transition-all duration-300"
-                          style={{
-                            width: sweepProgress.totalQuestions > 0
-                              ? `${(sweepProgress.questionIndex / sweepProgress.totalQuestions) * 100}%`
-                              : "0%",
-                          }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Completed configs table */}
-                {sweepResults.length > 0 && (
-                  <div className="mt-4 overflow-x-auto">
-                    <table className="w-full text-xs">
-                      <thead>
-                        <tr className="border-b text-gray-500 text-left">
-                          <th className="pb-1.5 pr-2">#</th>
-                          <th className="pb-1.5 pr-2">Params</th>
-                          <th className="pb-1.5 pr-2 text-right">MRR</th>
-                          <th className="pb-1.5 pr-2 text-right">R@5</th>
-                          <th className="pb-1.5 pr-2 text-right">R@10</th>
-                          <th className="pb-1.5 pr-2 text-right">Time</th>
-                          <th className="pb-1.5">Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {sweepResults.map((r) => (
-                          <tr key={r.config_index} className="border-b border-gray-50">
-                            <td className="py-1 pr-2 text-gray-400">{r.config_index}</td>
-                            <td className="py-1 pr-2 font-mono truncate max-w-[220px]" title={
-                              Object.entries(r.params)
-                                .map(([k, v]) => `${k.split(".").pop()}=${v}`)
-                                .join(", ")
-                            }>
-                              {Object.entries(r.params)
-                                .map(([k, v]) => `${k.split(".").pop()}=${v}`)
-                                .join(", ")}
-                            </td>
-                            <td className="py-1 pr-2 text-right font-mono">
-                              {r.status === "ok" ? r.avg_mrr?.toFixed(4) : "\u2014"}
-                            </td>
-                            <td className="py-1 pr-2 text-right font-mono">
-                              {r.status === "ok" ? r.avg_recall_at_5?.toFixed(4) : "\u2014"}
-                            </td>
-                            <td className="py-1 pr-2 text-right font-mono">
-                              {r.status === "ok" ? r.avg_recall_at_10?.toFixed(4) : "\u2014"}
-                            </td>
-                            <td className="py-1 pr-2 text-right font-mono">
-                              {r.status === "ok" ? `${r.total_wall_time_s?.toFixed(1)}s` : "\u2014"}
-                            </td>
-                            <td className="py-1">
-                              {r.status === "ok" ? (
-                                <span className="text-green-600 font-medium">OK</span>
-                              ) : (
-                                <span className="text-red-500" title={r.error}>ERR</span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-
-                {sweepPhase === "complete" && (
-                  <p className="mt-3 text-sm text-green-600">
-                    Sweep completed ({sweepResults.filter((r) => r.status === "ok").length}/
-                    {sweepResults.length} configs succeeded). View results in{" "}
-                    <Link to="/runs" className="underline hover:text-green-700">
-                      Run History
-                    </Link>.
-                  </p>
-                )}
-              </div>
-
-              {/* Error */}
-              {error && mode === "sweep" && (
-                <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
-                  {error}
-                </div>
-              )}
+        <div key="sweep" className="animate-fade-in-up space-y-4">
+          {effectiveConfig && (
+            <CollectionPreview
+              overrides={overrides}
+              baseConfig={effectiveConfig}
+              existingCollections={existingCollections}
+            />
+          )}
+          <ExecutionPanel
+            mode="sweep"
+            filteredDatasets={filteredDatasets}
+            selectedDatasetId={selectedDatasetId}
+            onDatasetChange={(id) => setSelectedDatasetId(id)}
+            runName={runName}
+            onRunNameChange={setRunName}
+            isRunning={isSweepRunning}
+            onRun={handleSweepRun}
+            onCancel={handleSweepCancel}
+            disabled={!preset || !selectedDatasetId}
+            combinationCount={combinationCount}
+            sweepPhase={sweepPhase}
+            sweepProgress={sweepProgress}
+            sweepResults={sweepResults}
+          />
+          {error && mode === "sweep" && (
+            <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
             </div>
-          </div>
+          )}
         </div>
       )}
 
