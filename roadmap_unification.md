@@ -336,23 +336,23 @@ Add Document-ID-based precision as a new metric tier, activate the existing but 
 
 Remove layout and structural differences between benchmark and sweep modes. Both use the same centered single-column layout with identical sections. Sweep mode uses MultiSelectChips for non-generation params and shows a collection combination list with existing/new status. Benchmark keeps single-select ParamChips. Factorize shared execution UI into a reusable component.
 
-##### 🔵 E6-F9-T1: Refactor TestingPage shared layout for benchmark and sweep
+##### ✅ E6-F9-T1: Refactor TestingPage shared layout for benchmark and sweep
 - blocked_by: []
-- status: ready
+- status: done
 - effort: M
 - agent_hint: In `frontend/src/pages/TestingPage.tsx`: (1) Replace sweep mode rendering (currently uses separate grid layout and different config approach) with structure identical to benchmark mode: centered single-column `max-w-3xl mx-auto`, "Configure Pipeline" button + ConfigBadges + eval dataset selector + run name + run/cancel button. (2) Remove the `grid grid-cols-12 gap-6` wrapper from sweep mode. (3) Both modes share: eval dataset dropdown + run name input + run/cancel button. (4) Sweep-specific differences: button says "Run Sweep (N configs)" instead of "Run Benchmark"; handler calls `handleSweepRun`; progress uses two-level sweep bars; completed configs table. (5) Move sweep combination count to a badge near ConfigBadges when mode is "sweep" and `combinationCount > 1`. (6) Sweep mode opens ParameterModal with `multiSelect={true}` (as today). Benchmark opens with `multiSelect={false}` (as today). Same button, same position, different prop.
 - description: Remove structural layout differences between benchmark and sweep modes. Both use identical centered single-column layout. Only execution handler and progress display differ. Sweep keeps multi-select in modal.
 
-##### ⚪ E6-F9-T2: Extract shared ExecutionPanel component
+##### ✅ E6-F9-T2: Extract shared ExecutionPanel component
 - blocked_by: [E6-F9-T1]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Create `frontend/src/components/testing/ExecutionPanel.tsx`. Props: `mode: "benchmark" | "sweep"`, `filteredDatasets: DatasetInfo[]`, `selectedDatasetId: string`, `onDatasetChange`, `runName: string`, `onRunNameChange`, `isRunning: boolean`, `onRun: () => void`, `onCancel: () => void`, `disabled: boolean`, `combinationCount?: number`, `progress?: { current: number; total: number; phase?: string }`, `sweepProgress?: SweepProgress`, `sweepResults?: SweepConfigCompleteEvent[]`, `isComplete: boolean`. Renders: eval dataset dropdown, run name text input, run/cancel button (text varies by mode), appropriate progress bars, completion link to `/runs`. In `TestingPage.tsx`, replace benchmark and sweep execution UI with `<ExecutionPanel>` in both modes.
 - description: Extract duplicated eval-dataset + run-name + run-button + progress UI into a shared ExecutionPanel component used by both benchmark and sweep modes. Ensures future changes apply to both modes automatically.
 
-##### ⚪ E6-F9-T3: Collection preview list for sweep parameter combinations
+##### ✅ E6-F9-T3: Collection preview list for sweep parameter combinations
 - blocked_by: [E6-F9-T1]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: (1) Create `frontend/src/utils/deriveCollectionName.ts` — function `deriveCollectionName(datasetName, backend, chunkSize, chunkOverlap, embeddingModel, distanceMetric) -> string` mirroring `CollectionService.derive_collection_name()` in `src/api/collection_service.py` (lines 37-56). Include `_EMBEDDING_SHORT_NAMES` map. (2) Create `frontend/src/components/testing/CollectionPreview.tsx`. Props: `overrides: Record<string, unknown>`, `baseConfig: BenchmarkConfig | null`, `existingCollections: string[]`. Compute cartesian product of collection-related sweep params (chunk_size, chunk_overlap, embedding_model, distance_metric, backend) from overrides. For each combo: derive collection name, show green badge "exists" or amber badge "new". Scrollable `max-h-48 overflow-y-auto`. Show summary: "N collections (M existing, P new)". (3) In `TestingPage.tsx`, when mode is "sweep", render `<CollectionPreview>` between ConfigBadges and ExecutionPanel. Fetch existing collections via `getCollections()` on mount/config change. No Import button in sweep — collections are derived from multi-select param values only.
 - description: Show a scrollable preview list of all collection names that will be used/created during a sweep, each with an existing/new status badge. Uses frontend cartesian product of collection params to derive names, checked against the existing collections API.
