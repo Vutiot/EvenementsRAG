@@ -1,9 +1,16 @@
 import { NavLink } from "react-router-dom";
 
-const NAV_ITEMS = [
+interface NavSection {
+  group: string;
+  subtitle?: string;
+  items: { to: string; label: string }[];
+}
+
+const NAV_ITEMS: NavSection[] = [
   {
-    group: "Query",
-    items: [{ to: "/query", label: "Query Tester" }],
+    group: "Testing",
+    subtitle: "Query, Benchmarks & Sweeps",
+    items: [{ to: "/testing", label: "Testing" }],
   },
   {
     group: "Data",
@@ -13,12 +20,11 @@ const NAV_ITEMS = [
     ],
   },
   {
-    group: "Benchmark",
+    group: "Results",
     items: [
-      { to: "/runs", label: "Runs" },
+      { to: "/runs", label: "Run History" },
       { to: "/benchmarks", label: "Result Viewer" },
       { to: "/metrics", label: "Metric Dashboards" },
-      { to: "/sweeps", label: "Sweep Visualizer" },
     ],
   },
 ];
@@ -39,6 +45,11 @@ export default function Sidebar() {
             <h2 className="px-4 text-xs font-semibold uppercase tracking-wider text-gray-500 mb-1">
               {section.group}
             </h2>
+            {section.subtitle && (
+              <p className="px-4 text-[10px] text-gray-500 mb-1">
+                {section.subtitle}
+              </p>
+            )}
             {section.items.map((item) => (
               <NavLink
                 key={item.to}
