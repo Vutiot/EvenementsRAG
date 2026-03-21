@@ -59,6 +59,20 @@ BENCHMARK_RESULT = {
         "name": "test_run",
         "description": "test",
         "dataset": {"dataset_name": "wiki_10k", "collection_name": "test"},
+        "chunking": {"chunk_size": 512, "chunk_overlap": 128},
+        "embedding": {"model_name": "sentence-transformers/all-MiniLM-L6-v2", "dimension": 384},
+        "retrieval": {
+            "technique": "vanilla",
+            "top_k": 100,
+            "rerank_k": 20,
+            "sparse_weight": 0.3,
+            "dense_weight": 0.7,
+            "fusion_method": "rrf",
+            "sparse_type": "bm25",
+        },
+        "reranker": {"type": "cross_encoder", "model_name": "cross-encoder/ms-marco-MiniLM-L-12-v2"},
+        "generation": {"model": "nvidia/nemotron-3-nano-30b-a3b"},
+        "vector_db": {"backend": "qdrant", "distance_metric": "cosine"},
     },
     "config_hash": "abc123",
     "phase_name": "phase1_vanilla",
@@ -90,6 +104,7 @@ BENCHMARK_RESULT = {
         },
     ],
     "total_wall_time_s": 30.5,
+    "eval_dataset_name": "Query Styles 100q",
     "metrics_summary": {
         "latency": {"retrieval_p50_ms": 12.0, "generation_p50_ms": 450.0},
         "ragas": {"avg_faithfulness": 0.8, "avg_answer_relevancy": 0.9, "num_questions_scored": 1},
@@ -182,6 +197,44 @@ class TestListResults:
         assert new["phase_name"] == "phase1_vanilla"
         assert new["timestamp"] == "2026-01-15T12:00:00Z"
         assert new["avg_mrr"] == 0.75
+
+    def test_config_summary_full_fields(self, mock_results_dir):
+        response = client.get("/api/results")
+        data = response.json()
+        new = next(r for r in data if r["filename"] == "new_benchmark.json")
+        cs = new["config_summary"]
+        assert cs is not None
+        # original 7
+        assert cs["technique"] == "vanilla"
+        assert cs["chunk_size"] == 512
+        assert cs["embedding_model"] == "sentence-transformers/all-MiniLM-L6-v2"
+        assert cs["dataset_name"] == "wiki_10k"
+        assert cs["top_k"] == 100
+        assert cs["llm_model"] == "nvidia/nemotron-3-nano-30b-a3b"
+        assert cs["distance_metric"] == "cosine"
+        # new 8
+        assert cs["chunk_overlap"] == 128
+        assert cs["backend"] == "qdrant"
+        assert cs["reranker_type"] == "cross_encoder"
+        assert cs["reranker_model"] == "cross-encoder/ms-marco-MiniLM-L-12-v2"
+        assert cs["rerank_top_k"] == 20
+        assert cs["sparse_weight"] == 0.3
+        assert cs["sparse_type"] == "bm25"
+        assert cs["fusion_method"] == "rrf"
+
+    def test_run_name_and_eval_dataset(self, mock_results_dir):
+        response = client.get("/api/results")
+        data = response.json()
+        new = next(r for r in data if r["filename"] == "new_benchmark.json")
+        assert new["run_name"] == "test_run"
+        assert new["eval_dataset_name"] == "Query Styles 100q"
+
+    def test_legacy_has_null_run_name_and_eval_dataset(self, mock_results_dir):
+        response = client.get("/api/results")
+        data = response.json()
+        legacy = next(r for r in data if r["filename"] == "legacy_30q.json")
+        assert legacy["run_name"] is None
+        assert legacy["eval_dataset_name"] is None
 
     def test_subdirectory_files_found(self, mock_results_dir):
         response = client.get("/api/results")

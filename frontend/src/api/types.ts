@@ -38,12 +38,30 @@ export interface ResultFileInfo {
   config_summary: {
     technique: string | null;
     chunk_size: number | null;
+    chunk_overlap: number | null;
     embedding_model: string | null;
     dataset_name: string | null;
     top_k: number | null;
     llm_model: string | null;
     distance_metric: string | null;
+    backend: string | null;
+    reranker_type: string | null;
+    reranker_model: string | null;
+    rerank_top_k: number | null;
+    sparse_weight: number | null;
+    sparse_type: string | null;
+    fusion_method: string | null;
   } | null;
+  sweep_meta: SweepMeta | null;
+  run_name: string | null;
+  eval_dataset_name: string | null;
+}
+
+/** Sweep metadata for grouped sweep runs */
+export interface SweepMeta {
+  sweep_id: string;
+  child_filenames: string[];
+  swept_params: Record<string, unknown[]>;
 }
 
 /** Single normalized question from a benchmark result */
@@ -259,6 +277,7 @@ export interface BenchmarkRunRequest {
   preset: string;
   config_overrides: Record<string, unknown> | null;
   eval_dataset_id: string;
+  name?: string;
 }
 
 export interface BenchmarkStartedEvent {

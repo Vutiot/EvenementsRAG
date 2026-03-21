@@ -83,13 +83,17 @@ class BenchmarkService:
             merged_dump["dataset"]["questions_file"] = str(dataset_path)
             # Disable highlight_chunks for benchmark runs
             merged_dump["generation"]["highlight_chunks"] = False
+            # Apply user-provided run name
+            if request.name:
+                merged_dump["name"] = request.name
             cfg = BenchmarkConfig.model_validate(merged_dump)
 
-            # 6. Load questions to get count
+            # 6. Load questions to get count + extract eval dataset name
             with open(dataset_path, "r", encoding="utf-8") as f:
                 ds_data = json.load(f)
             questions = ds_data.get("questions", [])
             total_questions = len(questions)
+            eval_dataset_name = ds_data.get("name", request.eval_dataset_id)
 
             yield _sse("started", {
                 "total_questions": total_questions,
@@ -143,6 +147,7 @@ class BenchmarkService:
                     result = runner.run(
                         output_dir=RESULTS_DIR,
                         progress_callback=_progress_callback,
+                        eval_dataset_name=eval_dataset_name,
                     )
                     result_holder.append(result)
                 except Exception as exc:

@@ -41,6 +41,9 @@ export default function BenchmarkRuns() {
   const [selectedDatasetId, setSelectedDatasetId] = useState("");
   const [registryMap, setRegistryMap] = useState<Record<string, DatasetRegistryEntry>>({});
 
+  // Run name
+  const [runName, setRunName] = useState("");
+
   // Run state
   const [phase, setPhase] = useState<RunPhase>("idle");
   const [activeRun, setActiveRun] = useState<ActiveRun | null>(null);
@@ -174,6 +177,7 @@ export default function BenchmarkRuns() {
         preset,
         config_overrides: Object.keys(finalOverrides).length > 0 ? finalOverrides : null,
         eval_dataset_id: selectedDatasetId,
+        ...(runName ? { name: runName } : {}),
       },
       {
         onStarted: (e) => {
@@ -188,6 +192,7 @@ export default function BenchmarkRuns() {
         onComplete: () => {
           setActiveRun(null);
           setPhase("complete");
+          setRunName("");
           // Refresh results list
           loadResults();
         },
@@ -200,7 +205,7 @@ export default function BenchmarkRuns() {
     );
 
     setAbortController(controller);
-  }, [preset, effectiveConfig, selectedDatasetId, overrides, overrideCount, loadResults]);
+  }, [preset, effectiveConfig, selectedDatasetId, overrides, overrideCount, runName, loadResults]);
 
   const handleCancel = useCallback(() => {
     abortController?.abort();
@@ -276,6 +281,22 @@ export default function BenchmarkRuns() {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              {/* Run name */}
+              <div className="flex-1">
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  Run Name <span className="text-gray-400">(optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={runName}
+                  onChange={(e) => setRunName(e.target.value)}
+                  placeholder="Auto-generated if empty"
+                  className="w-full rounded border-gray-300 bg-white px-3 py-2 text-sm shadow-sm
+                             focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  disabled={isRunning}
+                />
               </div>
 
               {/* Run / Cancel button */}

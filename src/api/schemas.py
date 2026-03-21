@@ -69,6 +69,9 @@ class ResultFileInfo(BaseModel):
     avg_recall_at_10: float | None = None
     total_wall_time_s: float | None = None
     config_summary: dict | None = None
+    sweep_meta: dict | None = None  # {sweep_id, child_filenames, swept_params}
+    run_name: str | None = None
+    eval_dataset_name: str | None = None
 
 
 class NormalizedQuestion(BaseModel):
@@ -187,6 +190,7 @@ class BenchmarkRunRequest(BaseModel):
     preset: str
     config_overrides: dict | None = None
     eval_dataset_id: str
+    name: str | None = None  # Optional user-provided run name
 
 
 class NormalizedBenchmarkResult(BaseModel):
