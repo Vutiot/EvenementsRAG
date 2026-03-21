@@ -108,12 +108,14 @@ class DatasetService:
 
     # ── List / Get / Delete ───────────────────────────────────────────
 
-    def list_datasets(self) -> list[dict]:
+    def list_datasets(self, *, collection_name: str | None = None) -> list[dict]:
         datasets: list[dict] = []
         for fp in sorted(DATASETS_DIR.glob("*.json"), reverse=True):
             try:
                 with open(fp, "r", encoding="utf-8") as f:
                     data = json.load(f)
+                if collection_name and data.get("collection_name") != collection_name:
+                    continue
                 datasets.append({
                     "id": data["id"],
                     "name": data["name"],

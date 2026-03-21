@@ -108,8 +108,11 @@ export function getDatasetRegistry(): Promise<{ datasets: DatasetRegistryEntry[]
   return fetchJSON(`${BASE}/datasets/registry`);
 }
 
-export function getDatasets(): Promise<{ datasets: DatasetInfo[] }> {
-  return fetchJSON(`${BASE}/datasets`);
+export function getDatasets(collectionName?: string): Promise<{ datasets: DatasetInfo[] }> {
+  const url = collectionName
+    ? `${BASE}/datasets?collection_name=${encodeURIComponent(collectionName)}`
+    : `${BASE}/datasets`;
+  return fetchJSON(url);
 }
 
 export function getDataset(id: string): Promise<DatasetDetail> {

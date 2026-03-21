@@ -39,6 +39,7 @@ import {
   computeSweepCombinations,
   extractSweepParams,
 } from "../utils/configHelpers";
+import { deriveCollectionName } from "../constants/paramOptions";
 import type { BenchPhase, SweepPhase, ActiveRun, SweepProgress } from "../components/testing/types";
 
 // ── Types ─────────────────────────────────────────────────────────────
@@ -139,11 +140,8 @@ export default function TestingPage() {
 
   // ── Effects ───────────────────────────────────────────────────────
 
-  // Load datasets and registry on mount
+  // Load registry on mount
   useEffect(() => {
-    getDatasets()
-      .then((r) => setDatasets(r.datasets.filter((d) => d.status === "completed")))
-      .catch(() => {});
     getDatasetRegistry()
       .then((r) => {
         const map: Record<string, DatasetRegistryEntry> = {};
@@ -152,6 +150,24 @@ export default function TestingPage() {
       })
       .catch(() => {});
   }, []);
+
+  // Load datasets — filtered by collection in benchmark mode, unfiltered in sweep mode
+  useEffect(() => {
+    let collectionFilter: string | undefined;
+    if (mode === "benchmark" && effectiveConfig) {
+      collectionFilter = deriveCollectionName(
+        effectiveConfig.dataset.dataset_name,
+        effectiveConfig.vector_db.backend,
+        effectiveConfig.chunking.chunk_size,
+        effectiveConfig.chunking.chunk_overlap,
+        effectiveConfig.embedding.model_name,
+        effectiveConfig.vector_db.distance_metric,
+      );
+    }
+    getDatasets(collectionFilter)
+      .then((r) => setDatasets(r.datasets.filter((d) => d.status === "completed")))
+      .catch(() => {});
+  }, [mode, effectiveConfig]);
 
   // Auto-load default preset on mount
   useEffect(() => {

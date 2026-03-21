@@ -4,7 +4,7 @@ import asyncio
 import queue
 import threading
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
 from src.api.dataset_service import DatasetService
@@ -46,9 +46,9 @@ async def get_dataset_registry():
 
 
 @router.get("/datasets", response_model=DatasetListResponse)
-async def list_datasets():
-    """List all saved datasets."""
-    datasets = await asyncio.to_thread(_service.list_datasets)
+async def list_datasets(collection_name: str | None = Query(None)):
+    """List all saved datasets, optionally filtered by collection_name."""
+    datasets = await asyncio.to_thread(_service.list_datasets, collection_name=collection_name)
     return DatasetListResponse(datasets=[DatasetInfo(**d) for d in datasets])
 
 
