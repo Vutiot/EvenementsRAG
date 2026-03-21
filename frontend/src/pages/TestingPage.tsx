@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useMemo } from "react";
+import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { Link } from "react-router-dom";
 import ModeSwitcher from "../components/testing/ModeSwitcher";
 import type { TestingMode } from "../components/testing/ModeSwitcher";
@@ -7,13 +7,13 @@ import ConfigSummary from "../components/config/ConfigSummary";
 import ParameterModal from "../components/config/ParameterModal";
 import QuestionPickerModal from "../components/config/QuestionPickerModal";
 import ChunkList from "../components/results/ChunkList";
-import GeneratedAnswer from "../components/results/GeneratedAnswer";
+import StreamingAnswer from "../components/results/StreamingAnswer";
 import LatencyBreakdown from "../components/results/LatencyBreakdown";
 import ChunkScoresChart from "../components/results/ChunkScoresChart";
 import {
   getPresetConfig,
-  executeQuery,
   ensureCollection,
+  executeQueryStreaming,
   getDatasets,
   getDataset,
   getDatasetRegistry,
@@ -26,7 +26,7 @@ import type {
   DatasetQuestion,
   DatasetRegistryEntry,
   EnsureCollectionRequest,
-  QueryResult,
+  RetrievedChunk,
 } from "../api/types";
 import { deepMerge, setOverridePath, countOverrides } from "../utils/configHelpers";
 
@@ -63,13 +63,21 @@ export default function TestingPage() {
   // ── Query-mode state ──────────────────────────────────────────────
   const [query, setQuery] = useState("");
   const [queryPhase, setQueryPhase] = useState<QueryPhase>("idle");
-  const [queryResult, setQueryResult] = useState<QueryResult | null>(null);
   const [questionPickerOpen, setQuestionPickerOpen] = useState(false);
   const [pickedQuestion, setPickedQuestion] = useState<DatasetQuestion | null>(null);
   const [isQueryEdited, setIsQueryEdited] = useState(false);
   const [highlightedChunks, setHighlightedChunks] = useState<Record<string, string>>({});
   const [relevanceMap, setRelevanceMap] = useState<Record<string, string>>({});
   const [highlighting, setHighlighting] = useState(false);
+
+  // ── Streaming state ────────────────────────────────────────────────
+  const [streamingTokens, setStreamingTokens] = useState<string[]>([]);
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [streamingChunks, setStreamingChunks] = useState<RetrievedChunk[] | null>(null);
+  const [streamRetrievalMs, setStreamRetrievalMs] = useState(0);
+  const [streamGenerationMs, setStreamGenerationMs] = useState<number | null>(null);
+  const [streamError, setStreamError] = useState<string | undefined>(undefined);
+  const streamControllerRef = useRef<AbortController | null>(null);
 
   // ── Benchmark-mode state ──────────────────────────────────────────
   const [benchPhase, setBenchPhase] = useState<BenchPhase>("idle");
@@ -150,7 +158,8 @@ export default function TestingPage() {
 
   const handlePresetChange = useCallback(async (filename: string) => {
     setPreset(filename);
-    setQueryResult(null);
+    setStreamingChunks(null);
+    setStreamingTokens([]);
     setError(null);
     setOverrides({});
     if (!filename) {
@@ -197,9 +206,18 @@ export default function TestingPage() {
 
   const handleQueryExecute = useCallback(async () => {
     if (!query.trim() || !preset || !effectiveConfig) return;
+
+    // Abort any previous streaming request
+    streamControllerRef.current?.abort();
+
     setQueryPhase("ensuring");
     setError(null);
-    setQueryResult(null);
+    setStreamingChunks(null);
+    setStreamingTokens([]);
+    setIsStreaming(false);
+    setStreamRetrievalMs(0);
+    setStreamGenerationMs(null);
+    setStreamError(undefined);
     setHighlightedChunks({});
     setRelevanceMap({});
     setHighlighting(false);
@@ -226,41 +244,78 @@ export default function TestingPage() {
           collection_name: ensureRes.collection_name,
         },
       };
-
-      setQueryPhase("querying");
-      const res = await executeQuery(query, preset, finalOverrides);
-      setQueryResult(res);
-
-      if (ec.generation.highlight_chunks && res.retrieved_chunks.length > 0) {
-        setHighlighting(true);
-        try {
-          const hlRes = await highlightChunks(
-            query,
-            res.retrieved_chunks.map((c) => ({
-              chunk_id: c.chunk_id,
-              content: c.content,
-            })),
-            ec.generation.model,
-          );
-          const hlMap: Record<string, string> = {};
-          const relMap: Record<string, string> = {};
-          for (const hl of hlRes.highlighted_chunks) {
-            hlMap[hl.chunk_id] = hl.highlighted_content;
-            if (hl.relevance) relMap[hl.chunk_id] = hl.relevance;
-          }
-          setHighlightedChunks(hlMap);
-          setRelevanceMap(relMap);
-        } catch {
-          // Highlighting is best-effort
-        } finally {
-          setHighlighting(false);
-        }
-      }
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
-    } finally {
       setQueryPhase("idle");
+      return;
     }
+
+    setQueryPhase("querying");
+
+    const ec = effectiveConfig;
+    // Store chunks in a local variable for highlighting in the completion callback
+    let retrievedChunks: RetrievedChunk[] = [];
+
+    const controller = executeQueryStreaming(
+      query,
+      preset,
+      Object.keys(finalOverrides).length > 0 ? finalOverrides : undefined,
+      {
+        onRetrievalComplete: (e) => {
+          retrievedChunks = e.chunks;
+          setStreamingChunks(e.chunks);
+          setStreamRetrievalMs(e.retrieval_time_ms);
+          if (ec.generation.enabled) {
+            setIsStreaming(true);
+          } else {
+            setQueryPhase("idle");
+          }
+        },
+        onGenerationToken: (e) => {
+          setStreamingTokens((prev) => [...prev, e.token]);
+        },
+        onGenerationComplete: async (e) => {
+          setIsStreaming(false);
+          setStreamGenerationMs(e.generation_time_ms);
+          setQueryPhase("idle");
+
+          // Trigger highlighting (best-effort)
+          if (ec.generation.highlight_chunks && retrievedChunks.length > 0) {
+            setHighlighting(true);
+            try {
+              const hlRes = await highlightChunks(
+                query,
+                retrievedChunks.map((c) => ({
+                  chunk_id: c.chunk_id,
+                  content: c.content,
+                })),
+                ec.generation.model,
+              );
+              const hlMap: Record<string, string> = {};
+              const relMap: Record<string, string> = {};
+              for (const hl of hlRes.highlighted_chunks) {
+                hlMap[hl.chunk_id] = hl.highlighted_content;
+                if (hl.relevance) relMap[hl.chunk_id] = hl.relevance;
+              }
+              setHighlightedChunks(hlMap);
+              setRelevanceMap(relMap);
+            } catch {
+              // best-effort
+            } finally {
+              setHighlighting(false);
+            }
+          }
+        },
+        onError: (msg) => {
+          setIsStreaming(false);
+          setStreamError(msg);
+          setError(msg);
+          setQueryPhase("idle");
+        },
+      },
+    );
+
+    streamControllerRef.current = controller;
   }, [query, preset, overrides, overrideCount, effectiveConfig]);
 
   // ── Benchmark-mode handlers ───────────────────────────────────────
@@ -465,40 +520,52 @@ export default function TestingPage() {
                 </div>
               )}
 
-              {/* Loading spinner */}
-              {queryPhase !== "idle" && (
+              {/* Loading spinner — only during collection preparation */}
+              {queryPhase === "ensuring" && (
                 <div className="flex flex-col items-center justify-center py-12 gap-3">
                   <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
                   <span className="text-sm text-gray-500">
-                    {queryPhase === "ensuring"
-                      ? "Preparing collection (indexing if needed)..."
-                      : "Executing query..."}
+                    Preparing collection (indexing if needed)...
                   </span>
                 </div>
               )}
 
-              {/* Results */}
-              {queryResult && queryPhase === "idle" && (
+              {/* Retrieving indicator — after ensure, before chunks arrive */}
+              {queryPhase === "querying" && !streamingChunks && (
+                <div className="flex flex-col items-center justify-center py-12 gap-3">
+                  <div className="h-8 w-8 animate-spin rounded-full border-4 border-blue-600 border-t-transparent" />
+                  <span className="text-sm text-gray-500">Retrieving chunks...</span>
+                </div>
+              )}
+
+              {/* Results — appear as soon as chunks arrive */}
+              {streamingChunks && (
                 <div className="space-y-4">
-                  <GeneratedAnswer answer={queryResult.generated_answer} />
                   <LatencyBreakdown
-                    retrievalMs={queryResult.retrieval_time_ms}
-                    generationMs={queryResult.generation_time_ms}
+                    retrievalMs={streamRetrievalMs}
+                    generationMs={streamGenerationMs ?? 0}
                   />
                   <ChunkScoresChart
-                    chunks={queryResult.retrieved_chunks}
+                    chunks={streamingChunks}
                     sourceChunkId={sourceChunkId}
                     highlightedChunkIds={highlightedChunkIds}
                     highlightedContent={highlightedChunks}
                     relevanceMap={relevanceMap}
                   />
                   <ChunkList
-                    chunks={queryResult.retrieved_chunks}
+                    chunks={streamingChunks}
                     highlightedContent={highlightedChunks}
                     highlighting={highlighting}
                     sourceChunkId={sourceChunkId}
                     relevanceMap={relevanceMap}
                   />
+                  {(isStreaming || streamingTokens.length > 0) && (
+                    <StreamingAnswer
+                      tokens={streamingTokens}
+                      isStreaming={isStreaming}
+                      error={streamError}
+                    />
+                  )}
                 </div>
               )}
             </div>

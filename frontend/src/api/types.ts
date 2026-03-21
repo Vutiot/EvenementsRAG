@@ -284,6 +284,21 @@ export interface BenchmarkCompleteEvent {
   total_wall_time_s: number;
 }
 
+/** Query streaming types */
+export interface QueryStreamRetrievalEvent {
+  chunks: RetrievedChunk[];
+  retrieval_time_ms: number;
+}
+
+export interface QueryStreamTokenEvent {
+  token: string;
+}
+
+export interface QueryStreamCompleteEvent {
+  full_answer: string;
+  generation_time_ms: number;
+}
+
 /** Chunk highlighting types */
 export interface HighlightedChunk {
   chunk_id: string;

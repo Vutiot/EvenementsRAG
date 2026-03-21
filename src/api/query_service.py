@@ -12,10 +12,11 @@ Usage (from a FastAPI endpoint):
 """
 
 import importlib
+import json
 import threading
 import time
 from collections import OrderedDict
-from typing import Any, Dict, Tuple
+from typing import Any, Dict, Generator, Tuple
 
 from src.benchmarks.config import BenchmarkConfig
 from src.retrieval.reranker import BaseReranker
@@ -30,6 +31,23 @@ _RAG_REGISTRY: Dict[str, str] = {
     "vanilla": "src.rag.phase1_vanilla.retriever.VanillaRetriever",
     "hybrid": "src.rag.phase3_hybrid.retriever.HybridRetriever",
 }
+
+
+def _sse(event: str, data: dict) -> str:
+    """Format a single SSE message."""
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+def _chunk_to_dict(chunk) -> dict:
+    """Serialize a RAG RetrievedChunk to the flat API dict format."""
+    return {
+        "chunk_id": chunk.chunk_id,
+        "content": chunk.content,
+        "score": chunk.score,
+        "article_title": chunk.article_title,
+        "source_url": chunk.source_url,
+        "chunk_index": chunk.chunk_index,
+    }
 
 
 class CollectionNotIndexedError(Exception):
@@ -101,6 +119,95 @@ class QueryService:
             "generation_time_ms": generation_ms,
             "config_hash": config.config_hash(),
         }
+
+    def execute_query_streaming(
+        self, query: str, config: BenchmarkConfig,
+    ) -> Generator[str, None, None]:
+        """Execute *query* with streaming generation, yielding SSE events.
+
+        SSE events emitted:
+        - ``retrieval_complete``: chunks + retrieval_time_ms
+        - ``generation_token``: individual token string
+        - ``generation_complete``: full_answer + generation_time_ms
+        - ``error``: on failure
+        """
+        try:
+            pipeline = self._get_or_build(config)
+        except (CollectionNotIndexedError, ValueError) as exc:
+            yield _sse("error", {"message": str(exc)})
+            return
+
+        retrieve_k = config.retrieval.top_k
+        needs_rerank = (
+            config.reranker.type != "none"
+            and config.retrieval.technique != "hybrid"
+        )
+
+        # ── Retrieval ─────────────────────────────────────────────────
+        try:
+            t0 = time.perf_counter()
+            chunks = pipeline.retrieve(query, top_k=retrieve_k)
+            if needs_rerank:
+                reranker = self._get_or_build_reranker(config)
+                final_k = config.generation.top_k_chunks
+                chunks = reranker.rerank(query, chunks, top_k=final_k)
+            retrieval_ms = (time.perf_counter() - t0) * 1000
+        except Exception as exc:
+            yield _sse("error", {"message": f"Retrieval failed: {exc}"})
+            return
+
+        yield _sse("retrieval_complete", {
+            "chunks": [_chunk_to_dict(c) for c in chunks],
+            "retrieval_time_ms": round(retrieval_ms, 2),
+        })
+
+        # ── Generation (streaming) ────────────────────────────────────
+        if not config.generation.enabled:
+            yield _sse("generation_complete", {
+                "full_answer": "[Generation disabled]",
+                "generation_time_ms": 0.0,
+            })
+            return
+
+        try:
+            from config.settings import settings
+
+            context = pipeline.format_context(chunks)
+            prompt = pipeline.prompt_template.format(context=context, query=query)
+            llm_model = config.generation.model or settings.CURRENT_LLM_MODEL
+            messages = [
+                {"role": "system", "content": pipeline.system_prompt},
+                {"role": "user", "content": prompt},
+            ]
+
+            t1 = time.perf_counter()
+            stream = pipeline.llm_client.chat.completions.create(
+                model=llm_model,
+                messages=messages,
+                temperature=config.generation.temperature,
+                max_tokens=config.generation.max_tokens,
+                stream=True,
+            )
+
+            full_answer_parts: list[str] = []
+            for chunk in stream:
+                delta = chunk.choices[0].delta
+                if delta.content:
+                    full_answer_parts.append(delta.content)
+                    yield _sse("generation_token", {"token": delta.content})
+
+            generation_ms = (time.perf_counter() - t1) * 1000
+            full_answer = "".join(full_answer_parts).strip()
+            if not full_answer:
+                full_answer = "[Model returned empty response]"
+
+            yield _sse("generation_complete", {
+                "full_answer": full_answer,
+                "generation_time_ms": round(generation_ms, 2),
+            })
+        except Exception as exc:
+            logger.error(f"Streaming generation failed: {exc}")
+            yield _sse("error", {"message": f"Generation failed: {exc}"})
 
     def clear_cache(self) -> None:
         """Remove all cached pipelines."""

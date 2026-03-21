@@ -1,9 +1,13 @@
 """Query execution endpoint — runs real RAG pipelines (E3-F1-T2)."""
 
 import asyncio
+import json
+import queue
+import threading
 
 import openai
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import StreamingResponse
 
 from config.settings import settings
 from src.api.dependencies import PRESETS_DIR
@@ -38,29 +42,11 @@ def _map_rag_chunk_to_api(chunk: RAGChunk) -> RetrievedChunk:
 
 @router.post("/query", response_model=QueryResult)
 async def execute_query(request: QueryRequest):
-    """Execute a query against the RAG system.
-
-    For the 'default.yaml' preset, also checks for user overrides in 'user-config.yaml'
-    and merges them if the file exists.
-    """
-    # Validate that the preset exists
-    preset_path = PRESETS_DIR / request.preset
-    if not preset_path.exists():
-        raise HTTPException(status_code=404, detail=f"Preset '{request.preset}' not found")
-
-    # For default preset, also check for user overrides
-    if request.preset == "default.yaml":
-        user_config_path = PRESETS_DIR / "user-config.yaml"
-        cfg = BenchmarkConfig.load_with_user_overrides(preset_path, user_config_path)
-    else:
-        cfg = BenchmarkConfig.from_yaml(preset_path)
-
-    # Apply frontend config overrides (from parameter modal)
-    if request.config_overrides:
-        from src.benchmarks.config import _deep_merge
-        merged = cfg.model_dump()
-        _deep_merge(merged, request.config_overrides)
-        cfg = BenchmarkConfig.model_validate(merged)
+    """Execute a query against the RAG system."""
+    try:
+        cfg = _resolve_config(request)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
 
     try:
         result = await asyncio.to_thread(
@@ -80,6 +66,74 @@ async def execute_query(request: QueryRequest):
         retrieval_time_ms=result["retrieval_time_ms"],
         generation_time_ms=result["generation_time_ms"],
         config_hash=result["config_hash"],
+    )
+
+
+def _resolve_config(request: QueryRequest) -> BenchmarkConfig:
+    """Load preset, apply user overrides and frontend overrides."""
+    preset_path = PRESETS_DIR / request.preset
+    if not preset_path.exists():
+        raise FileNotFoundError(f"Preset '{request.preset}' not found")
+
+    if request.preset == "default.yaml":
+        user_config_path = PRESETS_DIR / "user-config.yaml"
+        cfg = BenchmarkConfig.load_with_user_overrides(preset_path, user_config_path)
+    else:
+        cfg = BenchmarkConfig.from_yaml(preset_path)
+
+    if request.config_overrides:
+        from src.benchmarks.config import _deep_merge
+        merged = cfg.model_dump()
+        _deep_merge(merged, request.config_overrides)
+        cfg = BenchmarkConfig.model_validate(merged)
+
+    return cfg
+
+
+@router.post("/query/stream")
+async def execute_query_stream(request: QueryRequest):
+    """Execute a query with SSE-streamed generation tokens."""
+    try:
+        cfg = _resolve_config(request)
+    except FileNotFoundError as exc:
+        raise HTTPException(status_code=404, detail=str(exc))
+
+    q: queue.Queue[str | None] = queue.Queue()
+
+    def _worker():
+        try:
+            for event in _query_service.execute_query_streaming(
+                request.query, cfg,
+            ):
+                q.put(event)
+        except Exception as exc:
+            q.put(
+                f"event: error\ndata: {json.dumps({'message': str(exc)})}\n\n"
+            )
+        finally:
+            q.put(None)
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+
+    async def _stream():
+        while True:
+            try:
+                item = await asyncio.to_thread(q.get, timeout=300)
+            except Exception:
+                break
+            if item is None:
+                break
+            yield item
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
     )
 
 

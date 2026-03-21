@@ -282,6 +282,86 @@ export function executeQuery(
   });
 }
 
+/**
+ * Execute a query with SSE-streamed generation tokens.
+ * Returns an AbortController to cancel the request.
+ */
+export function executeQueryStreaming(
+  query: string,
+  preset: string,
+  configOverrides: Record<string, unknown> | undefined,
+  callbacks: {
+    onRetrievalComplete: (e: import("./types").QueryStreamRetrievalEvent) => void;
+    onGenerationToken: (e: import("./types").QueryStreamTokenEvent) => void;
+    onGenerationComplete: (e: import("./types").QueryStreamCompleteEvent) => void;
+    onError: (msg: string) => void;
+  },
+): AbortController {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const res = await fetch(`${BASE}/query/stream`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          preset,
+          config_overrides: configOverrides ?? null,
+        }),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        callbacks.onError(`${res.status}: ${text}`);
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        callbacks.onError("No response body");
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let currentEvent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            if (currentEvent === "retrieval_complete")
+              callbacks.onRetrievalComplete(data);
+            else if (currentEvent === "generation_token")
+              callbacks.onGenerationToken(data);
+            else if (currentEvent === "generation_complete")
+              callbacks.onGenerationComplete(data);
+            else if (currentEvent === "error")
+              callbacks.onError(data.message);
+          }
+        }
+      }
+    } catch (err: unknown) {
+      if ((err as Error).name !== "AbortError") {
+        callbacks.onError(err instanceof Error ? err.message : String(err));
+      }
+    }
+  })();
+
+  return controller;
+}
+
 export function highlightChunks(
   query: string,
   chunks: { chunk_id: string; content: string }[],
