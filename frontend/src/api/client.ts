@@ -19,7 +19,7 @@ import type {
   HighlightChunksResponse,
   NormalizedBenchmarkResult,
   PresetInfo,
-  QueryResult,
+
   ResultFileInfo,
   SweepCompleteEvent,
   SweepConfigCompleteEvent,
@@ -363,22 +363,6 @@ export function runSweep(
 // ---------------------------------------------------------------------------
 // Query execution
 // ---------------------------------------------------------------------------
-
-export function executeQuery(
-  query: string,
-  preset: string,
-  configOverrides?: Record<string, unknown>,
-): Promise<QueryResult> {
-  return fetchJSON(`${BASE}/query`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      query,
-      preset,
-      config_overrides: configOverrides ?? null,
-    }),
-  });
-}
 
 /**
  * Execute a query with SSE-streamed generation tokens.

@@ -1,4 +1,4 @@
-/** Shared config merge helpers — used by QueryTester and BenchmarkRuns. */
+/** Shared config merge helpers — used by TestingPage and ParameterModal. */
 
 /** Deep merge overrides into base (immutable — returns new object). */
 export function deepMerge(

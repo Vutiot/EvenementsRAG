@@ -434,6 +434,24 @@ Later-phase implementations for advanced retrieval methods.
 - agent_hint: Experiment with temporal embeddings: (1) Concatenate temporal metadata to embeddings, (2) Learn temporal offset adjustments, (3) Time-weighted similarity. Benchmark on temporal questions.
 - description: Implement date-aware embeddings that incorporate temporal metadata. Measure improvement on temporal question types.
 
+### 🧹 E6: UI Unification -- Testing Menu
+
+Merge Query, Benchmark, and Sweep interfaces into a single Testing page. Full roadmap in `roadmap_unification.md`.
+
+#### E6-F6: Cleanup & Integration
+
+##### ✅ E6-F6-T1: Remove old pages & dead routes
+- blocked_by: [E6-F2-T3, E6-F3-T4, E6-F4-T3, E6-F5-T4]
+- status: done
+- effort: S
+- description: Deleted orphaned QueryTester.tsx and SweepVisualizer.tsx. Rewrote BenchmarkRuns as thin RunHistory page (history-only, no config/execution). Removed dead executeQuery() and QueryResult from API layer.
+
+##### ✅ E6-F6-T2: End-to-end integration testing
+- blocked_by: [E6-F6-T1]
+- status: done
+- effort: M
+- description: Build verification (tsc --noEmit + vite build pass). Manual testing checklist for sidebar, mode switcher, config modal, query streaming, benchmark/sweep execution, run history table, and backward-compat redirects.
+
 ---
 
 ## Critical Path
@@ -608,6 +626,13 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - Shared utils: extracted `deepMerge`, `setOverridePath`, `countOverrides` to `frontend/src/utils/configHelpers.ts`
 - Extended `ResultFileInfo` with `config_summary` and `avg_recall_at_10`; added Recall@10 to MetricsByTypeChart
 - Navigation: `/runs` route, "Runs" sidebar entry under "Benchmark" group, `hideSections` prop on ParameterModal
+
+✅ **E6-F6-T1/T2 — Cleanup & Integration**
+- Deleted orphaned pages: `QueryTester.tsx`, `SweepVisualizer.tsx`
+- Rewrote `BenchmarkRuns.tsx` as thin `RunHistory.tsx` (history-only, no config/execution UI)
+- Removed dead `executeQuery()` and `QueryResult` from API layer
+- Updated `App.tsx` import (`BenchmarkRuns` → `RunHistory`)
+- Build verification: `tsc --noEmit` + `vite build` pass cleanly
 
 ---
 
@@ -964,6 +989,14 @@ Rationale: the LLM sometimes returns unexpected `type` values (e.g. `"unknown"`)
 
 **Removed `check_type_in_taxonomy` validator from `DatasetCategoryConfig` schema.**
 Rationale: the validator blocked `Query_Styles` preset types (`well_redacted`, `grammar_typos`, etc.) that are valid category types but not in `VALID_QUESTION_TYPES`. Since the type field is user-provided metadata (not a taxonomy constraint), any string should be accepted.
+
+### E6-F6-T1 — Cleanup & Dead Code Removal
+
+**Renamed `BenchmarkRuns` → `RunHistory`** (file + component).
+Rationale: the `/runs` route is a history-only view under the "Results" sidebar group. Removing execution UI avoids duplication with `TestingPage` which is now the single entry point for all execution. The name `RunHistory` matches the sidebar label and communicates the page's read-only purpose.
+
+**Removed non-streaming `executeQuery()` from API client.**
+Rationale: superseded by `executeQueryStreaming()` used by `TestingPage`. Keeping the dead export risks developers using the inferior synchronous variant instead of the streaming one.
 
 ## Notes
 

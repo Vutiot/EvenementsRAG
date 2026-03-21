@@ -15,15 +15,6 @@ export interface RetrievedChunk {
   chunk_index: number;
 }
 
-export interface QueryResult {
-  query: string;
-  generated_answer: string;
-  retrieved_chunks: RetrievedChunk[];
-  retrieval_time_ms: number;
-  generation_time_ms: number;
-  config_hash: string;
-}
-
 /** Benchmark result file info from GET /api/results */
 export interface ResultFileInfo {
   filename: string;

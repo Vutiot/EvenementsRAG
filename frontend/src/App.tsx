@@ -2,7 +2,7 @@ import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/layout/Sidebar";
 import TestingPage from "./pages/TestingPage";
 import BenchmarkViewer from "./pages/BenchmarkViewer";
-import BenchmarkRuns from "./pages/BenchmarkRuns";
+import RunHistory from "./pages/RunHistory";
 import MetricDashboards from "./pages/MetricDashboards";
 import CollectionManager from "./pages/CollectionManager";
 import DatasetManager from "./pages/DatasetManager";
@@ -17,7 +17,7 @@ export default function App() {
           <Route path="/testing" element={<TestingPage />} />
           <Route path="/collections" element={<CollectionManager />} />
           <Route path="/evaluations" element={<DatasetManager />} />
-          <Route path="/runs" element={<BenchmarkRuns />} />
+          <Route path="/runs" element={<RunHistory />} />
           <Route path="/benchmarks" element={<BenchmarkViewer />} />
           <Route path="/metrics" element={<MetricDashboards />} />
           {/* Backward-compat redirects */}
