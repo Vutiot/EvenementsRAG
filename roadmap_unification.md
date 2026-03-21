@@ -27,9 +27,9 @@ graph TD
   E6F3T3["✅ E6-F3-T3: Cartesian product logic & sweep run backend"]
   E6F3T4["✅ E6-F3-T4: Sweep execution frontend (SSE multi-config)"]
 
-  E6F4T1["E6-F4-T1: Backend streaming query endpoint (SSE)"]
-  E6F4T2["E6-F4-T2: StreamingAnswer component"]
-  E6F4T3["E6-F4-T3: Query mode: chunks first, stream generation last"]
+  E6F4T1["✅ E6-F4-T1: Backend streaming query endpoint (SSE)"]
+  E6F4T2["✅ E6-F4-T2: StreamingAnswer component"]
+  E6F4T3["✅ E6-F4-T3: Query mode: chunks first, stream generation last"]
 
   E6F5T1["E6-F5-T1: RunHistoryTable column expansion"]
   E6F5T2["E6-F5-T2: Sweep collapse/expand rows"]
@@ -66,6 +66,37 @@ graph TD
   E6F5T4 --> E6F6T1
   E6F6T1 --> E6F6T2
 
+  E6F8T1["🔵 E6-F8-T1: Doc-ID precision metrics backend"]
+  E6F8T2["⚪ E6-F8-T2: Wire doc metrics into runner"]
+  E6F8T3["🔵 E6-F8-T3: LLM Context precision toggle"]
+  E6F8T4["⚪ E6-F8-T4: Display three-tier metrics in UI"]
+
+  E6F9T1["🔵 E6-F9-T1: Unify benchmark/sweep layout"]
+  E6F9T2["⚪ E6-F9-T2: Extract ExecutionPanel component"]
+  E6F9T3["⚪ E6-F9-T3: Collection preview list for sweep"]
+  E6F9T4["⚪ E6-F9-T4: Restrict sweep to doc+LLM metrics"]
+
+  E6F10T1["🔵 E6-F10-T1: Multi-select collections in DatasetManager"]
+  E6F10T2["🔵 E6-F10-T2: System prompt for eval generation"]
+  E6F10T3["⚪ E6-F10-T3: SSE collection creation in DatasetManager"]
+
+  E6F11T1["🔵 E6-F11-T1: Filter eval datasets by collection"]
+  E6F11T2["⚪ E6-F11-T2: Runtime eval dataset warning"]
+
+  E6F8T1 --> E6F8T2
+  E6F8T1 --> E6F8T4
+  E6F8T3 --> E6F8T4
+  E6F8T2 --> E6F8T4
+
+  E6F9T1 --> E6F9T2
+  E6F9T1 --> E6F9T3
+  E6F8T4 --> E6F9T4
+  E6F9T1 --> E6F9T4
+
+  E6F10T1 --> E6F10T3
+
+  E6F11T1 --> E6F11T2
+
   style E6F1T1 fill:#22c55e
   style E6F1T2 fill:#22c55e
   style E6F1T3 fill:#22c55e
@@ -76,15 +107,28 @@ graph TD
   style E6F3T2 fill:#22c55e
   style E6F3T3 fill:#22c55e
   style E6F3T4 fill:#22c55e
-  style E6F4T1 fill:#3b82f6
-  style E6F4T2 fill:#6b7280
-  style E6F4T3 fill:#6b7280
+  style E6F4T1 fill:#22c55e
+  style E6F4T2 fill:#22c55e
+  style E6F4T3 fill:#22c55e
   style E6F5T1 fill:#22c55e
   style E6F5T2 fill:#22c55e
   style E6F5T3 fill:#22c55e
   style E6F5T4 fill:#22c55e
   style E6F6T1 fill:#6b7280
   style E6F6T2 fill:#6b7280
+  style E6F8T1 fill:#3b82f6
+  style E6F8T2 fill:#6b7280
+  style E6F8T3 fill:#3b82f6
+  style E6F8T4 fill:#ef4444
+  style E6F9T1 fill:#3b82f6
+  style E6F9T2 fill:#6b7280
+  style E6F9T3 fill:#6b7280
+  style E6F9T4 fill:#ef4444
+  style E6F10T1 fill:#3b82f6
+  style E6F10T2 fill:#3b82f6
+  style E6F10T3 fill:#6b7280
+  style E6F11T1 fill:#3b82f6
+  style E6F11T2 fill:#6b7280
 ```
 
 **Legend**: blue = ready, gray = pending, green = done, amber = in progress
@@ -181,23 +225,23 @@ Merge Query, Benchmark, and Sweep interfaces into a single Testing page with sha
 
 #### E6-F4: Query Mode Streaming
 
-##### E6-F4-T1: Backend streaming query endpoint (SSE)
+##### ✅ E6-F4-T1: Backend streaming query endpoint (SSE)
 - blocked_by: [E6-F1-T3]
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Add `POST /api/query/stream` endpoint in `src/api/routers/query.py`. Reuse `QueryService._get_or_build()` to get the pipeline. Run retrieval synchronously, then stream generation token-by-token via SSE. SSE events: `retrieval_complete` (chunks, retrieval_time_ms), `generation_token` (token: string), `generation_complete` (full_answer, generation_time_ms). For streaming: modify LLM call to use `stream=True` on the OpenAI client (`self.llm_client.chat.completions.create(..., stream=True)`), iterate over chunks, yield each `delta.content` token. Use FastAPI `StreamingResponse` with `media_type="text/event-stream"`. Existing non-streaming `/api/query` remains unchanged.
 - description: New SSE endpoint that streams LLM generation tokens in real-time. Retrieval results sent immediately, then generation tokens follow one by one. Frontend can display chunks before generation finishes.
 
-##### E6-F4-T2: StreamingAnswer component
+##### ✅ E6-F4-T2: StreamingAnswer component
 - blocked_by: [E6-F4-T1]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: Create `frontend/src/components/results/StreamingAnswer.tsx`. Props: `tokens: string[]` (accumulated), `isStreaming: boolean`, `error?: string`. Renders accumulated text with blinking cursor at end when `isStreaming=true`. Use `whitespace-pre-wrap` for formatting. When streaming finishes, cursor disappears. Blinking cursor: `<span>` with `animate-pulse` class. Keep it simple -- concatenate tokens and display. Use /frontend skill for design.
 - description: Component displaying streaming LLM output with typing indicator. Shows accumulated tokens in real-time with blinking cursor during generation.
 
-##### E6-F4-T3: Query mode: chunks first, stream generation last
+##### ✅ E6-F4-T3: Query mode: chunks first, stream generation last
 - blocked_by: [E6-F4-T2]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: In TestingPage's query mode handler, replace current `executeQuery()` call with new `executeQueryStreaming()` client function that connects to `/api/query/stream`. On `retrieval_complete`: immediately display `ChunkList`, `ChunkScoresChart`, `LatencyBreakdown` (retrieval portion). On `generation_token`: append to `tokens` array state, render `StreamingAnswer` at the BOTTOM (after chunks). On `generation_complete`: finalize answer, update generation_time_ms in LatencyBreakdown. Reorder results section: (1) LatencyBreakdown, (2) ChunkScoresChart, (3) ChunkList, (4) StreamingAnswer. Chunks appear instantly while generation streams below. If generation disabled, skip StreamingAnswer.
 - description: Wire streaming into query mode. Chunks display immediately after retrieval, then generation streams token-by-token below them. Generation output moves to last position in results area.
@@ -254,30 +298,152 @@ Merge Query, Benchmark, and Sweep interfaces into a single Testing page with sha
 
 ---
 
+#### E6-F8: Three-Tier Precision Metrics
+
+Add Document-ID-based precision as a new metric tier, activate the existing but unused `precision_at_k` for Chunk-ID precision, and surface RAGAS `context_precision` as an optional LLM Context precision toggle. Three distinct precision levels: Document-ID (coarse, always valid), Chunk-ID (fine, only valid when eval dataset matches collection), LLM Context (semantic, optional, uses LLM via RAGAS).
+
+##### 🔵 E6-F8-T1: Add Document-ID precision metrics to backend
+- blocked_by: []
+- status: ready
+- effort: M
+- agent_hint: In `src/evaluation/metrics.py`: (1) Add `doc_precision_at_k(retrieved_payloads, source_article_id, k) -> float` — counts how many of top-K retrieved chunks belong to the source article (check `payload.get("pageid") == source_article_id`), divides by k. (2) Add `doc_recall_at_k(retrieved_payloads, source_article_id, k) -> float` — binary 1.0 if any chunk from source article in top-K, else 0.0 (single ground-truth document). (3) Add `doc_mrr(retrieved_payloads, source_article_id) -> float` — 1/rank of first chunk from source article. (4) Add fields to `RetrievalMetrics`: `doc_precision_at_1/3/5/10`, `doc_recall_at_1/3/5/10`, `doc_mrr`. (5) Wire into `compute_retrieval_metrics()` when `source_article_id` available. (6) Also call existing but unused `precision_at_k()` (chunk-based) in `compute_retrieval_metrics()` — add `chunk_precision_at_1/3/5/10` fields. (7) Update `EvaluationResults` with `avg_doc_precision_at_k`, `avg_doc_recall_at_k`, `avg_doc_mrr`, `avg_chunk_precision_at_k`. (8) Add tests in `tests/unit/evaluation/test_doc_metrics.py`.
+- description: Implement Document-ID precision/recall/MRR metrics. These match retrieved chunks' parent document against `source_article_id` from eval questions. Also activate the existing but uncalled `precision_at_k()` for chunk-level precision. Both metric tiers computed alongside existing retrieval metrics.
+
+##### ⚪ E6-F8-T2: Wire document metrics into runner and result JSON
+- blocked_by: [E6-F8-T1]
+- status: pending
+- effort: S
+- agent_hint: In `src/evaluation/benchmark_runner.py`: (1) After existing `avg_chunk_hit_at_k` aggregation block (~line 389-402), add aggregation for `avg_doc_precision_at_k`, `avg_doc_recall_at_k`, `avg_doc_mrr`, `avg_chunk_precision_at_k` from `all_metrics`. (2) Store in `EvaluationResults` fields. (3) In `print_summary()`, add "--- Document-Level Precision ---" section showing Doc Precision@K, Doc Recall@K, Doc MRR. In `src/api/routers/results.py` or wherever results are normalized for the frontend API, ensure doc-level metrics are extracted from `evaluation` dict and included in the response.
+- description: Wire the new document-level and chunk-precision metrics into the benchmark runner aggregation, result JSON serialization, and print summary. Ensure they flow through to the frontend API.
+
+##### 🔵 E6-F8-T3: Add LLM Context precision toggle to config and UI
+- blocked_by: []
+- status: ready
+- effort: M
+- agent_hint: Backend: (1) In `src/benchmarks/config.py` `EvaluationConfig`, add `compute_context_precision: bool = False`. This is separate from the existing `compute_ragas` flag — when True, it runs ONLY `context_precision` from RAGAS (unless `compute_ragas` is also True, in which case `context_precision` is already included). (2) In `src/evaluation/metrics_collector.py`, update `compute_ragas_metrics()`: if `config.compute_context_precision` and not `config.compute_ragas`, create a temporary RagasEvaluator with only `["context_precision"]` metric list. (3) In `src/benchmarks/runner.py`, after the existing RAGAS block, add: if `compute_context_precision and not compute_ragas`, run collector with context_precision only. Frontend: (4) In `frontend/src/api/types.ts` `BenchmarkConfig.evaluation`, add `compute_context_precision: boolean`. (5) In `frontend/src/components/config/ParameterModal.tsx`, add an "Evaluation Metrics" sub-section (visible in benchmark and sweep modes) with a toggle switch for "LLM Context Precision (RAGAS)" mapping to `evaluation.compute_context_precision`. Style like the existing toggle switches. (6) In `config/benchmarks/default.yaml`, set `evaluation.compute_context_precision: false`.
+- description: Make RAGAS `context_precision` independently controllable via a toggle in the ParameterModal. When enabled, runs LLM-based context precision evaluation even without full RAGAS suite. Toggle visible in both benchmark and sweep modes.
+
+##### ⚪ E6-F8-T4: Display three-tier metrics in results viewer and run history
+- blocked_by: [E6-F8-T2, E6-F8-T3]
+- status: pending
+- effort: M
+- agent_hint: (1) In `frontend/src/api/types.ts`, add `avg_doc_precision_at_5`, `avg_doc_mrr`, `avg_chunk_precision_at_5`, `avg_context_precision` to result types. (2) In `frontend/src/components/benchmarks/RunHistoryTable.tsx`, add new metric columns after existing MRR/R@5/R@10: `Doc P@5`, `Doc MRR`, `Ctx Prec`. For sweep child rows show all. For sweep parent rows show "---". (3) In the result viewer metric dashboards (`/benchmarks` page), add a "Precision Tiers" tab/section showing three levels side-by-side: (a) Document-ID: doc_precision@K, doc_recall@K, doc_mrr; (b) Chunk-ID: chunk_precision@K, chunk_hit@K, mrr (existing); (c) LLM Context: context_precision (from RAGAS). (4) Make the Chunk-ID column hideable — sweep rows should hide it (see E6-F9-T4).
+- description: Surface all three precision tiers in the RunHistoryTable and result viewer. Document-ID and LLM Context columns always visible. Chunk-ID column visible for benchmarks, hidden for sweep results.
+
+---
+
+#### E6-F9: Unify Benchmark & Sweep Interface
+
+Remove layout and structural differences between benchmark and sweep modes. Both use the same centered single-column layout with identical sections. Sweep mode uses MultiSelectChips for non-generation params and shows a collection combination list with existing/new status. Benchmark keeps single-select ParamChips. Factorize shared execution UI into a reusable component.
+
+##### 🔵 E6-F9-T1: Refactor TestingPage shared layout for benchmark and sweep
+- blocked_by: []
+- status: ready
+- effort: M
+- agent_hint: In `frontend/src/pages/TestingPage.tsx`: (1) Replace sweep mode rendering (currently uses separate grid layout and different config approach) with structure identical to benchmark mode: centered single-column `max-w-3xl mx-auto`, "Configure Pipeline" button + ConfigBadges + eval dataset selector + run name + run/cancel button. (2) Remove the `grid grid-cols-12 gap-6` wrapper from sweep mode. (3) Both modes share: eval dataset dropdown + run name input + run/cancel button. (4) Sweep-specific differences: button says "Run Sweep (N configs)" instead of "Run Benchmark"; handler calls `handleSweepRun`; progress uses two-level sweep bars; completed configs table. (5) Move sweep combination count to a badge near ConfigBadges when mode is "sweep" and `combinationCount > 1`. (6) Sweep mode opens ParameterModal with `multiSelect={true}` (as today). Benchmark opens with `multiSelect={false}` (as today). Same button, same position, different prop.
+- description: Remove structural layout differences between benchmark and sweep modes. Both use identical centered single-column layout. Only execution handler and progress display differ. Sweep keeps multi-select in modal.
+
+##### ⚪ E6-F9-T2: Extract shared ExecutionPanel component
+- blocked_by: [E6-F9-T1]
+- status: pending
+- effort: M
+- agent_hint: Create `frontend/src/components/testing/ExecutionPanel.tsx`. Props: `mode: "benchmark" | "sweep"`, `filteredDatasets: DatasetInfo[]`, `selectedDatasetId: string`, `onDatasetChange`, `runName: string`, `onRunNameChange`, `isRunning: boolean`, `onRun: () => void`, `onCancel: () => void`, `disabled: boolean`, `combinationCount?: number`, `progress?: { current: number; total: number; phase?: string }`, `sweepProgress?: SweepProgress`, `sweepResults?: SweepConfigCompleteEvent[]`, `isComplete: boolean`. Renders: eval dataset dropdown, run name text input, run/cancel button (text varies by mode), appropriate progress bars, completion link to `/runs`. In `TestingPage.tsx`, replace benchmark and sweep execution UI with `<ExecutionPanel>` in both modes.
+- description: Extract duplicated eval-dataset + run-name + run-button + progress UI into a shared ExecutionPanel component used by both benchmark and sweep modes. Ensures future changes apply to both modes automatically.
+
+##### ⚪ E6-F9-T3: Collection preview list for sweep parameter combinations
+- blocked_by: [E6-F9-T1]
+- status: pending
+- effort: M
+- agent_hint: (1) Create `frontend/src/utils/deriveCollectionName.ts` — function `deriveCollectionName(datasetName, backend, chunkSize, chunkOverlap, embeddingModel, distanceMetric) -> string` mirroring `CollectionService.derive_collection_name()` in `src/api/collection_service.py` (lines 37-56). Include `_EMBEDDING_SHORT_NAMES` map. (2) Create `frontend/src/components/testing/CollectionPreview.tsx`. Props: `overrides: Record<string, unknown>`, `baseConfig: BenchmarkConfig | null`, `existingCollections: string[]`. Compute cartesian product of collection-related sweep params (chunk_size, chunk_overlap, embedding_model, distance_metric, backend) from overrides. For each combo: derive collection name, show green badge "exists" or amber badge "new". Scrollable `max-h-48 overflow-y-auto`. Show summary: "N collections (M existing, P new)". (3) In `TestingPage.tsx`, when mode is "sweep", render `<CollectionPreview>` between ConfigBadges and ExecutionPanel. Fetch existing collections via `getCollections()` on mount/config change. No Import button in sweep — collections are derived from multi-select param values only.
+- description: Show a scrollable preview list of all collection names that will be used/created during a sweep, each with an existing/new status badge. Uses frontend cartesian product of collection params to derive names, checked against the existing collections API.
+
+##### ⚪ E6-F9-T4: Restrict sweep metrics to Document-ID and LLM Context only
+- blocked_by: [E6-F8-T4, E6-F9-T1]
+- status: pending
+- effort: S
+- agent_hint: (1) In `frontend/src/components/benchmarks/RunHistoryTable.tsx`: when rendering sweep child rows (identified by `isSweepChild` flag), hide Chunk-ID metric columns (Chunk Hit@K, Chunk Precision@K, MRR). Show Doc P@5, Doc MRR, Ctx Precision. (2) In the sweep completed configs table in `TestingPage.tsx`, show only `Doc MRR` and `Ctx Prec` columns (not chunk-based MRR/R@5). (3) In `src/api/sweep_service.py` `config_complete` SSE event, add `avg_doc_mrr` and `avg_doc_precision_at_5` fields from result evaluation. (4) In `frontend/src/api/types.ts` `SweepConfigCompleteEvent`, add `avg_doc_mrr?: number` and `avg_doc_precision_at_5?: number`.
+- description: In sweep mode, chunk-ID metrics are not meaningful (eval questions were generated from one specific collection's chunks, which differ across sweep configs). Hide Chunk-ID metrics in sweep results. Show only Document-ID precision and LLM Context precision — both are valid across all collection configurations.
+
+---
+
+#### E6-F10: Reshape Eval Dataset Creation
+
+Overhaul the DatasetManager to use multi-select collection parameters (like sweep mode), add a system prompt option, and show SSE-powered collection creation progress when new collections are needed.
+
+##### 🔵 E6-F10-T1: Add multi-select collection params to DatasetManager
+- blocked_by: []
+- status: ready
+- effort: L
+- agent_hint: In `frontend/src/pages/DatasetManager.tsx`: (1) Replace the single "Collection" dropdown with multi-select chips for chunk_size, chunk_overlap, embedding_model, distance_metric (import `MultiSelectChips` and option arrays from `paramOptions.ts`). Dataset dropdown (wiki_10k / octank) stays. Backend selector stays as single-select (qdrant/faiss/pgvector). (2) New state: `collectionParams: { chunkSizes: number[], chunkOverlaps: number[], embeddingModels: string[], distanceMetrics: string[] }` with defaults matching the default preset (cs512, co128, minilm_l6, cosine). (3) Compute derived collection names from cartesian product using `deriveCollectionName()` utility (from E6-F9-T3 or create locally if F9-T3 not done yet). (4) Show collection list below chips: each name with green "exists" / amber "new" badge. Scrollable `max-h-48 overflow-y-auto`. Summary: "N collections (M existing, P new)". (5) Add a radio selector to pick ONE collection as "generation source" (the collection whose chunks are sampled for question generation). Default: first existing one. (6) The `selectedCollection` state feeds into `handleGenerate` as `collection_name` in `DatasetCreateRequest`. (7) When user clicks Generate, new collections are created first (see E6-F10-T3), then questions generated from the selected source collection.
+- description: Replace single collection dropdown with multi-select parameter chips in DatasetManager. Shows all derived collection combinations with existing/new status. User selects one collection as the question generation source.
+
+##### 🔵 E6-F10-T2: Add system prompt option to DatasetManager
+- blocked_by: []
+- status: ready
+- effort: S
+- agent_hint: (1) In `frontend/src/pages/DatasetManager.tsx`, add state: `systemPrompt: string` with sensible default (e.g. "You are a question generation assistant. Generate diverse, challenging questions based on the provided passage."). (2) Render a collapsible "System Prompt" section between the model selector and the category cards. Use a `<textarea>` with 3-4 rows, full width. Include preset buttons: "Default", "Strict Academic", "Conversational". (3) In `frontend/src/api/types.ts` `DatasetCreateRequest`, add optional `system_prompt?: string`. (4) In `src/api/schemas.py` `DatasetCreateRequest`, add `system_prompt: str | None = None`. (5) In `src/api/dataset_service.py` `generate_dataset()` or `_generate_for_chunk()`, use `request.system_prompt` as the system message in the OpenAI chat completion call (currently hardcoded). Fall back to the existing default if None. (6) Store `system_prompt` in the saved dataset JSON for provenance.
+- description: Add a configurable system prompt text field before category cards in DatasetManager. Sent as the system message to the LLM during question generation. Includes preset options for common styles.
+
+##### ⚪ E6-F10-T3: SSE collection creation in DatasetManager
+- blocked_by: [E6-F10-T1]
+- status: pending
+- effort: M
+- agent_hint: (1) Add `POST /api/datasets/ensure-collections` endpoint in `src/api/routers/datasets.py`. Accepts `{ collections: [{dataset_name, backend, chunk_size, chunk_overlap, embedding_model, embedding_dimension, distance_metric}] }`. For each, check if collection exists; if not, create via `CollectionService.create_and_index()`. Yield SSE events: `collection_exists` (name), `collection_creating` (name), `collection_created` (name), `collection_error` (name, error). (2) Frontend in `DatasetManager.tsx`: when user clicks "Generate" and there are "new" collections, first call the ensure-collections SSE endpoint. Show a collection creation progress section: each collection name with spinner (creating), green check (exists/created), red X (failed). (3) After all collections ready, proceed with normal dataset generation SSE. (4) Add SSE client function in `frontend/src/api/client.ts` and event types in `types.ts`.
+- description: SSE-powered collection creation flow in DatasetManager. When generating eval datasets, create any missing collections first with live progress indicators before starting question generation.
+
+---
+
+#### E6-F11: Eval Dataset Filtering
+
+Ensure eval datasets are correctly filtered based on collection compatibility. In benchmark mode, show only datasets matching the current collection. In sweep mode, show datasets without filtering (doc-level and LLM-context metrics are valid regardless). Add runtime mismatch warnings.
+
+##### 🔵 E6-F11-T1: Filter eval datasets by collection in benchmark mode
+- blocked_by: []
+- status: ready
+- effort: S
+- agent_hint: (1) In `src/api/routers/datasets.py`, add optional `collection_name: str | None = Query(None)` parameter to `GET /api/datasets`. If provided, filter datasets where stored `collection_name` matches. (2) In `src/api/dataset_service.py` `list_datasets()`, accept optional `collection_name` filter. (3) In `frontend/src/api/client.ts` `getDatasets()`, accept optional `collectionName?: string` param, pass as query param. (4) In `frontend/src/pages/TestingPage.tsx`: in benchmark mode, when `effectiveConfig` changes, re-fetch datasets filtered by the current collection name (derive from config using `deriveCollectionName()`). In sweep mode, fetch all datasets (no filter) — doc-level and LLM-context metrics work regardless of chunk differences.
+- description: Add collection_name filter to the datasets API. Benchmark mode shows only eval datasets matching the current collection config. Sweep mode shows all datasets since document-level and LLM-context metrics are valid across all collections.
+
+##### ⚪ E6-F11-T2: Runtime eval dataset compatibility warning
+- blocked_by: [E6-F11-T1]
+- status: pending
+- effort: S
+- agent_hint: (1) In `src/api/benchmark_service.py` `run_benchmark()`, after loading the eval dataset JSON, check if `ds_data.get("collection_name")` matches the benchmark collection name. If mismatch, yield SSE `warning` event: "Eval dataset was generated from collection '{ds_col}' but benchmark uses '{bench_col}'. Chunk-ID metrics may be unreliable." (2) In `src/api/sweep_service.py` `run_sweep()`, always yield SSE `warning` if sweep has multiple (chunk_size, chunk_overlap) combos: "Sweep uses multiple chunk configurations. Only Document-ID and LLM Context metrics are valid across all configs. Chunk-ID metrics only valid for the collection matching the eval dataset." (3) Frontend: handle `warning` SSE event in both `runBenchmark` and `runSweep` callbacks. Show amber warning banner below progress bars. (4) Add `onWarning` callback and `WarningEvent` type to `frontend/src/api/types.ts` and `client.ts`.
+- description: Runtime validation that warns users when eval dataset collection doesn't match the benchmark/sweep collection. Sweep always warns about chunk-ID metric limitations across different chunk configurations.
+
+---
+
 ## Critical Path
 
-**E6-F1-T1 -> E6-F1-T2 -> E6-F1-T3 -> E6-F3-T1 -> E6-F3-T2 -> E6-F3-T3 -> E6-F3-T4 -> E6-F6-T1 -> E6-F6-T2**
+**Completed path (E6-F1 through E6-F5)**: E6-F1-T1 -> E6-F1-T2 -> E6-F1-T3 -> E6-F3-T1 -> E6-F3-T2 -> E6-F3-T3 -> E6-F3-T4 (all done)
 
-**Length**: 9 tasks (the sweep feature chain is longest due to frontend + backend cartesian product work)
+**New critical path**: 🔴 E6-F8-T1 -> E6-F8-T2 -> E6-F8-T4 -> E6-F9-T4
+
+**Length**: 4 tasks (metrics backend -> wire into runner -> display in UI -> restrict sweep metrics)
+
+The cleanup track (E6-F6-T1 -> E6-F6-T2) runs independently.
 
 ---
 
 ## Parallel Opportunities
 
-**Parallel Group A** (after E6-F1-T3 -- once TestingPage shell exists):
-- E6-F2-T1 (simplified config) -- independent track
-- E6-F3-T1 (multi-select chips) -- independent track
-- E6-F4-T1 (streaming backend) -- independent track
-- E6-F5-T1 (table columns) -- independent track
+**Parallel Group C** (immediately available -- no blockers):
+- E6-F8-T1 (doc metrics backend)
+- E6-F8-T3 (LLM context precision toggle)
+- E6-F9-T1 (unify benchmark/sweep layout)
+- E6-F10-T1 (multi-select collections in DatasetManager)
+- E6-F10-T2 (system prompt for eval generation)
+- E6-F11-T1 (dataset API filter)
 
-All four tracks can proceed in parallel, converging at E6-F6-T1.
+All six tasks can start in parallel immediately.
 
-**Parallel Group B** (within each feature):
-- F2 chain (3 tasks) independent of F3/F4/F5
-- F4 chain (3 tasks) independent of F3/F5
-- F5 chain (4 tasks) independent of F3/F4
+**Parallel Group D** (after E6-F9-T1 done):
+- E6-F9-T2 (ExecutionPanel component) + E6-F9-T3 (collection preview list) in parallel
 
-**Effective time**: 3 (F1) + max(3, 4, 3, 4) (parallel tracks) + 2 (F6) = **9 tasks** instead of 19 serial.
+**Parallel Group E** (after E6-F8-T1 done):
+- E6-F8-T2 (wire runner metrics) + E6-F8-T3 (RAGAS toggle) in parallel -> converge at E6-F8-T4
+
+**Effective new time**: max(4, 3, 3, 3, 2, 2) = **4 tasks** sequential on critical path. Total 13 new tasks parallelized to ~4 sequential sessions.
 
 ---
 
@@ -320,7 +486,18 @@ All four tracks can proceed in parallel, converging at E6-F6-T1.
 | S      | 9     | F1-T1, F1-T2, F2-T1, F2-T2, F2-T3, F4-T2, F5-T3, F5-T4, F6-T1 |
 | M      | 8     | F1-T3, F3-T1, F3-T2, F3-T4, F4-T1, F4-T3, F5-T1, F6-T2 |
 | L      | 2     | F3-T3, F5-T2 |
-| **Total** | **19** | Core: 17 + Cleanup: 2 |
+| **Subtotal (E6-F1→F6)** | **19** | Core: 17 + Cleanup: 2 |
+
+**New features (E6-F8→F11):**
+
+| Effort | Count | Tasks |
+|--------|-------|-------|
+| S      | 5     | F8-T2, F9-T4, F10-T2, F11-T1, F11-T2 |
+| M      | 7     | F8-T1, F8-T3, F8-T4, F9-T1, F9-T2, F9-T3, F10-T3 |
+| L      | 1     | F10-T1 |
+| **Subtotal (E6-F8→F11)** | **13** | 5S + 7M + 1L |
+
+**Grand total**: 32 tasks (19 done/pending + 13 new).
 
 Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 
@@ -350,6 +527,16 @@ Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 | `src/api/schemas.py` | Sweep + streaming schemas |
 | `config/benchmarks/default.yaml` | **New** -- default preset |
 | `inspiration/run_history_feature_spec.md` | Reference spec for sweep row design |
+| `src/evaluation/metrics.py` | Doc-ID precision/recall/MRR + activate chunk precision_at_k |
+| `src/evaluation/benchmark_runner.py` | Wire doc-level metric aggregation |
+| `src/evaluation/metrics_collector.py` | Optional context_precision RAGAS toggle |
+| `src/benchmarks/config.py` | `compute_context_precision` flag on EvaluationConfig |
+| `frontend/src/components/testing/ExecutionPanel.tsx` | **New** -- shared execution UI component |
+| `frontend/src/components/testing/CollectionPreview.tsx` | **New** -- sweep collection list with badges |
+| `frontend/src/utils/deriveCollectionName.ts` | **New** -- frontend collection name derivation |
+| `frontend/src/pages/DatasetManager.tsx` | Multi-select collections + system prompt |
+| `src/api/dataset_service.py` | System prompt pass-through + collection creation |
+| `src/api/routers/datasets.py` | Collection filter param + ensure-collections endpoint |
 
 ---
 
@@ -379,6 +566,13 @@ Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 - **Per-config error resilience**: If one config in a sweep fails, the sweep continues to the next. `config_complete` events include `status: "ok" | "error"` so the frontend can display partial results.
 - **Sweep metadata**: Saved to `results/sweeps/sweep_meta_{hash}_{ts}.json` linking individual result files, enabling future E6-F5 sweep row grouping.
 - **SPARSE_WEIGHT_OPTIONS**: Added to `paramOptions.ts` as chips (values: 0.0, 0.1, 0.15, 0.2, 0.3, 0.5) matching `_HYBRID_WEIGHT_SWEEP` in config.py. Replaces the ParamSlider for sparse_weight in sweep mode.
+
+### E6-F4: Query Mode Streaming (completed 2026-03-21)
+- **Streaming at service level, not RAG level**: `execute_query_streaming()` added to `QueryService` rather than modifying `VanillaRetriever`/`HybridRetriever`. Accesses `pipeline.llm_client`, `pipeline.format_context()`, `pipeline.prompt_template`, `pipeline.system_prompt` directly to call `chat.completions.create(stream=True)`. Avoids touching existing RAG classes.
+- **Thread+queue SSE pattern**: Same pattern as `BenchmarkService` — synchronous generator yields SSE strings, router spawns worker thread + `queue.Queue`, async generator reads from queue via `asyncio.to_thread()`. Consistent across all SSE endpoints.
+- **Config resolution DRY**: Extracted `_resolve_config()` helper in `routers/query.py` — shared by both `/api/query` and `/api/query/stream`. Handles preset loading, user overrides, and frontend config overrides.
+- **Chunks-first UX**: Results section renders as soon as `streamingChunks` is set (on `retrieval_complete`), not after generation finishes. Spinner only shown during collection preparation. Streaming answer appears at the bottom with blinking cursor.
+- **Highlighting via closure variable**: `retrievedChunks` captured in a local variable before starting the SSE stream, then used in `onGenerationComplete` callback for highlighting. Avoids stale state reads from React setState.
 
 ### E6-F5: Run History Table Overhaul (completed 2026-03-21)
 - **config_summary expanded to 15 fields**: Added chunk_overlap, backend, reranker_type, reranker_model, rerank_top_k, sparse_weight, sparse_type, fusion_method to the backend `_parse_file_info()` extraction and frontend `ResultFileInfo.config_summary` type. Kept as untyped `dict | None` on the Pydantic model for flexibility.
