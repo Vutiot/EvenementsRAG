@@ -48,6 +48,23 @@ class RetrievalMetrics:
     ndcg_at_5: float = 0.0
     ndcg_at_10: float = 0.0
 
+    # Document-level precision/recall/MRR
+    doc_precision_at_1: float = 0.0
+    doc_precision_at_3: float = 0.0
+    doc_precision_at_5: float = 0.0
+    doc_precision_at_10: float = 0.0
+    doc_recall_at_1: float = 0.0
+    doc_recall_at_3: float = 0.0
+    doc_recall_at_5: float = 0.0
+    doc_recall_at_10: float = 0.0
+    doc_mrr: float = 0.0
+
+    # Chunk-level precision (fraction of top-K that match ground truth)
+    chunk_precision_at_1: float = 0.0
+    chunk_precision_at_3: float = 0.0
+    chunk_precision_at_5: float = 0.0
+    chunk_precision_at_10: float = 0.0
+
     # -- Derived binary hit properties (backward-compatible) ----------------
 
     @property
@@ -114,6 +131,14 @@ class EvaluationResults:
     # Binary hit rates (averaged across questions)
     avg_article_hit_at_k: Dict[int, float] = field(default_factory=dict)
     avg_chunk_hit_at_k: Dict[int, float] = field(default_factory=dict)
+
+    # Document-level precision averages
+    avg_doc_precision_at_k: Dict[int, float] = field(default_factory=dict)
+    avg_doc_recall_at_k: Dict[int, float] = field(default_factory=dict)
+    avg_doc_mrr: float = 0.0
+
+    # Chunk-level precision averages
+    avg_chunk_precision_at_k: Dict[int, float] = field(default_factory=dict)
 
     # Per-question-type breakdown
     metrics_by_type: Dict[str, RetrievalMetrics] = field(default_factory=dict)
@@ -369,6 +394,68 @@ def chunk_hit_at_k(
     return 1.0 if rank is not None and rank <= k else 0.0
 
 
+def doc_precision_at_k(
+    retrieved_payloads: List[Dict],
+    source_article_id,
+    k: int,
+) -> float:
+    """Fraction of top-K retrieved chunks that belong to the source article.
+
+    Args:
+        retrieved_payloads: Payload dicts with metadata (must contain ``pageid``).
+        source_article_id: The source article's page ID.
+        k: Number of top results to consider.
+
+    Returns:
+        Precision value between 0.0 and 1.0.
+    """
+    if k == 0 or not retrieved_payloads or not source_article_id:
+        return 0.0
+
+    sid = str(source_article_id)
+    count = sum(
+        1 for p in retrieved_payloads[:k]
+        if str(p.get("pageid")) == sid
+    )
+    return count / k
+
+
+def doc_recall_at_k(
+    retrieved_payloads: List[Dict],
+    source_article_id,
+    k: int,
+) -> float:
+    """Binary recall: 1.0 if any chunk from the source article is in the top-K.
+
+    With a single ground-truth document this is equivalent to ``article_hit_at_k``.
+    """
+    if k == 0 or not retrieved_payloads or not source_article_id:
+        return 0.0
+
+    sid = str(source_article_id)
+    return 1.0 if any(
+        str(p.get("pageid")) == sid for p in retrieved_payloads[:k]
+    ) else 0.0
+
+
+def doc_mrr_score(
+    retrieved_payloads: List[Dict],
+    source_article_id,
+) -> float:
+    """MRR at the document level: 1/rank of first chunk from the source article.
+
+    Reuses :func:`find_article_rank` for the rank lookup.
+    """
+    if not retrieved_payloads or not source_article_id:
+        return 0.0
+
+    # find_article_rank expects a chunks list (unused for pageid matching) and payloads.
+    rank = find_article_rank(
+        [""] * len(retrieved_payloads), retrieved_payloads, source_article_id
+    )
+    return 1.0 / rank if rank is not None else 0.0
+
+
 def compute_retrieval_metrics(
     retrieved_chunks: List[str],
     ground_truth_chunks: List[str],
@@ -419,6 +506,38 @@ def compute_retrieval_metrics(
             retrieved_chunks, source_chunk_id
         )
 
+    # Compute document-level precision/recall/MRR
+    if retrieved_payloads and source_article_id:
+        for k in k_values:
+            dp = doc_precision_at_k(retrieved_payloads, source_article_id, k)
+            dr = doc_recall_at_k(retrieved_payloads, source_article_id, k)
+            if k == 1:
+                metrics.doc_precision_at_1 = dp
+                metrics.doc_recall_at_1 = dr
+            elif k == 3:
+                metrics.doc_precision_at_3 = dp
+                metrics.doc_recall_at_3 = dr
+            elif k == 5:
+                metrics.doc_precision_at_5 = dp
+                metrics.doc_recall_at_5 = dr
+            elif k == 10:
+                metrics.doc_precision_at_10 = dp
+                metrics.doc_recall_at_10 = dr
+        metrics.doc_mrr = doc_mrr_score(retrieved_payloads, source_article_id)
+
+    # Compute chunk-level precision (activates existing precision_at_k)
+    if ground_truth_chunks:
+        for k in k_values:
+            cp = precision_at_k(retrieved_chunks, ground_truth_chunks, k)
+            if k == 1:
+                metrics.chunk_precision_at_1 = cp
+            elif k == 3:
+                metrics.chunk_precision_at_3 = cp
+            elif k == 5:
+                metrics.chunk_precision_at_5 = cp
+            elif k == 10:
+                metrics.chunk_precision_at_10 = cp
+
     # Compute MRR
     metrics.mrr = mrr(retrieved_chunks, ground_truth_chunks)
 
@@ -463,6 +582,16 @@ def aggregate_metrics(all_metrics: List[RetrievalMetrics]) -> Dict[str, float]:
     if article_ranks:
         aggregated["avg_ground_truth_article_rank"] = sum(article_ranks) / len(article_ranks)
 
+    # Document-level precision/recall/MRR
+    for k in (1, 3, 5, 10):
+        dp_attr = f"doc_precision_at_{k}"
+        dr_attr = f"doc_recall_at_{k}"
+        cp_attr = f"chunk_precision_at_{k}"
+        aggregated[f"avg_{dp_attr}"] = sum(getattr(m, dp_attr, 0.0) for m in all_metrics) / n
+        aggregated[f"avg_{dr_attr}"] = sum(getattr(m, dr_attr, 0.0) for m in all_metrics) / n
+        aggregated[f"avg_{cp_attr}"] = sum(getattr(m, cp_attr, 0.0) for m in all_metrics) / n
+    aggregated["avg_doc_mrr"] = sum(m.doc_mrr for m in all_metrics) / n
+
     return aggregated
 
 
@@ -506,6 +635,19 @@ def compute_metrics_by_type(
             mrr=sum(m.mrr for m in metrics_list) / n,
             ndcg_at_5=sum(m.ndcg_at_5 for m in metrics_list) / n,
             ndcg_at_10=sum(m.ndcg_at_10 for m in metrics_list) / n,
+            doc_precision_at_1=sum(m.doc_precision_at_1 for m in metrics_list) / n,
+            doc_precision_at_3=sum(m.doc_precision_at_3 for m in metrics_list) / n,
+            doc_precision_at_5=sum(m.doc_precision_at_5 for m in metrics_list) / n,
+            doc_precision_at_10=sum(m.doc_precision_at_10 for m in metrics_list) / n,
+            doc_recall_at_1=sum(m.doc_recall_at_1 for m in metrics_list) / n,
+            doc_recall_at_3=sum(m.doc_recall_at_3 for m in metrics_list) / n,
+            doc_recall_at_5=sum(m.doc_recall_at_5 for m in metrics_list) / n,
+            doc_recall_at_10=sum(m.doc_recall_at_10 for m in metrics_list) / n,
+            doc_mrr=sum(m.doc_mrr for m in metrics_list) / n,
+            chunk_precision_at_1=sum(m.chunk_precision_at_1 for m in metrics_list) / n,
+            chunk_precision_at_3=sum(m.chunk_precision_at_3 for m in metrics_list) / n,
+            chunk_precision_at_5=sum(m.chunk_precision_at_5 for m in metrics_list) / n,
+            chunk_precision_at_10=sum(m.chunk_precision_at_10 for m in metrics_list) / n,
         )
         averaged_by_type[q_type] = averaged
 

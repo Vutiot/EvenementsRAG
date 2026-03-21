@@ -36,6 +36,7 @@ generation:
 
 evaluation:
   compute_bert_score: false
+  compute_context_precision: false
   compute_ragas: false
   compute_rouge: true
   k_values:

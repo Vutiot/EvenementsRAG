@@ -211,6 +211,19 @@ class MetricsCollector:
         self._ensure_ragas_evaluator()
         self._ragas_evaluator.evaluate(per_question, questions_by_id)
 
+    def compute_context_precision_only(
+        self,
+        per_question: List[dict],
+        questions_by_id: Dict[str, dict],
+    ) -> None:
+        """Run only ``context_precision`` from RAGAS (lightweight alternative).
+
+        Called when ``compute_context_precision`` is True but ``compute_ragas``
+        is False, so the full RAGAS suite is not needed.
+        """
+        self._ensure_ragas_evaluator_for_context_precision()
+        self._ragas_evaluator.evaluate(per_question, questions_by_id)
+
     def get_summary(self) -> dict:
         """Return ``{"latency": {...}, "generation": {...}, "ragas": {...}}`` for serialization."""
         summary: dict = {}
@@ -258,6 +271,21 @@ class MetricsCollector:
             ) from exc
         self._ragas_evaluator = RagasEvaluator(self._config)
         logger.debug("RagasEvaluator initialised")
+
+    def _ensure_ragas_evaluator_for_context_precision(self):
+        """Lazy-import ``RagasEvaluator`` configured for context_precision only."""
+        if self._ragas_evaluator is not None:
+            return
+        try:
+            from src.evaluation.ragas_evaluator import RagasEvaluator
+        except ImportError as exc:
+            raise ImportError(
+                "ragas is required for context_precision. "
+                "Install with: uv pip install ragas --python .venv/bin/python"
+            ) from exc
+        cfg = self._config.model_copy(update={"ragas_metrics": ["context_precision"]})
+        self._ragas_evaluator = RagasEvaluator(cfg)
+        logger.debug("RagasEvaluator initialised (context_precision only)")
 
     def _ensure_rouge_scorer(self):
         """Lazy-import and cache ``rouge_score.rouge_scorer.RougeScorer``."""

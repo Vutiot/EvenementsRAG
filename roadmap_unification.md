@@ -302,30 +302,30 @@ Merge Query, Benchmark, and Sweep interfaces into a single Testing page with sha
 
 Add Document-ID-based precision as a new metric tier, activate the existing but unused `precision_at_k` for Chunk-ID precision, and surface RAGAS `context_precision` as an optional LLM Context precision toggle. Three distinct precision levels: Document-ID (coarse, always valid), Chunk-ID (fine, only valid when eval dataset matches collection), LLM Context (semantic, optional, uses LLM via RAGAS).
 
-##### 🔵 E6-F8-T1: Add Document-ID precision metrics to backend
+##### ✅ E6-F8-T1: Add Document-ID precision metrics to backend
 - blocked_by: []
-- status: ready
+- status: done
 - effort: M
 - agent_hint: In `src/evaluation/metrics.py`: (1) Add `doc_precision_at_k(retrieved_payloads, source_article_id, k) -> float` — counts how many of top-K retrieved chunks belong to the source article (check `payload.get("pageid") == source_article_id`), divides by k. (2) Add `doc_recall_at_k(retrieved_payloads, source_article_id, k) -> float` — binary 1.0 if any chunk from source article in top-K, else 0.0 (single ground-truth document). (3) Add `doc_mrr(retrieved_payloads, source_article_id) -> float` — 1/rank of first chunk from source article. (4) Add fields to `RetrievalMetrics`: `doc_precision_at_1/3/5/10`, `doc_recall_at_1/3/5/10`, `doc_mrr`. (5) Wire into `compute_retrieval_metrics()` when `source_article_id` available. (6) Also call existing but unused `precision_at_k()` (chunk-based) in `compute_retrieval_metrics()` — add `chunk_precision_at_1/3/5/10` fields. (7) Update `EvaluationResults` with `avg_doc_precision_at_k`, `avg_doc_recall_at_k`, `avg_doc_mrr`, `avg_chunk_precision_at_k`. (8) Add tests in `tests/unit/evaluation/test_doc_metrics.py`.
 - description: Implement Document-ID precision/recall/MRR metrics. These match retrieved chunks' parent document against `source_article_id` from eval questions. Also activate the existing but uncalled `precision_at_k()` for chunk-level precision. Both metric tiers computed alongside existing retrieval metrics.
 
-##### ⚪ E6-F8-T2: Wire document metrics into runner and result JSON
+##### ✅ E6-F8-T2: Wire document metrics into runner and result JSON
 - blocked_by: [E6-F8-T1]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: In `src/evaluation/benchmark_runner.py`: (1) After existing `avg_chunk_hit_at_k` aggregation block (~line 389-402), add aggregation for `avg_doc_precision_at_k`, `avg_doc_recall_at_k`, `avg_doc_mrr`, `avg_chunk_precision_at_k` from `all_metrics`. (2) Store in `EvaluationResults` fields. (3) In `print_summary()`, add "--- Document-Level Precision ---" section showing Doc Precision@K, Doc Recall@K, Doc MRR. In `src/api/routers/results.py` or wherever results are normalized for the frontend API, ensure doc-level metrics are extracted from `evaluation` dict and included in the response.
 - description: Wire the new document-level and chunk-precision metrics into the benchmark runner aggregation, result JSON serialization, and print summary. Ensure they flow through to the frontend API.
 
-##### 🔵 E6-F8-T3: Add LLM Context precision toggle to config and UI
+##### ✅ E6-F8-T3: Add LLM Context precision toggle to config and UI
 - blocked_by: []
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Backend: (1) In `src/benchmarks/config.py` `EvaluationConfig`, add `compute_context_precision: bool = False`. This is separate from the existing `compute_ragas` flag — when True, it runs ONLY `context_precision` from RAGAS (unless `compute_ragas` is also True, in which case `context_precision` is already included). (2) In `src/evaluation/metrics_collector.py`, update `compute_ragas_metrics()`: if `config.compute_context_precision` and not `config.compute_ragas`, create a temporary RagasEvaluator with only `["context_precision"]` metric list. (3) In `src/benchmarks/runner.py`, after the existing RAGAS block, add: if `compute_context_precision and not compute_ragas`, run collector with context_precision only. Frontend: (4) In `frontend/src/api/types.ts` `BenchmarkConfig.evaluation`, add `compute_context_precision: boolean`. (5) In `frontend/src/components/config/ParameterModal.tsx`, add an "Evaluation Metrics" sub-section (visible in benchmark and sweep modes) with a toggle switch for "LLM Context Precision (RAGAS)" mapping to `evaluation.compute_context_precision`. Style like the existing toggle switches. (6) In `config/benchmarks/default.yaml`, set `evaluation.compute_context_precision: false`.
 - description: Make RAGAS `context_precision` independently controllable via a toggle in the ParameterModal. When enabled, runs LLM-based context precision evaluation even without full RAGAS suite. Toggle visible in both benchmark and sweep modes.
 
-##### ⚪ E6-F8-T4: Display three-tier metrics in results viewer and run history
+##### 🔵 E6-F8-T4: Display three-tier metrics in results viewer and run history
 - blocked_by: [E6-F8-T2, E6-F8-T3]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: (1) In `frontend/src/api/types.ts`, add `avg_doc_precision_at_5`, `avg_doc_mrr`, `avg_chunk_precision_at_5`, `avg_context_precision` to result types. (2) In `frontend/src/components/benchmarks/RunHistoryTable.tsx`, add new metric columns after existing MRR/R@5/R@10: `Doc P@5`, `Doc MRR`, `Ctx Prec`. For sweep child rows show all. For sweep parent rows show "---". (3) In the result viewer metric dashboards (`/benchmarks` page), add a "Precision Tiers" tab/section showing three levels side-by-side: (a) Document-ID: doc_precision@K, doc_recall@K, doc_mrr; (b) Chunk-ID: chunk_precision@K, chunk_hit@K, mrr (existing); (c) LLM Context: context_precision (from RAGAS). (4) Make the Chunk-ID column hideable — sweep rows should hide it (see E6-F9-T4).
 - description: Surface all three precision tiers in the RunHistoryTable and result viewer. Document-ID and LLM Context columns always visible. Chunk-ID column visible for benchmarks, hidden for sweep results.

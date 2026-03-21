@@ -212,6 +212,10 @@ class NormalizedBenchmarkResult(BaseModel):
     avg_ndcg: dict[str, float]
     avg_article_hit_at_k: dict[str, float] | None = None
     avg_chunk_hit_at_k: dict[str, float] | None = None
+    avg_doc_precision_at_k: dict[str, float] | None = None
+    avg_doc_recall_at_k: dict[str, float] | None = None
+    avg_doc_mrr: float | None = None
+    avg_chunk_precision_at_k: dict[str, float] | None = None
     metrics_by_type: dict[str, dict[str, float | None]]
     per_question: list[NormalizedQuestion]
     total_questions: int
