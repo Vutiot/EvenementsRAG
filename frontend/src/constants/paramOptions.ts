@@ -76,6 +76,15 @@ export const FUSION_OPTIONS = [
   { value: "weighted_sum", label: "weighted_sum" },
 ];
 
+export const SPARSE_WEIGHT_OPTIONS = [
+  { value: 0.0, label: "0.0" },
+  { value: 0.1, label: "0.1" },
+  { value: 0.15, label: "0.15" },
+  { value: 0.2, label: "0.2" },
+  { value: 0.3, label: "0.3" },
+  { value: 0.5, label: "0.5" },
+];
+
 export const RETRIEVER_K_OPTIONS = [
   { value: 20, label: "20" },
   { value: 60, label: "60" },

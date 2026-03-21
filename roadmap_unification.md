@@ -22,10 +22,10 @@ graph TD
   E6F2T2["E6-F2-T2: Preset as first dropdown inside modal"]
   E6F2T3["E6-F2-T3: Default config & scroll-to-top on execute"]
 
-  E6F3T1["E6-F3-T1: MultiSelectChips component"]
-  E6F3T2["E6-F3-T2: ParameterModal multi-select mode"]
-  E6F3T3["E6-F3-T3: Cartesian product logic & sweep run backend"]
-  E6F3T4["E6-F3-T4: Sweep execution frontend (SSE multi-config)"]
+  E6F3T1["✅ E6-F3-T1: MultiSelectChips component"]
+  E6F3T2["✅ E6-F3-T2: ParameterModal multi-select mode"]
+  E6F3T3["✅ E6-F3-T3: Cartesian product logic & sweep run backend"]
+  E6F3T4["✅ E6-F3-T4: Sweep execution frontend (SSE multi-config)"]
 
   E6F4T1["E6-F4-T1: Backend streaming query endpoint (SSE)"]
   E6F4T2["E6-F4-T2: StreamingAnswer component"]
@@ -72,10 +72,10 @@ graph TD
   style E6F2T1 fill:#3b82f6
   style E6F2T2 fill:#6b7280
   style E6F2T3 fill:#6b7280
-  style E6F3T1 fill:#3b82f6
-  style E6F3T2 fill:#6b7280
-  style E6F3T3 fill:#6b7280
-  style E6F3T4 fill:#6b7280
+  style E6F3T1 fill:#22c55e
+  style E6F3T2 fill:#22c55e
+  style E6F3T3 fill:#22c55e
+  style E6F3T4 fill:#22c55e
   style E6F4T1 fill:#3b82f6
   style E6F4T2 fill:#6b7280
   style E6F4T3 fill:#6b7280
@@ -151,28 +151,28 @@ Merge Query, Benchmark, and Sweep interfaces into a single Testing page with sha
 
 ##### E6-F3-T1: MultiSelectChips component
 - blocked_by: [E6-F1-T3]
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Create `frontend/src/components/config/MultiSelectChips.tsx`. Similar interface to existing `ParamChips.tsx` but supports multiple selected values. Props: `label: string`, `options: {value, label, disabled?}[]`, `values: T[]` (array), `presetValue: T` (single), `onChange: (values: T[]) => void`. Visual: selected chips get blue border+bg, multiple can be active simultaneously. Add subtle "multi" indicator (stacked-squares icon or "(multi)" label). Clicking selected chip deselects it; clicking unselected adds it. At least one must remain selected (prevent empty). When only one value selected, visually identical to single-select. Use /frontend skill for design.
 - description: Multi-select variant of ParamChips for sweep mode. Allows selecting multiple parameter values that form the cartesian product. Clear visual feedback for selected values.
 
 ##### E6-F3-T2: ParameterModal multi-select mode
 - blocked_by: [E6-F3-T1]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Add `multiSelect?: boolean` prop to `ParameterModal`. When true, replace all `ParamChips` with `MultiSelectChips` for sweepable parameters: chunk_size, chunk_overlap, embedding_model, distance_metric, technique, top_k, reranker_type, reranker_model, rerank_top_k, sparse_weight, sparse_type, fusion_method. Keep generation params (LLM model, temperature, max_tokens, system_prompt) as single-select since spec says "everything except generation". State shape changes: `sweepOverrides: Record<string, unknown[]>` (arrays). Add bottom summary showing "N combinations" computed as cartesian product size. TestingPage opens modal with `multiSelect={true}` when mode is "sweep".
 - description: Extend ParameterModal to support multi-select mode for sweep configuration. All sweepable parameters (except generation) use MultiSelectChips. Summary counter shows total parameter combinations.
 
 ##### E6-F3-T3: Cartesian product logic & sweep run backend
 - blocked_by: [E6-F3-T2]
-- status: pending
+- status: done
 - effort: L
 - agent_hint: Backend: Create `src/api/sweep_service.py` modeled after `src/api/benchmark_service.py`. Accepts `SweepRunRequest` with `preset: str`, `sweep_params: dict[str, list[any]]` (e.g. `{"chunking.chunk_size": [256, 512, 1024], "retrieval.top_k": [60, 100]}`), `eval_dataset_id: str`, `name: str` (optional). Compute cartesian product of all sweep_params to get N configs. For each config: ensure collection, run benchmark, yield SSE events. SSE events: `sweep_started` (total_configs, total_questions_per), `config_started` (config_index, config_summary), `config_progress` (config_index, question_index, total_questions), `config_complete` (config_index, metrics), `sweep_complete` (all results). Add `POST /api/benchmark/sweep` endpoint in `src/api/routers/benchmark.py`. Add schemas to `src/api/schemas.py`. Store sweep results: individual result files + `sweep_meta_{hash}_{ts}.json` that lists child filenames and sweep parameters.
 - description: Backend service for executing sweep runs. Computes cartesian product of multi-selected parameters, runs each config sequentially, streams progress via SSE. Saves individual results plus sweep metadata linking them.
 
 ##### E6-F3-T4: Sweep execution frontend (SSE multi-config)
 - blocked_by: [E6-F3-T3]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: In `frontend/src/api/client.ts`, add `runSweep(request, callbacks)` function following the same SSE pattern as `runBenchmark()`. Callbacks: `onSweepStarted`, `onConfigStarted`, `onConfigProgress`, `onConfigComplete`, `onSweepComplete`, `onError`. Add corresponding event types and `SweepRunRequest` to `frontend/src/api/types.ts`. In TestingPage, when mode is "sweep" and user clicks "Run Sweep": gather sweepOverrides, call `runSweep()`. Show two-level progress UI: overall progress (config M of N) as top bar + per-config progress (question X of Y) as nested bar. On completion, refresh RunHistoryTable.
 - description: Frontend SSE client and UI for sweep execution. Shows two-level progress (configs x questions). Integrates with TestingPage's sweep mode.
@@ -362,3 +362,12 @@ Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 - **RunHistoryTable stays at /runs**: TestingPage's benchmark mode shows a completion message with Link to `/runs` instead of embedding the table. Keeps the page focused on execution.
 - **ParameterModal hideSections**: Computed from current `mode` — query mode shows "Results" section (highlight toggle), benchmark/sweep hides it.
 - **Sidebar subtitle**: Added optional `subtitle` field to NavSection for the "Testing" group description.
+
+### E6-F3: Sweep Mode (completed 2026-03-21)
+- **Shared overrides state**: Sweep mode reuses the same `overrides` state object as query/benchmark but stores **arrays** for multi-selected params. `extractSweepParams()` splits the overrides into `sweep_params` (arrays with length > 1) and `config_overrides` (scalars, including single-element arrays collapsed to scalars) before sending to backend.
+- **CollectionSection replaced in sweep mode**: When `multiSelect=true`, ParameterModal skips the CollectionSection component (import button, derived name, existence badge) and renders direct MultiSelectChips for chunk_size, chunk_overlap, embedding_model, distance_metric. The sweep backend handles collection creation per combination automatically.
+- **Generation params stay single-select**: LLM model, temperature, max_tokens, system prompt remain single-select in sweep mode per spec ("everything except generation"). These are passed as scalar `config_overrides`.
+- **Cartesian product computed on backend**: Frontend computes only the combination count (for display). Backend's `compute_cartesian_configs()` uses `itertools.product` and auto-resolves `dense_weight = 1 - sparse_weight` and embedding dimension from model name. Invalid combos (e.g., overlap >= chunk_size) are caught by Pydantic validation and skipped with a warning.
+- **Per-config error resilience**: If one config in a sweep fails, the sweep continues to the next. `config_complete` events include `status: "ok" | "error"` so the frontend can display partial results.
+- **Sweep metadata**: Saved to `results/sweeps/sweep_meta_{hash}_{ts}.json` linking individual result files, enabling future E6-F5 sweep row grouping.
+- **SPARSE_WEIGHT_OPTIONS**: Added to `paramOptions.ts` as chips (values: 0.0, 0.1, 0.15, 0.2, 0.3, 0.5) matching `_HYBRID_WEIGHT_SWEEP` in config.py. Replaces the ParamSlider for sparse_weight in sweep mode.
