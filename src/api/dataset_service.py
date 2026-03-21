@@ -161,6 +161,8 @@ class DatasetService:
                 "generated": 0,
             })
 
+        system_prompt = request.system_prompt or "You are an expert question generator for historical content evaluation."
+
         dataset: dict = {
             "id": dataset_id,
             "name": request.name,
@@ -170,6 +172,7 @@ class DatasetService:
             "total_questions": sum(c.count for c in request.categories),
             "categories": categories_state,
             "questions": [],
+            "system_prompt": system_prompt,
             "metadata": {
                 "total_generated": 0,
                 "unique_articles": 0,
@@ -232,7 +235,8 @@ class DatasetService:
 
                     try:
                         questions = self._generate_for_chunk(
-                            client, chunk, cat, question_counter
+                            client, chunk, cat, question_counter,
+                            system_prompt=system_prompt,
                         )
                     except Exception as exc:
                         retries += 1
@@ -345,6 +349,8 @@ class DatasetService:
         chunk: dict,
         cat: DatasetCategoryConfig,
         counter: int,
+        *,
+        system_prompt: str = "You are an expert question generator for historical content evaluation.",
     ) -> list[dict] | None:
         """Call LLM to generate 1 question for a chunk.
 
@@ -374,7 +380,7 @@ Output ONLY the JSON array, no other text:
             messages=[
                 {
                     "role": "system",
-                    "content": "You are an expert question generator for historical content evaluation.",
+                    "content": system_prompt,
                 },
                 {"role": "user", "content": prompt},
             ],
