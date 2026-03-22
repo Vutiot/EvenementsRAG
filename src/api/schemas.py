@@ -159,6 +159,7 @@ class DatasetCreateRequest(BaseModel):
     name: str
     collection_name: str
     categories: list[DatasetCategoryConfig]
+    system_prompt: str | None = None
 
 
 class DatasetInfo(BaseModel):

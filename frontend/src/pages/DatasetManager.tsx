@@ -1,9 +1,11 @@
 import { useEffect, useState, useCallback, useMemo } from "react";
 import PageHeader from "../components/layout/PageHeader";
+import MultiSelectChips from "../components/config/MultiSelectChips";
 import {
   getDatasetRegistry,
   getDatasets,
   getDataset,
+  getCollections,
   deleteDataset,
   generateDataset,
 } from "../api/client";
@@ -12,8 +14,16 @@ import type {
   DatasetInfo,
   DatasetDetail,
   DatasetProgressEvent,
+  CollectionInfo,
 } from "../api/types";
 import { hashColor } from "../utils/hashColor";
+import {
+  CHUNK_SIZE_OPTIONS,
+  CHUNK_OVERLAP_VALUES,
+  EMBEDDING_MODELS,
+  DISTANCE_OPTIONS,
+  deriveCollectionName,
+} from "../constants/paramOptions";
 
 // ── Preset types ──────────────────────────────────────────────────────
 
@@ -175,6 +185,18 @@ export default function DatasetManager() {
   const [globalModel, setGlobalModel] = useState(LLM_MODELS[0]!.value);
   const [cards, setCards] = useState<CardState[]>(() => cardsFromPreset(BUILTIN_PRESETS[0]!));
 
+  // Collection multi-select params (E6-F10-T1)
+  const [chunkSizes, setChunkSizes] = useState<number[]>([512]);
+  const [chunkOverlaps, setChunkOverlaps] = useState<number[]>([128]);
+  const [embeddingModels, setEmbeddingModels] = useState<string[]>(["sentence-transformers/all-MiniLM-L6-v2"]);
+  const [distanceMetrics, setDistanceMetrics] = useState<string[]>(["cosine"]);
+  const [existingCollections, setExistingCollections] = useState<CollectionInfo[]>([]);
+  const [sourceCollection, setSourceCollection] = useState("");
+
+  // System prompt (E6-F10-T2)
+  const [systemPrompt, setSystemPrompt] = useState("You are an expert question generator for historical content evaluation.");
+  const [showSystemPrompt, setShowSystemPrompt] = useState(false);
+
   // Preset state
   const [customPresets, setCustomPresets] = useState<CategoryPreset[]>(() => loadCustomPresets());
   const [savingPreset, setSavingPreset] = useState(false);
@@ -261,6 +283,38 @@ export default function DatasetManager() {
     }
   }, []);
 
+  // Fetch existing collections for badges
+  useEffect(() => {
+    getCollections()
+      .then((r) => setExistingCollections(r.collections))
+      .catch(() => {});
+  }, []);
+
+  // Derive collection names from multi-select params
+  const derivedCollections = useMemo(() => {
+    if (!selectedDataset) return [];
+    const cols: { name: string; exists: boolean }[] = [];
+    const existingNames = new Set(existingCollections.map((c) => c.name));
+    for (const cs of chunkSizes) {
+      for (const co of chunkOverlaps) {
+        if (co >= cs) continue;
+        for (const em of embeddingModels) {
+          for (const dm of distanceMetrics) {
+            const name = deriveCollectionName(selectedDataset.name, "qdrant", cs, co, em, dm);
+            cols.push({ name, exists: existingNames.has(name) });
+          }
+        }
+      }
+    }
+    return cols;
+  }, [selectedDataset, chunkSizes, chunkOverlaps, embeddingModels, distanceMetrics, existingCollections]);
+
+  // Auto-select first existing collection as source
+  useEffect(() => {
+    const firstExisting = derivedCollections.find((c) => c.exists);
+    setSourceCollection(firstExisting?.name ?? derivedCollections[0]?.name ?? "");
+  }, [derivedCollections]);
+
   useEffect(() => {
     getDatasetRegistry().then((r) => {
       setRegistryDatasets(r.datasets);
@@ -310,7 +364,7 @@ export default function DatasetManager() {
   // ── Generate handler ──────────────────────────────────────────────
 
   const handleGenerate = useCallback(() => {
-    if (!datasetName.trim() || !selectedCollection) return;
+    if (!datasetName.trim() || !sourceCollection) return;
     const enabledCards = cards.filter((c) => c.enabled && c.count > 0);
     if (enabledCards.length === 0) return;
 
@@ -326,13 +380,14 @@ export default function DatasetManager() {
     generateDataset(
       {
         name: datasetName,
-        collection_name: selectedCollection,
+        collection_name: sourceCollection,
         categories: enabledCards.map((c) => ({
           type: c.type,
           prompt: c.prompt,
           model: globalModel,
           count: c.count,
         })),
+        system_prompt: systemPrompt || undefined,
       },
       {
         onProgress: (e: DatasetProgressEvent) => {
@@ -358,7 +413,7 @@ export default function DatasetManager() {
         },
       },
     );
-  }, [datasetName, selectedCollection, cards, globalModel, refreshDatasets]);
+  }, [datasetName, sourceCollection, cards, globalModel, systemPrompt, refreshDatasets]);
 
   // ── Detail handler ─────────────────────────────────────────────────
 
@@ -433,18 +488,13 @@ export default function DatasetManager() {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Collection
+                Dataset
               </label>
               <select
                 value={selectedDataset?.name ?? ""}
                 onChange={(e) => {
                   const entry = registryDatasets.find((d) => d.name === e.target.value);
                   setSelectedDataset(entry ?? null);
-                  if (entry) {
-                    setSelectedCollection(entry.collections[0] ?? entry.default_collection);
-                  } else {
-                    setSelectedCollection("");
-                  }
                 }}
                 className="w-full rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
                            focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
@@ -458,23 +508,6 @@ export default function DatasetManager() {
                   </option>
                 ))}
               </select>
-              {selectedDataset && selectedDataset.collections.length > 1 && (
-                <select
-                  value={selectedCollection}
-                  onChange={(e) => setSelectedCollection(e.target.value)}
-                  className="w-full mt-1 rounded border-gray-300 bg-white px-3 py-1.5 text-sm shadow-sm
-                             focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-                >
-                  {selectedDataset.collections.map((c) => (
-                    <option key={c} value={c}>{c}</option>
-                  ))}
-                </select>
-              )}
-              {selectedDataset && selectedDataset.collections.length === 0 && (
-                <p className="mt-1 text-xs text-amber-600">
-                  No indexed collection found for this dataset. Create one in Collections first.
-                </p>
-              )}
             </div>
           </div>
 
@@ -550,6 +583,137 @@ export default function DatasetManager() {
               >
                 Delete Preset
               </button>
+            )}
+          </div>
+
+          {/* Collection parameters (multi-select) */}
+          <div className="rounded border border-gray-200 bg-gray-50/50 p-3 space-y-3">
+            <span className="text-sm font-medium text-gray-700">Collection Parameters</span>
+            <div className="grid grid-cols-2 gap-3">
+              <MultiSelectChips
+                label="Chunk Size"
+                options={CHUNK_SIZE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                values={chunkSizes}
+                presetValue={512}
+                onChange={setChunkSizes}
+              />
+              <MultiSelectChips
+                label="Chunk Overlap"
+                options={CHUNK_OVERLAP_VALUES.map((v) => ({ value: v, label: String(v) }))}
+                values={chunkOverlaps}
+                presetValue={128}
+                onChange={setChunkOverlaps}
+              />
+              <MultiSelectChips
+                label="Embedding Model"
+                options={EMBEDDING_MODELS.map((o) => ({ value: o.value, label: o.label }))}
+                values={embeddingModels}
+                presetValue="sentence-transformers/all-MiniLM-L6-v2"
+                onChange={setEmbeddingModels}
+              />
+              <MultiSelectChips
+                label="Distance Metric"
+                options={DISTANCE_OPTIONS.map((o) => ({ value: o.value, label: o.label }))}
+                values={distanceMetrics}
+                presetValue="cosine"
+                onChange={setDistanceMetrics}
+              />
+            </div>
+            {derivedCollections.length > 0 && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <span className="text-xs font-medium text-gray-500">
+                    Collections ({derivedCollections.length})
+                  </span>
+                  <span className="text-xs text-gray-400">
+                    {derivedCollections.filter((c) => c.exists).length} existing,{" "}
+                    {derivedCollections.filter((c) => !c.exists).length} new
+                  </span>
+                </div>
+                <div className="max-h-36 overflow-y-auto rounded border border-gray-200 bg-white divide-y divide-gray-100">
+                  {derivedCollections.map((c) => (
+                    <label
+                      key={c.name}
+                      className={`flex items-center gap-2 px-2.5 py-1.5 text-xs cursor-pointer hover:bg-gray-50 ${
+                        sourceCollection === c.name ? "bg-blue-50" : ""
+                      }`}
+                    >
+                      <input
+                        type="radio"
+                        name="source-collection"
+                        checked={sourceCollection === c.name}
+                        onChange={() => setSourceCollection(c.name)}
+                        className="text-blue-600"
+                      />
+                      <span className="font-mono text-gray-700 truncate flex-1">{c.name}</span>
+                      <span
+                        className={`shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${
+                          c.exists
+                            ? "bg-green-100 text-green-700"
+                            : "bg-amber-100 text-amber-700"
+                        }`}
+                      >
+                        {c.exists ? "exists" : "new"}
+                      </span>
+                    </label>
+                  ))}
+                </div>
+                <p className="mt-1 text-[10px] text-gray-400">
+                  Select the collection to use as question generation source.
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* System prompt (collapsible) */}
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowSystemPrompt(!showSystemPrompt)}
+              className="flex items-center gap-1.5 text-sm font-medium text-gray-700 hover:text-gray-900"
+            >
+              <svg
+                className={`w-3.5 h-3.5 transition-transform ${showSystemPrompt ? "rotate-90" : ""}`}
+                fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+              >
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+              System Prompt
+            </button>
+            {showSystemPrompt && (
+              <div className="mt-2 space-y-2">
+                <textarea
+                  value={systemPrompt}
+                  onChange={(e) => setSystemPrompt(e.target.value)}
+                  rows={3}
+                  className="w-full rounded border border-gray-300 px-3 py-2 text-sm
+                             focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
+                  placeholder="System prompt for question generation..."
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setSystemPrompt("You are an expert question generator for historical content evaluation.")}
+                    className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
+                  >
+                    Default
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSystemPrompt("You are an academic researcher creating rigorous evaluation questions. Generate precise, unambiguous questions that test deep understanding of the source material. Avoid questions with subjective answers.")}
+                    className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
+                  >
+                    Strict Academic
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setSystemPrompt("You are a friendly quiz master creating engaging questions about historical topics. Generate questions that are interesting and educational, suitable for a general audience.")}
+                    className="rounded bg-gray-100 px-2 py-1 text-xs text-gray-600 hover:bg-gray-200"
+                  >
+                    Conversational
+                  </button>
+                </div>
+              </div>
             )}
           </div>
 

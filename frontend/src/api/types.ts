@@ -165,6 +165,7 @@ export interface DatasetCreateRequest {
   name: string;
   collection_name: string;
   categories: { type: string; prompt: string; model: string; count: number }[];
+  system_prompt?: string;
 }
 
 export interface DatasetInfo {
