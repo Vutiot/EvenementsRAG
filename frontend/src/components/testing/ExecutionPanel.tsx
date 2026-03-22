@@ -16,6 +16,8 @@ export interface ExecutionPanelProps {
   // Benchmark-specific
   benchPhase?: BenchPhase;
   activeRun?: ActiveRun | null;
+  // Warnings
+  warnings?: string[];
   // Sweep-specific
   combinationCount?: number;
   sweepPhase?: SweepPhase;
@@ -36,6 +38,7 @@ export default function ExecutionPanel({
   disabled,
   benchPhase,
   activeRun,
+  warnings = [],
   combinationCount = 1,
   sweepPhase,
   sweepProgress,
@@ -183,6 +186,33 @@ export default function ExecutionPanel({
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Warnings ── */}
+      {warnings.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {warnings.map((msg, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-2 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+            >
+              <svg
+                className="w-4 h-4 mt-0.5 shrink-0 text-amber-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126ZM12 15.75h.007v.008H12v-.008Z"
+                />
+              </svg>
+              <span>{msg}</span>
+            </div>
+          ))}
         </div>
       )}
 
