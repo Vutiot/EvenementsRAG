@@ -300,5 +300,7 @@ docs/_templates/
 *.tgz
 *.rar
 
-# Claude Code worktrees
+# Claude Code
 .claude/worktrees/
+.claude/settings.json
+.claude/settings.local.json
