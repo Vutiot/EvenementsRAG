@@ -74,7 +74,7 @@ graph TD
   E6F9T1["✅ E6-F9-T1: Unify benchmark/sweep layout"]
   E6F9T2["✅ E6-F9-T2: Extract ExecutionPanel component"]
   E6F9T3["✅ E6-F9-T3: Collection preview list for sweep"]
-  E6F9T4["⚪ E6-F9-T4: Restrict sweep to doc+LLM metrics"]
+  E6F9T4["✅ E6-F9-T4: Restrict sweep to doc+LLM metrics"]
 
   E6F10T1["✅ E6-F10-T1: Multi-select collections in DatasetManager"]
   E6F10T2["✅ E6-F10-T2: System prompt for eval generation"]
@@ -123,7 +123,7 @@ graph TD
   style E6F9T1 fill:#22c55e
   style E6F9T2 fill:#22c55e
   style E6F9T3 fill:#22c55e
-  style E6F9T4 fill:#3b82f6
+  style E6F9T4 fill:#22c55e
   style E6F10T1 fill:#22c55e
   style E6F10T2 fill:#22c55e
   style E6F10T3 fill:#3b82f6
@@ -357,9 +357,9 @@ Remove layout and structural differences between benchmark and sweep modes. Both
 - agent_hint: (1) Create `frontend/src/utils/deriveCollectionName.ts` — function `deriveCollectionName(datasetName, backend, chunkSize, chunkOverlap, embeddingModel, distanceMetric) -> string` mirroring `CollectionService.derive_collection_name()` in `src/api/collection_service.py` (lines 37-56). Include `_EMBEDDING_SHORT_NAMES` map. (2) Create `frontend/src/components/testing/CollectionPreview.tsx`. Props: `overrides: Record<string, unknown>`, `baseConfig: BenchmarkConfig | null`, `existingCollections: string[]`. Compute cartesian product of collection-related sweep params (chunk_size, chunk_overlap, embedding_model, distance_metric, backend) from overrides. For each combo: derive collection name, show green badge "exists" or amber badge "new". Scrollable `max-h-48 overflow-y-auto`. Show summary: "N collections (M existing, P new)". (3) In `TestingPage.tsx`, when mode is "sweep", render `<CollectionPreview>` between ConfigBadges and ExecutionPanel. Fetch existing collections via `getCollections()` on mount/config change. No Import button in sweep — collections are derived from multi-select param values only.
 - description: Show a scrollable preview list of all collection names that will be used/created during a sweep, each with an existing/new status badge. Uses frontend cartesian product of collection params to derive names, checked against the existing collections API.
 
-##### 🔵 E6-F9-T4: Restrict sweep metrics to Document-ID and LLM Context only
+##### ✅ E6-F9-T4: Restrict sweep metrics to Document-ID and LLM Context only
 - blocked_by: [E6-F8-T4, E6-F9-T1] (both done)
-- status: ready
+- status: done
 - effort: S
 - agent_hint: (1) In `frontend/src/components/benchmarks/RunHistoryTable.tsx`: when rendering sweep child rows (identified by `isSweepChild` flag), hide Chunk-ID metric columns (Chunk Hit@K, Chunk Precision@K, MRR). Show Doc P@5, Doc MRR, Ctx Precision. (2) In the sweep completed configs table in `TestingPage.tsx`, show only `Doc MRR` and `Ctx Prec` columns (not chunk-based MRR/R@5). (3) In `src/api/sweep_service.py` `config_complete` SSE event, add `avg_doc_mrr` and `avg_doc_precision_at_5` fields from result evaluation. (4) In `frontend/src/api/types.ts` `SweepConfigCompleteEvent`, add `avg_doc_mrr?: number` and `avg_doc_precision_at_5?: number`.
 - description: In sweep mode, chunk-ID metrics are not meaningful (eval questions were generated from one specific collection's chunks, which differ across sweep configs). Hide Chunk-ID metrics in sweep results. Show only Document-ID precision and LLM Context precision — both are valid across all collection configurations.

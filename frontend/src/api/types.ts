@@ -363,6 +363,9 @@ export interface SweepConfigCompleteEvent {
   avg_mrr?: number;
   avg_recall_at_5?: number;
   avg_recall_at_10?: number;
+  avg_doc_mrr?: number;
+  avg_doc_precision_at_5?: number;
+  avg_context_precision?: number;
   total_wall_time_s?: number;
 }
 

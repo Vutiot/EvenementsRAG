@@ -268,6 +268,8 @@ class SweepService:
                 rel_filename = f"{technique}/{result.phase_name}_{hash8}_{ts}.json"
                 result_files.append(rel_filename)
 
+                ctx_prec = result.metrics_summary.get("ragas", {}).get("avg_context_precision")
+
                 yield _sse("config_complete", {
                     "config_index": config_index + 1,
                     "total_configs": total_configs,
@@ -277,6 +279,9 @@ class SweepService:
                     "avg_mrr": round(result.evaluation.avg_mrr, 4),
                     "avg_recall_at_5": round(result.evaluation.avg_recall_at_k.get(5, 0.0), 4),
                     "avg_recall_at_10": round(result.evaluation.avg_recall_at_k.get(10, 0.0), 4),
+                    "avg_doc_mrr": round(result.evaluation.avg_doc_mrr, 4),
+                    "avg_doc_precision_at_5": round(result.evaluation.avg_doc_precision_at_k.get(5, 0.0), 4),
+                    "avg_context_precision": round(ctx_prec, 4) if ctx_prec is not None else None,
                     "total_wall_time_s": round(result.total_wall_time_s, 2),
                 })
 

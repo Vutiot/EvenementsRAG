@@ -109,10 +109,10 @@ function buildDisplayRows(results: ResultFileInfo[]): DisplayRow[] {
       const children = r.sweep_meta.child_filenames
         .map((fn) => resultsByFilename.get(fn))
         .filter((c): c is ResultFileInfo => c != null);
-      // Find best MRR among children
-      const mrrs = children.map((c) => c.avg_mrr ?? 0);
-      const maxMrr = Math.max(...mrrs);
-      const hasBest = maxMrr > 0;
+      // Find best Doc MRR among children (chunk-level MRR not meaningful across sweep configs)
+      const docMrrs = children.map((c) => c.avg_doc_mrr ?? 0);
+      const maxDocMrr = Math.max(...docMrrs);
+      const hasBest = maxDocMrr > 0;
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
         if (!child) continue;
@@ -122,7 +122,7 @@ function buildDisplayRows(results: ResultFileInfo[]): DisplayRow[] {
           parentSweepId: r.sweep_meta.sweep_id,
           childIndex: i,
           isLast: i === children.length - 1,
-          isBest: hasBest && (child.avg_mrr ?? 0) === maxMrr,
+          isBest: hasBest && (child.avg_doc_mrr ?? 0) === maxDocMrr,
         });
       }
     } else {
@@ -538,11 +538,11 @@ function SweepParentRow({
       <ParamCell value={cs?.sparse_weight} format="float" sweptValues={getSweptValues(r, "retrieval.sparse_weight")} />
       <ParamCell value={cs?.sparse_type} sweptValues={getSweptValues(r, "retrieval.sparse_type")} />
       <ParamCell value={cs?.fusion_method} sweptValues={getSweptValues(r, "retrieval.fusion_method")} />
-      {/* Metrics show dashes for sweep parent */}
+      {/* Metrics show dashes for sweep parent; chunk-ID metrics hidden */}
       <td className="px-3 py-2 text-right text-gray-400">{"\u2014"}</td>
-      <td className="px-3 py-2 text-right font-mono text-gray-400">---</td>
-      <td className="px-3 py-2 text-right font-mono text-gray-400">---</td>
-      <td className="px-3 py-2 text-right font-mono text-gray-400">---</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-300"></td>
+      <td className="px-3 py-2 text-right font-mono text-gray-300"></td>
+      <td className="px-3 py-2 text-right font-mono text-gray-300"></td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
@@ -628,15 +628,10 @@ function SweepChildRow({
       <ParamCell value={r.config_summary?.sparse_type} />
       <ParamCell value={r.config_summary?.fusion_method} />
       <td className="px-3 py-2 text-right text-gray-600">{r.total_questions}</td>
-      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
-        {fmt(r.avg_mrr)}
-      </td>
-      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
-        {fmt(r.avg_recall_at_5)}
-      </td>
-      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
-        {fmt(r.avg_recall_at_10)}
-      </td>
+      {/* Chunk-ID metrics hidden for sweep children */}
+      <td className="px-3 py-2 text-right font-mono text-gray-300">{"\u2014"}</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-300">{"\u2014"}</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-300">{"\u2014"}</td>
       <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
         {fmt(r.avg_doc_precision_at_5)}
       </td>

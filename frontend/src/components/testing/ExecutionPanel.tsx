@@ -194,9 +194,8 @@ export default function ExecutionPanel({
               <tr className="border-b text-gray-500 text-left">
                 <th className="pb-1.5 pr-2">#</th>
                 <th className="pb-1.5 pr-2">Params</th>
-                <th className="pb-1.5 pr-2 text-right">MRR</th>
-                <th className="pb-1.5 pr-2 text-right">R@5</th>
-                <th className="pb-1.5 pr-2 text-right">R@10</th>
+                <th className="pb-1.5 pr-2 text-right">Doc MRR</th>
+                <th className="pb-1.5 pr-2 text-right">Ctx Prec</th>
                 <th className="pb-1.5 pr-2 text-right">Time</th>
                 <th className="pb-1.5">Status</th>
               </tr>
@@ -215,13 +214,10 @@ export default function ExecutionPanel({
                       .join(", ")}
                   </td>
                   <td className="py-1 pr-2 text-right font-mono">
-                    {r.status === "ok" ? r.avg_mrr?.toFixed(4) : "\u2014"}
+                    {r.status === "ok" ? (r.avg_doc_mrr?.toFixed(4) ?? "\u2014") : "\u2014"}
                   </td>
                   <td className="py-1 pr-2 text-right font-mono">
-                    {r.status === "ok" ? r.avg_recall_at_5?.toFixed(4) : "\u2014"}
-                  </td>
-                  <td className="py-1 pr-2 text-right font-mono">
-                    {r.status === "ok" ? r.avg_recall_at_10?.toFixed(4) : "\u2014"}
+                    {r.status === "ok" ? (r.avg_context_precision?.toFixed(4) ?? "\u2014") : "\u2014"}
                   </td>
                   <td className="py-1 pr-2 text-right font-mono">
                     {r.status === "ok" ? `${r.total_wall_time_s?.toFixed(1)}s` : "\u2014"}
