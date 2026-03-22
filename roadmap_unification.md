@@ -81,7 +81,7 @@ graph TD
   E6F10T3["✅ E6-F10-T3: SSE collection creation in DatasetManager"]
 
   E6F11T1["✅ E6-F11-T1: Filter eval datasets by collection"]
-  E6F11T2["⚪ E6-F11-T2: Runtime eval dataset warning"]
+  E6F11T2["✅ E6-F11-T2: Runtime eval dataset warning"]
 
   E6F8T1 --> E6F8T2
   E6F8T1 --> E6F8T4
@@ -415,25 +415,11 @@ Ensure eval datasets are correctly filtered based on collection compatibility. I
 
 ## Critical Path
 
-**Completed path (E6-F1 through E6-F11-T1)**: E6-F1 → F2 → F3 → F4 → F5 → F6 → F8-T1/T2/T3/T4 → F9-T1/T2/T3 → F10-T1/T2 → F11-T1 (all done)
+**All E6 core tasks complete.** E6-F1 → F2 → F3 → F4 → F5 → F6 → F8 → F9 → F10 → F11 (all done)
 
-**New critical path**: 🔴 E6-F9-T4
+**Critical path**: Finished. No remaining blocking tasks.
 
-**Length**: 1 task (restrict sweep metrics to doc+LLM only)
-
----
-
-## Parallel Opportunities
-
-**Parallel Group E** (immediately available — no blockers):
-- E6-F9-T4 (restrict sweep metrics — last critical path task)
-- E6-F10-T3 (SSE collection creation in DatasetManager)
-- E6-F11-T2 (runtime eval dataset compatibility warning)
-
-**Parallel Group E** (after E6-F8-T1 done):
-- E6-F8-T2 (wire runner metrics) + E6-F8-T3 (RAGAS toggle) in parallel -> converge at E6-F8-T4
-
-**Effective new time**: max(4, 3, 3, 3, 2, 2) = **4 tasks** sequential on critical path. Total 13 new tasks parallelized to ~4 sequential sessions.
+**Remaining**: Only the suggested features (E6-F7) are left, all optional.
 
 ---
 
