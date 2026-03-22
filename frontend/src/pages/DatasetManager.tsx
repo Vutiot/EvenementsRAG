@@ -298,6 +298,7 @@ export default function DatasetManager() {
     Map<string, "pending" | "creating" | "exists" | "created" | "error">
   >(new Map());
   const [collectionErrors, setCollectionErrors] = useState<Map<string, string>>(new Map());
+  const [collectionSteps, setCollectionSteps] = useState<Map<string, string>>(new Map());
 
   // Derive collection names from multi-select params
   const derivedCollections = useMemo(() => {
@@ -444,6 +445,7 @@ export default function DatasetManager() {
     }
     setCollectionProgress(new Map(progressInit));
     setCollectionErrors(new Map());
+    setCollectionSteps(new Map());
 
     ensureCollections(
       {
@@ -467,6 +469,9 @@ export default function DatasetManager() {
         onCreated: (e) => {
           setCollectionProgress((prev) => new Map(prev).set(e.name, "created"));
         },
+        onProgress: (e) => {
+          setCollectionSteps((prev) => new Map(prev).set(e.name, e.step));
+        },
         onError: (e) => {
           if (e.name) {
             setCollectionProgress((prev) => new Map(prev).set(e.name, "error"));
@@ -488,9 +493,15 @@ export default function DatasetManager() {
               // Proceed with generation
               setTimeout(() => startGeneration(), 0);
             } else {
-              setGenError(
-                `Source collection "${sourceCollection}" could not be created. Cannot proceed with question generation.`,
-              );
+              setCollectionErrors((errs) => {
+                const detail = errs.get(sourceCollection);
+                setGenError(
+                  `Source collection "${sourceCollection}" could not be created.` +
+                  (detail ? ` Error: ${detail}` : " The indexing may have timed out.") +
+                  ` Cannot proceed with question generation.`,
+                );
+                return errs;
+              });
             }
             return prev;
           });
@@ -958,6 +969,11 @@ export default function DatasetManager() {
                     )}
                     {status === "creating" && (
                       <div className="shrink-0 h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                    )}
+                    {status === "creating" && collectionSteps.get(name) && (
+                      <span className="shrink-0 text-blue-500 text-[10px] truncate max-w-[200px]">
+                        {collectionSteps.get(name)}
+                      </span>
                     )}
                     {(status === "exists" || status === "created") && (
                       <svg className="shrink-0 h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

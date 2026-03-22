@@ -2,7 +2,7 @@ name: phase2_hybrid
 description: "Phase 2: Hybrid search with RRF fusion"
 
 dataset:
-  collection_name: ww2_events_10000
+  collection_name: wiki_10k_qdrant_cs512_co50_minilm_l6_cosine
   dataset_name: wiki_10k
   questions_file: data/evaluation/eval_10000_articles_50q.json
 

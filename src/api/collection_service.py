@@ -2,7 +2,7 @@
 
 import logging
 from pathlib import Path
-from typing import Any, Dict, List
+from typing import Any, Callable, Dict, List, Optional
 
 from src.api.dependencies import FAISS_PERSIST_DIR
 from src.vector_store.base import BaseVectorStore, DistanceMetric
@@ -24,10 +24,7 @@ _EMBEDDING_SHORT_NAMES: Dict[str, str] = {
     "BAAI/bge-base-en-v1.5": "bge_base",
 }
 
-# Legacy collection names for backward compatibility (avoid re-indexing)
-_LEGACY_NAMES: Dict[tuple, str] = {
-    ("wiki_10k", "qdrant", 512, 50, "sentence-transformers/all-MiniLM-L6-v2", "cosine"): "ww2_events_10000",
-}
+_LEGACY_NAMES: Dict[tuple, str] = {}
 
 
 class CollectionService:
@@ -139,6 +136,7 @@ class CollectionService:
         embedding_model: str,
         embedding_dimension: int,
         distance_metric: str,
+        on_progress: Optional[Callable[[str], None]] = None,
     ) -> str:
         """Create a collection and index the dataset into it.
 
@@ -148,6 +146,10 @@ class CollectionService:
         from src.embeddings.embedding_generator import EmbeddingGenerator
         from src.preprocessing.text_chunker import TextChunker
         from src.vector_store.indexer import DocumentIndexer
+
+        def _progress(msg: str) -> None:
+            if on_progress:
+                on_progress(msg)
 
         # Resolve articles dir
         if dataset_name not in _DATASET_DIRS:
@@ -166,6 +168,7 @@ class CollectionService:
         distance = DistanceMetric(distance_metric)
 
         # Create the collection
+        _progress("Creating collection")
         store.create_collection(
             collection_name=collection_name,
             vector_size=embedding_dimension,
@@ -182,13 +185,20 @@ class CollectionService:
         if backend == "qdrant":
             from src.vector_store.qdrant_adapter import QdrantAdapter
             mgr = store.manager if isinstance(store, QdrantAdapter) else store
-            indexer = DocumentIndexer(qdrant_manager=mgr, text_chunker=chunker)
-            indexer.index_all_articles(
+            indexer = DocumentIndexer(qdrant_manager=mgr, embedding_generator=embedding_gen, text_chunker=chunker)
+
+            _progress("Loading articles")
+            articles = indexer.load_articles(articles_dir)
+            _progress(f"Chunking {len(articles)} articles")
+            chunks = indexer.process_articles(articles)
+            _progress(f"Indexing {len(chunks)} chunks (embedding + upload)")
+            indexer.index_chunks(
                 collection_name=collection_name,
-                articles_dir=articles_dir,
+                chunks=chunks,
             )
         else:
             # Generic indexing path for FAISS / pgvector
+            _progress("Indexing articles")
             self._generic_index(
                 store, collection_name, articles_dir, chunker, embedding_gen
             )

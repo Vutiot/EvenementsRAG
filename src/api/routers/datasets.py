@@ -141,6 +141,9 @@ async def ensure_collections(request: EnsureCollectionsRequest):
 
                 q.put(_sse("collection_creating", payload))
                 try:
+                    def _on_progress(msg: str, _p=payload):
+                        q.put(_sse("collection_progress", {**_p, "step": msg}))
+
                     svc.create_and_index(
                         dataset_name=col.dataset_name,
                         collection_name=col_name,
@@ -150,6 +153,7 @@ async def ensure_collections(request: EnsureCollectionsRequest):
                         embedding_model=col.embedding_model,
                         embedding_dimension=col.embedding_dimension,
                         distance_metric=col.distance_metric,
+                        on_progress=_on_progress,
                     )
                     q.put(_sse("collection_created", payload))
                 except Exception as exc:
@@ -165,7 +169,7 @@ async def ensure_collections(request: EnsureCollectionsRequest):
     async def _stream():
         while True:
             try:
-                item = await asyncio.to_thread(q.get, timeout=600)
+                item = await asyncio.to_thread(q.get, timeout=3600)
             except Exception:
                 break
             if item is None:

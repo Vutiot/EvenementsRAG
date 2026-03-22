@@ -49,7 +49,7 @@ def _deep_merge(base: dict, overrides: dict) -> None:
 
 class DatasetConfig(BaseModel):
     dataset_name: str = "wiki_10k"
-    collection_name: str = "ww2_events_10000"
+    collection_name: str = "wiki_10k_qdrant_cs512_co50_minilm_l6_cosine"
     questions_file: str = "data/evaluation/eval_10k_200q.json"
     articles_dir: Optional[str] = None  # override DATASET_REGISTRY path
 

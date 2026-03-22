@@ -12,7 +12,7 @@ Usage:
 
     cfg = BenchmarkConfig.phase2_hybrid()
     retriever = HybridRetriever(
-        collection_name="ww2_events_10000",
+        collection_name="wiki_10k_qdrant_cs512_co50_minilm_l6_cosine",
         qdrant_manager=vector_store,
         embedding_generator=emb_gen,
         config=cfg,

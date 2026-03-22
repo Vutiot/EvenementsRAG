@@ -2,7 +2,7 @@ name: wiki_model_llama
 description: "Model sweep: Meta LLaMA 3.1 8B Instruct (free)"
 
 dataset:
-  collection_name: ww2_events_10000
+  collection_name: wiki_10k_qdrant_cs512_co50_minilm_l6_cosine
   dataset_name: wiki_10k
   questions_file: data/evaluation/eval_10k_200q.json
 

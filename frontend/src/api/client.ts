@@ -10,6 +10,7 @@ import type {
   CollectionCreateResponse,
   CollectionErrorEvent,
   CollectionListResponse,
+  CollectionProgressEvent,
   CollectionSSEEvent,
   DatasetCreateRequest,
   DatasetDetail,
@@ -141,6 +142,7 @@ export function ensureCollections(
     onExists: (e: CollectionSSEEvent) => void;
     onCreating: (e: CollectionSSEEvent) => void;
     onCreated: (e: CollectionSSEEvent) => void;
+    onProgress?: (e: CollectionProgressEvent) => void;
     onError: (e: CollectionErrorEvent) => void;
     onDone: () => void;
   },
@@ -196,6 +198,9 @@ export function ensureCollections(
                 break;
               case "collection_created":
                 callbacks.onCreated(data);
+                break;
+              case "collection_progress":
+                callbacks.onProgress?.(data);
                 break;
               case "collection_error":
                 callbacks.onError(data);

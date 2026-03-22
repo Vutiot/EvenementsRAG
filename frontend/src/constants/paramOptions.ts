@@ -141,12 +141,6 @@ export const MAX_TOKENS_OPTIONS = [
 // ── Collection name derivation ───────────────────────────────────────
 // Mirrors backend CollectionService.derive_collection_name
 
-const _LEGACY_KEY = JSON.stringify([
-  "wiki_10k", "qdrant", 512, 50,
-  "sentence-transformers/all-MiniLM-L6-v2", "cosine",
-]);
-const _LEGACY_NAMES: Record<string, string> = { [_LEGACY_KEY]: "ww2_events_10000" };
-
 export function deriveCollectionName(
   datasetName: string,
   backend = "qdrant",
@@ -155,12 +149,6 @@ export function deriveCollectionName(
   embeddingModel = "sentence-transformers/all-MiniLM-L6-v2",
   distanceMetric = "cosine",
 ): string {
-  const key = JSON.stringify([
-    datasetName, backend, chunkSize, chunkOverlap, embeddingModel, distanceMetric,
-  ]);
-  const legacy = _LEGACY_NAMES[key];
-  if (legacy) return legacy;
-
   const embShort =
     EMBEDDING_SHORT_NAMES[embeddingModel] ??
     embeddingModel.split("/").pop()?.toLowerCase() ??
@@ -179,19 +167,7 @@ export interface ParsedCollectionParams {
   distanceMetric: string;
 }
 
-const _LEGACY_REVERSE: Record<string, ParsedCollectionParams> = {
-  ww2_events_10000: {
-    dataset: "wiki_10k",
-    backend: "qdrant",
-    chunkSize: 512,
-    chunkOverlap: 50,
-    embeddingModel: "sentence-transformers/all-MiniLM-L6-v2",
-    distanceMetric: "cosine",
-  },
-};
-
 export function parseCollectionName(name: string): ParsedCollectionParams | null {
-  if (name in _LEGACY_REVERSE) return _LEGACY_REVERSE[name] ?? null;
 
   const match = name.match(
     /^(.+?)_(qdrant|faiss|pgvector)_cs(\d+)_co(\d+)_(.+?)_(cosine|euclidean|dot_product)$/,

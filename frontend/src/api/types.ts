@@ -145,6 +145,10 @@ export interface CollectionErrorEvent extends CollectionSSEEvent {
   error: string;
 }
 
+export interface CollectionProgressEvent extends CollectionSSEEvent {
+  step: string;
+}
+
 export interface CollectionCreateRequest {
   dataset_name: string;
   collection_name?: string;

@@ -2,7 +2,7 @@ name: wiki_model_mistral
 description: "Model sweep: Mistral Small 3.1 24B (free)"
 
 dataset:
-  collection_name: ww2_events_10000
+  collection_name: wiki_10k_qdrant_cs512_co50_minilm_l6_cosine
   dataset_name: wiki_10k
   questions_file: data/evaluation/eval_10k_200q.json
 

@@ -2,7 +2,7 @@ name: wiki_topk10
 description: "Top-k chunks sweep: wide context (top_k_chunks=10)"
 
 dataset:
-  collection_name: ww2_events_10000
+  collection_name: wiki_10k_qdrant_cs512_co50_minilm_l6_cosine
   dataset_name: wiki_10k
   questions_file: data/evaluation/eval_10k_200q.json
 
