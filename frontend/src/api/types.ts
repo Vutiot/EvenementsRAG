@@ -25,6 +25,10 @@ export interface ResultFileInfo {
   avg_mrr: number;
   avg_recall_at_5: number | null;
   avg_recall_at_10: number | null;
+  avg_doc_precision_at_5: number | null;
+  avg_doc_mrr: number | null;
+  avg_chunk_precision_at_5: number | null;
+  avg_context_precision: number | null;
   total_wall_time_s: number | null;
   config_summary: {
     technique: string | null;

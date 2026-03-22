@@ -36,23 +36,23 @@ type DisplayRow =
 /* ------------------------------------------------------------------ */
 
 function fmt(v: number | null | undefined, digits = 3): string {
-  if (v == null) return "—";
+  if (v == null) return "\u2014";
   return v.toFixed(digits);
 }
 
 function fmtTime(s: number | null | undefined): string {
-  if (s == null) return "—";
+  if (s == null) return "\u2014";
   if (s < 60) return `${s.toFixed(1)}s`;
   return `${Math.floor(s / 60)}m ${(s % 60).toFixed(0)}s`;
 }
 
 function truncate(s: string | null | undefined, maxLen = 20): string {
-  if (!s) return "—";
+  if (!s) return "\u2014";
   return s.length > maxLen ? s.slice(0, maxLen) + "..." : s;
 }
 
 function formatTimestamp(ts: string | null | undefined): string {
-  if (!ts) return "—";
+  if (!ts) return "\u2014";
   try {
     const d = new Date(ts);
     return d.toLocaleString(undefined, {
@@ -68,7 +68,7 @@ function formatTimestamp(ts: string | null | undefined): string {
 
 /** Short display for embedding model names */
 function shortModel(s: string | null | undefined): string {
-  if (!s) return "—";
+  if (!s) return "\u2014";
   const m = s.match(/MiniLM-L\d+/i);
   if (m) return m[0];
   const b = s.match(/bge-\w+/i);
@@ -136,7 +136,7 @@ function buildDisplayRows(results: ResultFileInfo[]): DisplayRow[] {
 /* Constants                                                           */
 /* ------------------------------------------------------------------ */
 
-const TOTAL_COLS = 24;
+const TOTAL_COLS = 27;
 
 const stickyCls = "sticky left-0 z-10 bg-white";
 const stickyStyle: React.CSSProperties = {
@@ -200,7 +200,7 @@ function ParamCell({
   }
   let display: string;
   if (value == null) {
-    display = "—";
+    display = "\u2014";
   } else if (format === "model") {
     display = shortModel(String(value));
   } else if (format === "float") {
@@ -270,6 +270,9 @@ export default function RunHistoryTable({ results, activeRun }: Props) {
             <th className="px-3 py-2 text-right">MRR</th>
             <th className="px-3 py-2 text-right">R@5</th>
             <th className="px-3 py-2 text-right">R@10</th>
+            <th className="px-3 py-2 text-right">Doc P@5</th>
+            <th className="px-3 py-2 text-right">Doc MRR</th>
+            <th className="px-3 py-2 text-right">Ctx Prec</th>
             <th className="px-3 py-2 text-right">Time</th>
           </tr>
         </thead>
@@ -414,10 +417,10 @@ function NormalRow({
         {formatTimestamp(r.timestamp)}
       </td>
       <td className="px-3 py-2 font-mono text-xs text-gray-600">
-        {r.config_summary?.dataset_name ?? "—"}
+        {r.config_summary?.dataset_name ?? "\u2014"}
       </td>
       <td className="px-3 py-2 text-xs text-gray-500">
-        {r.eval_dataset_name ?? "—"}
+        {r.eval_dataset_name ?? "\u2014"}
       </td>
       <td className="px-3 py-2">
         {r.config_summary?.technique ? (
@@ -425,7 +428,7 @@ function NormalRow({
             {r.config_summary.technique}
           </span>
         ) : (
-          "—"
+          "\u2014"
         )}
       </td>
       <ParamCell value={r.config_summary?.chunk_size} />
@@ -447,6 +450,15 @@ function NormalRow({
       </td>
       <td className="px-3 py-2 text-right font-mono text-gray-700">
         {fmt(r.avg_recall_at_10)}
+      </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_doc_precision_at_5)}
+      </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_doc_mrr)}
+      </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_context_precision)}
       </td>
       <td className="px-3 py-2 text-right text-gray-500">
         {fmtTime(r.total_wall_time_s)}
@@ -500,10 +512,10 @@ function SweepParentRow({
         {formatTimestamp(r.timestamp)}
       </td>
       <td className="px-3 py-2 font-mono text-xs text-gray-600">
-        {cs?.dataset_name ?? "—"}
+        {cs?.dataset_name ?? "\u2014"}
       </td>
       <td className="px-3 py-2 text-xs text-gray-500">
-        {r.eval_dataset_name ?? "—"}
+        {r.eval_dataset_name ?? "\u2014"}
       </td>
       <td className="px-3 py-2">
         {cs?.technique ? (
@@ -511,7 +523,7 @@ function SweepParentRow({
             {cs.technique}
           </span>
         ) : (
-          "—"
+          "\u2014"
         )}
       </td>
       <ParamCell value={cs?.chunk_size} sweptValues={getSweptValues(r, "chunking.chunk_size")} />
@@ -527,10 +539,13 @@ function SweepParentRow({
       <ParamCell value={cs?.sparse_type} sweptValues={getSweptValues(r, "retrieval.sparse_type")} />
       <ParamCell value={cs?.fusion_method} sweptValues={getSweptValues(r, "retrieval.fusion_method")} />
       {/* Metrics show dashes for sweep parent */}
-      <td className="px-3 py-2 text-right text-gray-400">—</td>
+      <td className="px-3 py-2 text-right text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">---</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">---</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">---</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right text-gray-400">---</td>
     </tr>
   );
@@ -586,10 +601,10 @@ function SweepChildRow({
         {formatTimestamp(r.timestamp)}
       </td>
       <td className="px-3 py-2 font-mono text-xs text-gray-600">
-        {r.config_summary?.dataset_name ?? "—"}
+        {r.config_summary?.dataset_name ?? "\u2014"}
       </td>
       <td className="px-3 py-2 text-xs text-gray-500">
-        {r.eval_dataset_name ?? "—"}
+        {r.eval_dataset_name ?? "\u2014"}
       </td>
       <td className="px-3 py-2">
         {r.config_summary?.technique ? (
@@ -597,7 +612,7 @@ function SweepChildRow({
             {r.config_summary.technique}
           </span>
         ) : (
-          "—"
+          "\u2014"
         )}
       </td>
       <ParamCell value={r.config_summary?.chunk_size} />
@@ -621,6 +636,15 @@ function SweepChildRow({
       </td>
       <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
         {fmt(r.avg_recall_at_10)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_doc_precision_at_5)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_doc_mrr)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_context_precision)}
       </td>
       <td className={`px-3 py-2 text-right ${isBest ? "text-green-600 font-semibold" : "text-gray-500"}`}>
         {fmtTime(r.total_wall_time_s)}

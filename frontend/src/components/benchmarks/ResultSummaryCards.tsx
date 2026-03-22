@@ -36,12 +36,12 @@ export default function ResultSummaryCards({ result }: Props) {
     },
     {
       label: "Recall@5",
-      value: recall5 != null ? recall5.toFixed(4) : "—",
+      value: recall5 != null ? recall5.toFixed(4) : "\u2014",
       accent: "border-l-blue-500",
     },
     {
       label: "NDCG@5",
-      value: ndcg5 != null ? ndcg5.toFixed(4) : "—",
+      value: ndcg5 != null ? ndcg5.toFixed(4) : "\u2014",
       accent: "border-l-green-500",
     },
     {
@@ -61,6 +61,24 @@ export default function ResultSummaryCards({ result }: Props) {
       label: "Wall Time",
       value: `${result.total_wall_time_s.toFixed(1)}s`,
       accent: "border-l-amber-500",
+    });
+  }
+
+  // Precision tier cards
+  if (result.avg_doc_mrr != null) {
+    cards.push({
+      label: "Doc MRR",
+      value: result.avg_doc_mrr.toFixed(4),
+      accent: "border-l-purple-500",
+    });
+  }
+
+  const docP5 = result.avg_doc_precision_at_k?.["5"];
+  if (docP5 != null) {
+    cards.push({
+      label: "Doc P@5",
+      value: docP5.toFixed(4),
+      accent: "border-l-purple-500",
     });
   }
 
