@@ -30,6 +30,7 @@ import type {
   SweepConfigStartedEvent,
   SweepRunRequest,
   SweepStartedEvent,
+  WarningEvent,
 } from "./types";
 
 const BASE = "/api";
@@ -308,6 +309,7 @@ export function runBenchmark(
     onStarted: (e: BenchmarkStartedEvent) => void;
     onProgress: (e: BenchmarkProgressEvent) => void;
     onComplete: (e: BenchmarkCompleteEvent) => void;
+    onWarning?: (e: WarningEvent) => void;
     onError: (msg: string) => void;
   },
 ): AbortController {
@@ -352,6 +354,7 @@ export function runBenchmark(
           } else if (line.startsWith("data: ")) {
             const data = JSON.parse(line.slice(6));
             if (currentEvent === "started") callbacks.onStarted(data);
+            else if (currentEvent === "warning") callbacks.onWarning?.(data);
             else if (currentEvent === "progress") callbacks.onProgress(data);
             else if (currentEvent === "complete") callbacks.onComplete(data);
             else if (currentEvent === "error") callbacks.onError(data.message);
@@ -384,6 +387,7 @@ export function runSweep(
     onConfigProgress: (e: SweepConfigProgressEvent) => void;
     onConfigComplete: (e: SweepConfigCompleteEvent) => void;
     onSweepComplete: (e: SweepCompleteEvent) => void;
+    onWarning?: (e: WarningEvent) => void;
     onError: (msg: string) => void;
   },
 ): AbortController {
@@ -428,6 +432,9 @@ export function runSweep(
           } else if (line.startsWith("data: ")) {
             const data = JSON.parse(line.slice(6));
             switch (currentEvent) {
+              case "warning":
+                callbacks.onWarning?.(data);
+                break;
               case "sweep_started":
                 callbacks.onSweepStarted(data);
                 break;

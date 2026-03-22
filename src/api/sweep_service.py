@@ -131,7 +131,46 @@ class SweepService:
             questions = ds_data.get("questions", [])
             total_questions = len(questions)
 
-            # 4. Generate sweep ID
+            # 4. Instantiate collection service (used for warnings + per-config loop)
+            svc = CollectionService()
+
+            # 4a. Warn if sweep has multiple chunk configurations
+            chunk_combos = {
+                (c.chunking.chunk_size, c.chunking.chunk_overlap)
+                for _, c in configs
+            }
+            if len(chunk_combos) > 1:
+                yield _sse("warning", {
+                    "message": (
+                        "Sweep uses multiple chunk configurations. "
+                        "Only Document-ID and LLM Context metrics are valid across all configs. "
+                        "Chunk-ID metrics only valid for the collection matching the eval dataset."
+                    ),
+                })
+
+            # 4b. Warn if eval dataset collection doesn't match any sweep config
+            ds_col = ds_data.get("collection_name")
+            if ds_col:
+                for _, config in configs:
+                    test_col = svc.derive_collection_name(
+                        dataset_name=config.dataset.dataset_name,
+                        backend=config.vector_db.backend,
+                        chunk_size=config.chunking.chunk_size,
+                        chunk_overlap=config.chunking.chunk_overlap,
+                        embedding_model=config.embedding.model_name,
+                        distance_metric=config.vector_db.distance_metric,
+                    )
+                    if test_col != ds_col:
+                        yield _sse("warning", {
+                            "message": (
+                                f"Eval dataset was generated from collection '{ds_col}' "
+                                f"but sweep includes collection '{test_col}'. "
+                                "Chunk-ID metrics may be unreliable for mismatched collections."
+                            ),
+                        })
+                        break
+
+            # 5. Generate sweep ID
             sweep_ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             sweep_hash = hashlib.sha256(
                 json.dumps(request.model_dump(), sort_keys=True, default=str).encode()
@@ -145,9 +184,8 @@ class SweepService:
                 "sweep_name": request.name or sweep_id,
             })
 
-            # 5. Run each config sequentially
+            # 6. Run each config sequentially
             result_files: list[str] = []
-            svc = CollectionService()
 
             for config_index, (param_dict, config) in enumerate(configs):
                 # 5a. Derive collection name

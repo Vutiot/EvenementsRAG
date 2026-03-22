@@ -318,6 +318,11 @@ export interface BenchmarkCompleteEvent {
   total_wall_time_s: number;
 }
 
+/** Warning event (shared by benchmark and sweep SSE streams) */
+export interface WarningEvent {
+  message: string;
+}
+
 /** Query streaming types */
 export interface QueryStreamRetrievalEvent {
   chunks: RetrievedChunk[];

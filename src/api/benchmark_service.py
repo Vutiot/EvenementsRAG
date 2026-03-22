@@ -95,6 +95,17 @@ class BenchmarkService:
             total_questions = len(questions)
             eval_dataset_name = ds_data.get("name", request.eval_dataset_id)
 
+            # Check eval dataset collection compatibility
+            ds_col = ds_data.get("collection_name")
+            if ds_col and ds_col != col_name:
+                yield _sse("warning", {
+                    "message": (
+                        f"Eval dataset was generated from collection '{ds_col}' "
+                        f"but benchmark uses '{col_name}'. "
+                        "Chunk-ID metrics may be unreliable."
+                    ),
+                })
+
             yield _sse("started", {
                 "total_questions": total_questions,
                 "config_hash": cfg.config_hash(),

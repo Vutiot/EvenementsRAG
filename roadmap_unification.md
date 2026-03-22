@@ -128,7 +128,7 @@ graph TD
   style E6F10T2 fill:#22c55e
   style E6F10T3 fill:#22c55e
   style E6F11T1 fill:#22c55e
-  style E6F11T2 fill:#3b82f6
+  style E6F11T2 fill:#22c55e
 ```
 
 **Legend**: blue = ready, gray = pending, green = done, amber = in progress
@@ -404,9 +404,9 @@ Ensure eval datasets are correctly filtered based on collection compatibility. I
 - agent_hint: (1) In `src/api/routers/datasets.py`, add optional `collection_name: str | None = Query(None)` parameter to `GET /api/datasets`. If provided, filter datasets where stored `collection_name` matches. (2) In `src/api/dataset_service.py` `list_datasets()`, accept optional `collection_name` filter. (3) In `frontend/src/api/client.ts` `getDatasets()`, accept optional `collectionName?: string` param, pass as query param. (4) In `frontend/src/pages/TestingPage.tsx`: in benchmark mode, when `effectiveConfig` changes, re-fetch datasets filtered by the current collection name (derive from config using `deriveCollectionName()`). In sweep mode, fetch all datasets (no filter) — doc-level and LLM-context metrics work regardless of chunk differences.
 - description: Add collection_name filter to the datasets API. Benchmark mode shows only eval datasets matching the current collection config. Sweep mode shows all datasets since document-level and LLM-context metrics are valid across all collections.
 
-##### 🔵 E6-F11-T2: Runtime eval dataset compatibility warning
+##### ✅ E6-F11-T2: Runtime eval dataset compatibility warning
 - blocked_by: [E6-F11-T1] (done)
-- status: ready
+- status: done
 - effort: S
 - agent_hint: (1) In `src/api/benchmark_service.py` `run_benchmark()`, after loading the eval dataset JSON, check if `ds_data.get("collection_name")` matches the benchmark collection name. If mismatch, yield SSE `warning` event: "Eval dataset was generated from collection '{ds_col}' but benchmark uses '{bench_col}'. Chunk-ID metrics may be unreliable." (2) In `src/api/sweep_service.py` `run_sweep()`, always yield SSE `warning` if sweep has multiple (chunk_size, chunk_overlap) combos: "Sweep uses multiple chunk configurations. Only Document-ID and LLM Context metrics are valid across all configs. Chunk-ID metrics only valid for the collection matching the eval dataset." (3) Frontend: handle `warning` SSE event in both `runBenchmark` and `runSweep` callbacks. Show amber warning banner below progress bars. (4) Add `onWarning` callback and `WarningEvent` type to `frontend/src/api/types.ts` and `client.ts`.
 - description: Runtime validation that warns users when eval dataset collection doesn't match the benchmark/sweep collection. Sweep always warns about chunk-ID metric limitations across different chunk configurations.
