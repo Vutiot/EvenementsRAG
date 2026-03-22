@@ -60,6 +60,7 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         total = eval_data.get("total_questions", len(per_q))
         timestamp = data.get("timestamp")
     else:
+        eval_data = data
         avg_mrr = data.get("avg_mrr", 0.0)
         recall_at_k = data.get("avg_recall_at_k", {})
         per_q = data.get("per_question_metrics", [])
@@ -69,6 +70,22 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
     # Get recall@5 and recall@10 (keys may be int-strings)
     avg_recall_at_5 = recall_at_k.get("5") or recall_at_k.get(5)
     avg_recall_at_10 = recall_at_k.get("10") or recall_at_k.get(10)
+
+    # Extract three-tier precision metrics
+    doc_prec_at_k = eval_data.get("avg_doc_precision_at_k", {})
+    avg_doc_precision_at_5 = doc_prec_at_k.get("5") or doc_prec_at_k.get(5)
+
+    avg_doc_mrr = eval_data.get("avg_doc_mrr")
+
+    chunk_prec_at_k = eval_data.get("avg_chunk_precision_at_k", {})
+    avg_chunk_precision_at_5 = chunk_prec_at_k.get("5") or chunk_prec_at_k.get(5)
+
+    # Context precision from RAGAS metrics summary
+    avg_context_precision = (
+        data.get("metrics_summary", {})
+        .get("ragas", {})
+        .get("avg_context_precision")
+    )
 
     phase_name = _infer_phase_name(filepath.name, data)
 
@@ -126,6 +143,10 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         avg_recall_at_5=round(avg_recall_at_5, 4) if avg_recall_at_5 is not None else None,
         avg_recall_at_10=round(avg_recall_at_10, 4) if avg_recall_at_10 is not None else None,
         total_wall_time_s=round(total_wall_time_s, 2) if total_wall_time_s is not None else None,
+        avg_doc_precision_at_5=round(avg_doc_precision_at_5, 4) if avg_doc_precision_at_5 is not None else None,
+        avg_doc_mrr=round(avg_doc_mrr, 4) if avg_doc_mrr is not None else None,
+        avg_chunk_precision_at_5=round(avg_chunk_precision_at_5, 4) if avg_chunk_precision_at_5 is not None else None,
+        avg_context_precision=round(avg_context_precision, 4) if avg_context_precision is not None else None,
         config_summary=config_summary,
         sweep_meta=sweep_meta,
         run_name=run_name,

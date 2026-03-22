@@ -68,6 +68,10 @@ class ResultFileInfo(BaseModel):
     avg_recall_at_5: float | None = None
     avg_recall_at_10: float | None = None
     total_wall_time_s: float | None = None
+    avg_doc_precision_at_5: float | None = None
+    avg_doc_mrr: float | None = None
+    avg_chunk_precision_at_5: float | None = None
+    avg_context_precision: float | None = None
     config_summary: dict | None = None
     sweep_meta: dict | None = None  # {sweep_id, child_filenames, swept_params}
     run_name: str | None = None

@@ -10,6 +10,101 @@ import QuestionExplorer from "../components/benchmarks/QuestionExplorer";
 import RagasMetricsGrid from "../components/benchmarks/RagasMetricsGrid";
 import LatencyBreakdown from "../components/results/LatencyBreakdown";
 
+/* ------------------------------------------------------------------ */
+/* Precision Tiers section                                             */
+/* ------------------------------------------------------------------ */
+
+function PrecisionTiers({ result }: { result: NormalizedBenchmarkResult }) {
+  const docP5 = result.avg_doc_precision_at_k?.["5"];
+  const docMrr = result.avg_doc_mrr;
+  const docRecall5 = result.avg_doc_recall_at_k?.["5"];
+  const chunkP5 = result.avg_chunk_precision_at_k?.["5"];
+  const chunkHit5 = result.avg_chunk_hit_at_k?.["5"];
+
+  const ragasAgg = result.metrics_summary?.ragas as
+    | Record<string, unknown>
+    | undefined;
+  const ctxPrec = ragasAgg?.avg_context_precision as number | undefined;
+
+  // Only show if at least one tier has data
+  const hasDocTier = docP5 != null || docMrr != null || docRecall5 != null;
+  const hasChunkTier = chunkP5 != null || chunkHit5 != null;
+  const hasCtxTier = ctxPrec != null;
+
+  if (!hasDocTier && !hasChunkTier && !hasCtxTier) return null;
+
+  const fmtVal = (v: number | null | undefined): string =>
+    v != null ? v.toFixed(4) : "\u2014";
+
+  return (
+    <div className="rounded border border-slate-200 bg-white p-4">
+      <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
+        Precision Tiers
+      </h3>
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        {/* Tier 1: Document-level */}
+        <div className="rounded border border-purple-100 bg-purple-50/30 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-500 mb-2">
+            Tier 1 &mdash; Document
+          </p>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Doc P@5</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(docP5)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Doc MRR</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(docMrr)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Doc R@5</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(docRecall5)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tier 2: Chunk-level */}
+        <div className="rounded border border-blue-100 bg-blue-50/30 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-blue-500 mb-2">
+            Tier 2 &mdash; Chunk
+          </p>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Chunk P@5</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(chunkP5)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Chunk Hit@5</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(chunkHit5)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">MRR</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(result.avg_mrr)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tier 3: Context (LLM-judged) */}
+        <div className="rounded border border-amber-100 bg-amber-50/30 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 mb-2">
+            Tier 3 &mdash; Context (LLM)
+          </p>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Ctx Precision</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(ctxPrec)}</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/* Main component                                                      */
+/* ------------------------------------------------------------------ */
+
 export default function BenchmarkViewer() {
   const [files, setFiles] = useState<ResultFileInfo[]>([]);
   const [filesLoading, setFilesLoading] = useState(true);
@@ -119,6 +214,9 @@ export default function BenchmarkViewer() {
 
             {/* Summary cards */}
             <ResultSummaryCards result={result} />
+
+            {/* Precision Tiers */}
+            <PrecisionTiers result={result} />
 
             {/* Metrics by type chart */}
             <MetricsByTypeChart metricsByType={result.metrics_by_type} />
