@@ -129,6 +129,10 @@ class EnsureCollectionResponse(BaseModel):
     message: str
 
 
+class EnsureCollectionsRequest(BaseModel):
+    collections: list[EnsureCollectionRequest]
+
+
 class CollectionCreateRequest(BaseModel):
     dataset_name: str
     collection_name: str | None = None

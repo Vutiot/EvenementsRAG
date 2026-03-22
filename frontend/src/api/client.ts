@@ -8,7 +8,9 @@ import type {
   BenchmarkStartedEvent,
   CollectionCreateRequest,
   CollectionCreateResponse,
+  CollectionErrorEvent,
   CollectionListResponse,
+  CollectionSSEEvent,
   DatasetCreateRequest,
   DatasetDetail,
   DatasetInfo,
@@ -16,6 +18,7 @@ import type {
   DatasetRegistryEntry,
   EnsureCollectionRequest,
   EnsureCollectionResponse,
+  EnsureCollectionsRequest,
   HighlightChunksResponse,
   NormalizedBenchmarkResult,
   PresetInfo,
@@ -125,6 +128,100 @@ export function deleteDataset(
   return fetchJSON(`${BASE}/datasets/${encodeURIComponent(id)}`, {
     method: "DELETE",
   });
+}
+
+/**
+ * Ensure collections exist, creating missing ones via SSE streaming.
+ * Returns an AbortController to cancel the request.
+ */
+export function ensureCollections(
+  request: EnsureCollectionsRequest,
+  callbacks: {
+    onExists: (e: CollectionSSEEvent) => void;
+    onCreating: (e: CollectionSSEEvent) => void;
+    onCreated: (e: CollectionSSEEvent) => void;
+    onError: (e: CollectionErrorEvent) => void;
+    onDone: () => void;
+  },
+): AbortController {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const res = await fetch(`${BASE}/datasets/ensure-collections`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(request),
+        signal: controller.signal,
+      });
+
+      if (!res.ok) {
+        const text = await res.text();
+        callbacks.onError({ name: "", index: 0, total: 0, error: `${res.status}: ${text}` });
+        callbacks.onDone();
+        return;
+      }
+
+      const reader = res.body?.getReader();
+      if (!reader) {
+        callbacks.onError({ name: "", index: 0, total: 0, error: "No response body" });
+        callbacks.onDone();
+        return;
+      }
+
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let currentEvent = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\n");
+        buffer = lines.pop() ?? "";
+
+        for (const line of lines) {
+          if (line.startsWith("event: ")) {
+            currentEvent = line.slice(7).trim();
+          } else if (line.startsWith("data: ")) {
+            const data = JSON.parse(line.slice(6));
+            switch (currentEvent) {
+              case "collection_exists":
+                callbacks.onExists(data);
+                break;
+              case "collection_creating":
+                callbacks.onCreating(data);
+                break;
+              case "collection_created":
+                callbacks.onCreated(data);
+                break;
+              case "collection_error":
+                callbacks.onError(data);
+                break;
+              case "error":
+                callbacks.onError({ name: "", index: 0, total: 0, error: data.message });
+                break;
+            }
+          }
+        }
+      }
+
+      callbacks.onDone();
+    } catch (err: unknown) {
+      if ((err as Error).name !== "AbortError") {
+        callbacks.onError({
+          name: "",
+          index: 0,
+          total: 0,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+      callbacks.onDone();
+    }
+  })();
+
+  return controller;
 }
 
 /**

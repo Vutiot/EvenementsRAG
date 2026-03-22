@@ -1,18 +1,21 @@
 """Dataset CRUD + SSE generation endpoints."""
 
 import asyncio
+import json
 import queue
 import threading
 
 from fastapi import APIRouter, HTTPException, Query
 from fastapi.responses import StreamingResponse
 
+from src.api.collection_service import CollectionService
 from src.api.dataset_service import DatasetService
 from src.api.schemas import (
     DatasetCreateRequest,
     DatasetDetail,
     DatasetInfo,
     DatasetListResponse,
+    EnsureCollectionsRequest,
 )
 
 router = APIRouter()
@@ -80,7 +83,6 @@ async def generate_dataset(request: DatasetCreateRequest):
             for event in _service.generate_dataset(request):
                 q.put(event)
         except Exception as exc:
-            import json
             q.put(f"event: error\ndata: {json.dumps({'message': str(exc)})}\n\n")
         finally:
             q.put(None)  # sentinel
@@ -92,6 +94,78 @@ async def generate_dataset(request: DatasetCreateRequest):
         while True:
             try:
                 item = await asyncio.to_thread(q.get, timeout=120)
+            except Exception:
+                break
+            if item is None:
+                break
+            yield item
+
+    return StreamingResponse(
+        _stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
+        },
+    )
+
+
+def _sse(event: str, data: dict) -> str:
+    return f"event: {event}\ndata: {json.dumps(data)}\n\n"
+
+
+@router.post("/datasets/ensure-collections")
+async def ensure_collections(request: EnsureCollectionsRequest):
+    """Create missing collections via SSE, reporting progress per collection."""
+    q: queue.Queue[str | None] = queue.Queue()
+
+    def _worker():
+        svc = CollectionService()
+        total = len(request.collections)
+        try:
+            for i, col in enumerate(request.collections):
+                col_name = CollectionService.derive_collection_name(
+                    dataset_name=col.dataset_name,
+                    backend=col.backend,
+                    chunk_size=col.chunk_size,
+                    chunk_overlap=col.chunk_overlap,
+                    embedding_model=col.embedding_model,
+                    distance_metric=col.distance_metric,
+                )
+                payload = {"name": col_name, "index": i, "total": total}
+
+                if svc.get_one(col.backend, col_name) is not None:
+                    q.put(_sse("collection_exists", payload))
+                    continue
+
+                q.put(_sse("collection_creating", payload))
+                try:
+                    svc.create_and_index(
+                        dataset_name=col.dataset_name,
+                        collection_name=col_name,
+                        backend=col.backend,
+                        chunk_size=col.chunk_size,
+                        chunk_overlap=col.chunk_overlap,
+                        embedding_model=col.embedding_model,
+                        embedding_dimension=col.embedding_dimension,
+                        distance_metric=col.distance_metric,
+                    )
+                    q.put(_sse("collection_created", payload))
+                except Exception as exc:
+                    q.put(_sse("collection_error", {**payload, "error": str(exc)}))
+        except Exception as exc:
+            q.put(_sse("error", {"message": str(exc)}))
+        finally:
+            q.put(None)
+
+    thread = threading.Thread(target=_worker, daemon=True)
+    thread.start()
+
+    async def _stream():
+        while True:
+            try:
+                item = await asyncio.to_thread(q.get, timeout=600)
             except Exception:
                 break
             if item is None:
