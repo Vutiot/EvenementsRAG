@@ -78,7 +78,7 @@ graph TD
 
   E6F10T1["✅ E6-F10-T1: Multi-select collections in DatasetManager"]
   E6F10T2["✅ E6-F10-T2: System prompt for eval generation"]
-  E6F10T3["⚪ E6-F10-T3: SSE collection creation in DatasetManager"]
+  E6F10T3["✅ E6-F10-T3: SSE collection creation in DatasetManager"]
 
   E6F11T1["✅ E6-F11-T1: Filter eval datasets by collection"]
   E6F11T2["⚪ E6-F11-T2: Runtime eval dataset warning"]
@@ -126,7 +126,7 @@ graph TD
   style E6F9T4 fill:#3b82f6
   style E6F10T1 fill:#22c55e
   style E6F10T2 fill:#22c55e
-  style E6F10T3 fill:#3b82f6
+  style E6F10T3 fill:#22c55e
   style E6F11T1 fill:#22c55e
   style E6F11T2 fill:#3b82f6
 ```
@@ -384,9 +384,9 @@ Overhaul the DatasetManager to use multi-select collection parameters (like swee
 - agent_hint: (1) In `frontend/src/pages/DatasetManager.tsx`, add state: `systemPrompt: string` with sensible default (e.g. "You are a question generation assistant. Generate diverse, challenging questions based on the provided passage."). (2) Render a collapsible "System Prompt" section between the model selector and the category cards. Use a `<textarea>` with 3-4 rows, full width. Include preset buttons: "Default", "Strict Academic", "Conversational". (3) In `frontend/src/api/types.ts` `DatasetCreateRequest`, add optional `system_prompt?: string`. (4) In `src/api/schemas.py` `DatasetCreateRequest`, add `system_prompt: str | None = None`. (5) In `src/api/dataset_service.py` `generate_dataset()` or `_generate_for_chunk()`, use `request.system_prompt` as the system message in the OpenAI chat completion call (currently hardcoded). Fall back to the existing default if None. (6) Store `system_prompt` in the saved dataset JSON for provenance.
 - description: Add a configurable system prompt text field before category cards in DatasetManager. Sent as the system message to the LLM during question generation. Includes preset options for common styles.
 
-##### 🔵 E6-F10-T3: SSE collection creation in DatasetManager
+##### ✅ E6-F10-T3: SSE collection creation in DatasetManager
 - blocked_by: [E6-F10-T1] (done)
-- status: ready
+- status: done
 - effort: M
 - agent_hint: (1) Add `POST /api/datasets/ensure-collections` endpoint in `src/api/routers/datasets.py`. Accepts `{ collections: [{dataset_name, backend, chunk_size, chunk_overlap, embedding_model, embedding_dimension, distance_metric}] }`. For each, check if collection exists; if not, create via `CollectionService.create_and_index()`. Yield SSE events: `collection_exists` (name), `collection_creating` (name), `collection_created` (name), `collection_error` (name, error). (2) Frontend in `DatasetManager.tsx`: when user clicks "Generate" and there are "new" collections, first call the ensure-collections SSE endpoint. Show a collection creation progress section: each collection name with spinner (creating), green check (exists/created), red X (failed). (3) After all collections ready, proceed with normal dataset generation SSE. (4) Add SSE client function in `frontend/src/api/client.ts` and event types in `types.ts`.
 - description: SSE-powered collection creation flow in DatasetManager. When generating eval datasets, create any missing collections first with live progress indicators before starting question generation.

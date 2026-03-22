@@ -8,6 +8,7 @@ import {
   getCollections,
   deleteDataset,
   generateDataset,
+  ensureCollections,
 } from "../api/client";
 import type {
   DatasetRegistryEntry,
@@ -21,6 +22,7 @@ import {
   CHUNK_SIZE_OPTIONS,
   CHUNK_OVERLAP_VALUES,
   EMBEDDING_MODELS,
+  EMBEDDING_DIMENSION_MAP,
   DISTANCE_OPTIONS,
   deriveCollectionName,
 } from "../constants/paramOptions";
@@ -290,10 +292,17 @@ export default function DatasetManager() {
       .catch(() => {});
   }, []);
 
+  // Collection creation state (E6-F10-T3)
+  const [creatingCollections, setCreatingCollections] = useState(false);
+  const [collectionProgress, setCollectionProgress] = useState<
+    Map<string, "pending" | "creating" | "exists" | "created" | "error">
+  >(new Map());
+  const [collectionErrors, setCollectionErrors] = useState<Map<string, string>>(new Map());
+
   // Derive collection names from multi-select params
   const derivedCollections = useMemo(() => {
     if (!selectedDataset) return [];
-    const cols: { name: string; exists: boolean }[] = [];
+    const cols: { name: string; exists: boolean; chunkSize: number; chunkOverlap: number; embeddingModel: string; distanceMetric: string }[] = [];
     const existingNames = new Set(existingCollections.map((c) => c.name));
     for (const cs of chunkSizes) {
       for (const co of chunkOverlaps) {
@@ -301,7 +310,7 @@ export default function DatasetManager() {
         for (const em of embeddingModels) {
           for (const dm of distanceMetrics) {
             const name = deriveCollectionName(selectedDataset.name, "qdrant", cs, co, em, dm);
-            cols.push({ name, exists: existingNames.has(name) });
+            cols.push({ name, exists: existingNames.has(name), chunkSize: cs, chunkOverlap: co, embeddingModel: em, distanceMetric: dm });
           }
         }
       }
@@ -363,14 +372,11 @@ export default function DatasetManager() {
 
   // ── Generate handler ──────────────────────────────────────────────
 
-  const handleGenerate = useCallback(() => {
-    if (!datasetName.trim() || !sourceCollection) return;
+  const startGeneration = useCallback(() => {
     const enabledCards = cards.filter((c) => c.enabled && c.count > 0);
     if (enabledCards.length === 0) return;
 
     setGenerating(true);
-    setGenError(null);
-    setGenSuccess(null);
 
     // Reset generated counters
     setCards((prev) =>
@@ -413,7 +419,85 @@ export default function DatasetManager() {
         },
       },
     );
-  }, [datasetName, sourceCollection, cards, globalModel, systemPrompt, refreshDatasets]);
+  }, [cards, datasetName, sourceCollection, globalModel, systemPrompt, refreshDatasets]);
+
+  const handleGenerate = useCallback(() => {
+    if (!datasetName.trim() || !sourceCollection || !selectedDataset) return;
+    const enabledCards = cards.filter((c) => c.enabled && c.count > 0);
+    if (enabledCards.length === 0) return;
+
+    setGenError(null);
+    setGenSuccess(null);
+
+    const newCollections = derivedCollections.filter((c) => !c.exists);
+
+    if (newCollections.length === 0) {
+      startGeneration();
+      return;
+    }
+
+    // Create missing collections first via SSE
+    setCreatingCollections(true);
+    const progressInit = new Map<string, "pending" | "creating" | "exists" | "created" | "error">();
+    for (const c of derivedCollections) {
+      progressInit.set(c.name, c.exists ? "exists" : "pending");
+    }
+    setCollectionProgress(new Map(progressInit));
+    setCollectionErrors(new Map());
+
+    ensureCollections(
+      {
+        collections: newCollections.map((c) => ({
+          dataset_name: selectedDataset.name,
+          backend: "qdrant",
+          chunk_size: c.chunkSize,
+          chunk_overlap: c.chunkOverlap,
+          embedding_model: c.embeddingModel,
+          embedding_dimension: EMBEDDING_DIMENSION_MAP[c.embeddingModel] ?? 384,
+          distance_metric: c.distanceMetric,
+        })),
+      },
+      {
+        onExists: (e) => {
+          setCollectionProgress((prev) => new Map(prev).set(e.name, "exists"));
+        },
+        onCreating: (e) => {
+          setCollectionProgress((prev) => new Map(prev).set(e.name, "creating"));
+        },
+        onCreated: (e) => {
+          setCollectionProgress((prev) => new Map(prev).set(e.name, "created"));
+        },
+        onError: (e) => {
+          if (e.name) {
+            setCollectionProgress((prev) => new Map(prev).set(e.name, "error"));
+            setCollectionErrors((prev) => new Map(prev).set(e.name, e.error));
+          } else {
+            setGenError(e.error);
+          }
+        },
+        onDone: () => {
+          setCreatingCollections(false);
+          // Refresh existing collections
+          getCollections()
+            .then((r) => setExistingCollections(r.collections))
+            .catch(() => {});
+          // Check if source collection is available
+          setCollectionProgress((prev) => {
+            const sourceStatus = prev.get(sourceCollection);
+            if (sourceStatus === "exists" || sourceStatus === "created") {
+              // Proceed with generation
+              setTimeout(() => startGeneration(), 0);
+            } else {
+              setGenError(
+                `Source collection "${sourceCollection}" could not be created. Cannot proceed with question generation.`,
+              );
+            }
+            return prev;
+          });
+        },
+      },
+    );
+  }, [datasetName, sourceCollection, selectedDataset, cards, derivedCollections, startGeneration]);
 
   // ── Detail handler ─────────────────────────────────────────────────
 
@@ -856,20 +940,77 @@ export default function DatasetManager() {
             </button>
           </div>
 
+          {/* Collection creation progress (E6-F10-T3) */}
+          {collectionProgress.size > 0 && (
+            <div className="rounded border border-gray-200 bg-gray-50/50 p-3">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-sm font-medium text-gray-700">Collection Setup</span>
+                <span className="text-xs text-gray-400">
+                  {[...collectionProgress.values()].filter((s) => s === "exists" || s === "created").length} / {collectionProgress.size} ready
+                </span>
+              </div>
+              <div className="max-h-36 overflow-y-auto rounded border border-gray-200 bg-white divide-y divide-gray-100">
+                {[...collectionProgress.entries()].map(([name, status]) => (
+                  <div key={name} className="flex items-center gap-2 px-2.5 py-1.5 text-xs">
+                    {/* Status indicator */}
+                    {status === "pending" && (
+                      <span className="shrink-0 h-4 w-4 rounded-full border-2 border-gray-300" />
+                    )}
+                    {status === "creating" && (
+                      <div className="shrink-0 h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                    )}
+                    {(status === "exists" || status === "created") && (
+                      <svg className="shrink-0 h-4 w-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    )}
+                    {status === "error" && (
+                      <svg className="shrink-0 h-4 w-4 text-red-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                    <span className="font-mono text-gray-700 truncate flex-1">{name}</span>
+                    {status === "error" && collectionErrors.get(name) && (
+                      <span className="shrink-0 text-red-500 truncate max-w-[200px]" title={collectionErrors.get(name)}>
+                        {collectionErrors.get(name)}
+                      </span>
+                    )}
+                    {status === "created" && (
+                      <span className="shrink-0 rounded-full bg-green-100 text-green-700 px-1.5 py-0.5 text-[10px] font-medium">
+                        created
+                      </span>
+                    )}
+                    {status === "exists" && (
+                      <span className="shrink-0 rounded-full bg-gray-100 text-gray-500 px-1.5 py-0.5 text-[10px] font-medium">
+                        exists
+                      </span>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Create button */}
           <div className="flex items-center gap-4 pt-2">
             <button
               onClick={handleGenerate}
               disabled={
-                generating || !datasetName.trim() || !selectedCollection || (selectedDataset?.collections.length === 0) || totalQuestions === 0
+                generating || creatingCollections || !datasetName.trim() || !sourceCollection || totalQuestions === 0
               }
               className="rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white
                          hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
                          transition-colors"
             >
-              {generating ? "Generating..." : "Create Evaluation Set"}
+              {creatingCollections ? "Creating Collections..." : generating ? "Generating..." : "Create Evaluation Set"}
             </button>
 
+            {creatingCollections && (
+              <div className="flex items-center gap-2 text-sm text-gray-500">
+                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                Creating collections...
+              </div>
+            )}
             {generating && (
               <div className="flex items-center gap-2 text-sm text-gray-500">
                 <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />

@@ -131,6 +131,20 @@ export interface EnsureCollectionResponse {
   message: string;
 }
 
+export interface EnsureCollectionsRequest {
+  collections: EnsureCollectionRequest[];
+}
+
+export interface CollectionSSEEvent {
+  name: string;
+  index: number;
+  total: number;
+}
+
+export interface CollectionErrorEvent extends CollectionSSEEvent {
+  error: string;
+}
+
 export interface CollectionCreateRequest {
   dataset_name: string;
   collection_name?: string;
