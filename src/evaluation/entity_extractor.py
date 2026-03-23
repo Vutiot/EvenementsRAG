@@ -47,7 +47,7 @@ class EntityExtractor:
         model: str = "nvidia/nemotron-3-nano-30b-a3b",
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
-        rate_limit_seconds: float = 3.0,
+        rate_limit_seconds: float = 1.5,
         max_retries: int = 3,
     ) -> None:
         self._model = model

@@ -281,8 +281,8 @@ class DatasetService:
                         "question_id": questions[0]["id"] if questions else None,
                     })
 
-                    # Rate limiting (20 RPM free tier)
-                    time.sleep(3)
+                    # Rate limiting (40 RPM free tier)
+                    time.sleep(1.5)
                     break
 
                 if not success:

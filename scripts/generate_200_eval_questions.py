@@ -44,7 +44,7 @@ NUM_QUESTIONS = 200          # Total questions to generate
 QUESTIONS_PER_CHUNK = 1      # 1 question per chunk → 200 chunks sampled
 SAMPLING_STRATEGY = "stratified"
 
-LLM_DELAY_SECONDS = 4.0     # Delay between LLM API calls (fits free-tier limits)
+LLM_DELAY_SECONDS = 1.5     # Delay between LLM API calls (40 RPM free-tier limit)
 MAX_RETRIES = 3              # Retries per chunk on API failure
 RETRY_BASE_DELAY = 10.0     # Base delay for exponential backoff (seconds)
 
