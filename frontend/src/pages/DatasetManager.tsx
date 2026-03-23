@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useMemo } from "react";
+import React, { useEffect, useState, useCallback, useMemo } from "react";
 import PageHeader from "../components/layout/PageHeader";
 import MultiSelectChips from "../components/config/MultiSelectChips";
 import {
@@ -133,6 +133,57 @@ const LLM_MODELS = [
 
 const LOCALSTORAGE_KEY = "evalCategoryPresets";
 
+const DATASET_TABLE_COLS = 10;
+
+const dsStickyCls = "sticky left-0 z-10 bg-white";
+const dsStickyHeaderCls = "sticky left-0 z-20 bg-gray-50";
+const dsStickyStyle: React.CSSProperties = {
+  boxShadow: "2px 0 5px -2px rgba(0,0,0,0.1)",
+};
+
+// ── Table helpers ────────────────────────────────────────────────────
+
+function formatTimestamp(ts: string | null | undefined): string {
+  if (!ts) return "\u2014";
+  try {
+    const d = new Date(ts);
+    return d.toLocaleString(undefined, {
+      month: "short",
+      day: "numeric",
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  } catch {
+    return ts;
+  }
+}
+
+function shortModel(s: string | null | undefined): string {
+  if (!s) return "\u2014";
+  const parts = s.split("/");
+  const name = parts.length > 1 ? parts[parts.length - 1]! : s;
+  return name.length > 24 ? name.slice(0, 24) + "..." : name;
+}
+
+function truncate(s: string | null | undefined, maxLen = 80): string {
+  if (!s) return "\u2014";
+  return s.length > maxLen ? s.slice(0, maxLen) + "..." : s;
+}
+
+function ChevronIcon({ expanded }: { expanded: boolean }) {
+  return (
+    <svg
+      className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${expanded ? "rotate-90" : ""}`}
+      fill="none"
+      viewBox="0 0 24 24"
+      stroke="currentColor"
+      strokeWidth={2}
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+    </svg>
+  );
+}
+
 // ── localStorage helpers ─────────────────────────────────────────────
 
 function loadCustomPresets(): CategoryPreset[] {
@@ -180,10 +231,8 @@ export default function DatasetManager() {
   // Dataset registry for dropdown
   const [registryDatasets, setRegistryDatasets] = useState<DatasetRegistryEntry[]>([]);
   const [selectedDataset, setSelectedDataset] = useState<DatasetRegistryEntry | null>(null);
-  const [selectedCollection, setSelectedCollection] = useState("");
 
   // Create form
-  const [datasetName, setDatasetName] = useState("");
   const [globalModel, setGlobalModel] = useState(LLM_MODELS[0]!.value);
   const [cards, setCards] = useState<CardState[]>(() => cardsFromPreset(BUILTIN_PRESETS[0]!));
 
@@ -220,6 +269,9 @@ export default function DatasetManager() {
   // Delete state
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
+
+  // Category pills expansion (for table view)
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // ── Preset logic ────────────────────────────────────────────────────
 
@@ -331,7 +383,6 @@ export default function DatasetManager() {
       if (r.datasets.length > 0 && !selectedDataset) {
         const first = r.datasets[0]!;
         setSelectedDataset(first);
-        setSelectedCollection(first.collections[0] ?? first.default_collection);
       }
     });
     refreshDatasets();
@@ -364,18 +415,17 @@ export default function DatasetManager() {
   const totalQuestions = cards.filter((c) => c.enabled).reduce((s, c) => s + c.count, 0);
   const totalGenerated = cards.filter((c) => c.enabled).reduce((s, c) => s + c.generated, 0);
 
-  // Auto-generate default name from preset + collection + total questions
-  useEffect(() => {
-    if (matchedPresetName && selectedCollection) {
-      setDatasetName(`${matchedPresetName.replace(/\s+/g, "_")}_${selectedCollection}_${totalQuestions}q`);
-    }
-  }, [matchedPresetName, selectedCollection, totalQuestions]);
-
   // ── Generate handler ──────────────────────────────────────────────
 
   const startGeneration = useCallback(() => {
     const enabledCards = cards.filter((c) => c.enabled && c.count > 0);
     if (enabledCards.length === 0) return;
+
+    // Auto-generate dataset name: PresetName_YYYYMMDD_HHmmss
+    const now = new Date();
+    const pad = (n: number) => String(n).padStart(2, "0");
+    const ts = `${now.getFullYear()}${pad(now.getMonth() + 1)}${pad(now.getDate())}_${pad(now.getHours())}${pad(now.getMinutes())}${pad(now.getSeconds())}`;
+    const autoName = `${(matchedPresetName ?? "Custom").replace(/\s+/g, "_")}_${ts}`;
 
     setGenerating(true);
 
@@ -386,7 +436,7 @@ export default function DatasetManager() {
 
     generateDataset(
       {
-        name: datasetName,
+        name: autoName,
         collection_name: sourceCollection,
         categories: enabledCards.map((c) => ({
           type: c.type,
@@ -420,10 +470,10 @@ export default function DatasetManager() {
         },
       },
     );
-  }, [cards, datasetName, sourceCollection, globalModel, systemPrompt, refreshDatasets]);
+  }, [cards, matchedPresetName, sourceCollection, globalModel, systemPrompt, refreshDatasets]);
 
   const handleGenerate = useCallback(() => {
-    if (!datasetName.trim() || !sourceCollection || !selectedDataset) return;
+    if (!sourceCollection || !selectedDataset) return;
     const enabledCards = cards.filter((c) => c.enabled && c.count > 0);
     if (enabledCards.length === 0) return;
 
@@ -508,7 +558,7 @@ export default function DatasetManager() {
         },
       },
     );
-  }, [datasetName, sourceCollection, selectedDataset, cards, derivedCollections, startGeneration]);
+  }, [sourceCollection, selectedDataset, cards, derivedCollections, startGeneration]);
 
   // ── Detail handler ─────────────────────────────────────────────────
 
@@ -572,14 +622,12 @@ export default function DatasetManager() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Evaluation Name
               </label>
-              <input
-                type="text"
-                value={datasetName}
-                onChange={(e) => setDatasetName(e.target.value)}
-                placeholder="e.g. WW2 Factual 50Q"
-                className="w-full rounded border border-gray-300 px-3 py-1.5 text-sm
-                           focus:border-blue-500 focus:ring-1 focus:ring-blue-500"
-              />
+              <div className="flex items-center gap-2 rounded border border-gray-200 bg-gray-50 px-3 py-1.5 text-sm text-gray-600">
+                <span className="font-mono text-xs">
+                  {(matchedPresetName ?? "Custom").replace(/\s+/g, "_")}_<span className="text-gray-400">YYYYMMDD_HHmmss</span>
+                </span>
+                <span className="text-xs text-gray-400">(auto)</span>
+              </div>
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -1012,7 +1060,7 @@ export default function DatasetManager() {
             <button
               onClick={handleGenerate}
               disabled={
-                generating || creatingCollections || !datasetName.trim() || !sourceCollection || totalQuestions === 0
+                generating || creatingCollections || !sourceCollection || totalQuestions === 0
               }
               className="rounded bg-blue-600 px-5 py-2 text-sm font-medium text-white
                          hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed
@@ -1050,8 +1098,8 @@ export default function DatasetManager() {
       </section>
 
       {/* ── Existing Datasets ───────────────────────────────────────── */}
-      <section className="rounded border border-gray-200 bg-white p-5">
-        <div className="flex items-center justify-between mb-4">
+      <section>
+        <div className="flex items-center justify-between mb-3">
           <h2 className="text-sm font-semibold text-gray-900 uppercase tracking-wider">
             Existing Evaluation Sets
           </h2>
@@ -1073,105 +1121,191 @@ export default function DatasetManager() {
             No evaluation sets yet. Create one above.
           </p>
         ) : (
-          <div className="space-y-2">
-            {datasets.map((ds) => {
-              const isExpanded = selectedDetail?.id === ds.id;
-              const isConfirmingDelete = deletingId === ds.id;
+          <div className="rounded border border-gray-200 bg-white overflow-x-auto">
+            <table className="min-w-full text-sm">
+              <thead>
+                <tr className="border-b border-gray-100 text-left text-xs font-medium uppercase tracking-wider text-gray-400 bg-gray-50">
+                  <th className="px-3 py-2 w-8"></th>
+                  <th className={`px-3 py-2 ${dsStickyHeaderCls}`} style={dsStickyStyle}>Name</th>
+                  <th className="px-3 py-2">Created</th>
+                  <th className="px-3 py-2">Collection</th>
+                  <th className="px-3 py-2">Categories</th>
+                  <th className="px-3 py-2">Model</th>
+                  <th className="px-3 py-2">System Prompt</th>
+                  <th className="px-3 py-2 text-right">Qs</th>
+                  <th className="px-3 py-2">Status</th>
+                  <th className="px-3 py-2 w-16"></th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {datasets.map((ds) => {
+                  const isExpanded = selectedDetail?.id === ds.id;
+                  const isConfirmingDelete = deletingId === ds.id;
+                  const showAllCats = expandedCategories.has(ds.id);
+                  const visibleCats = showAllCats ? ds.categories : ds.categories.slice(0, 3);
+                  const hiddenCount = ds.categories.length - 3;
 
-              return (
-                <div key={ds.id}>
-                  {/* Dataset row */}
-                  <div
-                    className={`flex items-center justify-between rounded-lg border px-4 py-3 cursor-pointer transition-colors ${
-                      isExpanded
-                        ? "border-blue-300 bg-blue-50"
-                        : "border-gray-200 hover:bg-gray-50"
-                    }`}
-                    onClick={() => handleViewDetail(ds.id)}
-                  >
-                    <div className="flex items-center gap-4 min-w-0">
-                      <div className="min-w-0">
-                        <div className="text-sm font-medium text-gray-900 truncate">
-                          {ds.name}
-                        </div>
-                        <div className="text-xs text-gray-500">
-                          {ds.collection_name} &middot;{" "}
-                          {new Date(ds.created_at).toLocaleDateString()}
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex items-center gap-4 shrink-0">
-                      {/* Category pills */}
-                      <div className="hidden sm:flex gap-1">
-                        {ds.categories.map((cat) => (
-                          <span
-                            key={cat.type}
-                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium border ${hashColor(cat.type)}`}
-                          >
-                            {cat.type.replace("_", " ")} ({cat.generated ?? cat.count})
-                          </span>
-                        ))}
-                      </div>
-
-                      {/* Status badge */}
-                      <span
-                        className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          ds.status === "completed"
-                            ? "bg-green-100 text-green-700"
-                            : ds.status === "generating"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-red-100 text-red-700"
+                  return (
+                    <React.Fragment key={ds.id}>
+                      <tr
+                        className={`cursor-pointer transition-colors ${
+                          isExpanded ? "bg-blue-50" : "hover:bg-gray-50"
                         }`}
+                        onClick={() => handleViewDetail(ds.id)}
                       >
-                        {ds.total_questions}q &middot; {ds.status}
-                      </span>
+                        {/* Chevron */}
+                        <td className="px-3 py-2">
+                          <ChevronIcon expanded={isExpanded} />
+                        </td>
 
-                      {/* Delete */}
-                      <span
-                        onClick={(e) => e.stopPropagation()}
-                        className="flex items-center gap-1"
-                      >
-                        {isConfirmingDelete ? (
-                          <>
-                            <button
-                              onClick={() => handleDelete(ds.id)}
-                              disabled={deleteLoading}
-                              className="text-xs text-red-600 font-medium hover:text-red-800"
-                            >
-                              {deleteLoading ? "..." : "Confirm"}
-                            </button>
-                            <button
-                              onClick={() => setDeletingId(null)}
-                              className="text-xs text-gray-400 hover:text-gray-600"
-                            >
-                              Cancel
-                            </button>
-                          </>
-                        ) : (
-                          <button
-                            onClick={() => setDeletingId(ds.id)}
-                            className="text-xs text-gray-400 hover:text-red-600 transition"
+                        {/* Name */}
+                        <td
+                          className={`px-3 py-2 font-mono text-xs text-gray-900 whitespace-nowrap ${dsStickyCls} ${isExpanded ? "!bg-blue-50" : ""}`}
+                          style={dsStickyStyle}
+                        >
+                          {ds.name}
+                        </td>
+
+                        {/* Created */}
+                        <td className="px-3 py-2 text-xs text-gray-500 whitespace-nowrap">
+                          {formatTimestamp(ds.created_at)}
+                        </td>
+
+                        {/* Collection */}
+                        <td className="px-3 py-2 font-mono text-xs text-gray-600">
+                          {ds.collection_name}
+                        </td>
+
+                        {/* Categories */}
+                        <td className="px-3 py-2">
+                          <div className="flex flex-wrap gap-1">
+                            {visibleCats.map((cat) => (
+                              <span
+                                key={cat.type}
+                                className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium border ${hashColor(cat.type)}`}
+                              >
+                                {cat.type.replace(/_/g, " ")}
+                              </span>
+                            ))}
+                            {hiddenCount > 0 && !showAllCats && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedCategories((prev) => {
+                                    const next = new Set(prev);
+                                    next.add(ds.id);
+                                    return next;
+                                  });
+                                }}
+                                className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 hover:bg-gray-200 transition"
+                              >
+                                +{hiddenCount} more
+                              </button>
+                            )}
+                            {showAllCats && hiddenCount > 0 && (
+                              <button
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setExpandedCategories((prev) => {
+                                    const next = new Set(prev);
+                                    next.delete(ds.id);
+                                    return next;
+                                  });
+                                }}
+                                className="inline-block rounded-full px-2 py-0.5 text-xs font-medium bg-gray-100 text-gray-500 hover:bg-gray-200 transition"
+                              >
+                                less
+                              </button>
+                            )}
+                          </div>
+                        </td>
+
+                        {/* Model */}
+                        <td className="px-3 py-2 font-mono text-xs text-gray-600 whitespace-nowrap">
+                          {shortModel(ds.model || ds.categories[0]?.model)}
+                        </td>
+
+                        {/* System Prompt */}
+                        <td
+                          className="px-3 py-2 text-xs text-gray-500 max-w-[200px]"
+                          title={ds.system_prompt || ""}
+                        >
+                          <span className="block truncate">
+                            {truncate(ds.system_prompt, 80)}
+                          </span>
+                        </td>
+
+                        {/* Questions */}
+                        <td className="px-3 py-2 text-right font-mono text-xs text-gray-700">
+                          {ds.total_questions}
+                        </td>
+
+                        {/* Status */}
+                        <td className="px-3 py-2">
+                          <span
+                            className={`inline-block rounded-full px-2 py-0.5 text-xs font-medium whitespace-nowrap ${
+                              ds.status === "completed"
+                                ? "bg-green-100 text-green-700"
+                                : ds.status === "generating"
+                                  ? "bg-yellow-100 text-yellow-700"
+                                  : "bg-red-100 text-red-700"
+                            }`}
                           >
-                            Delete
-                          </button>
-                        )}
-                      </span>
-                    </div>
-                  </div>
+                            {ds.status}
+                          </span>
+                        </td>
 
-                  {/* Expanded detail */}
-                  {isExpanded && selectedDetail && (
-                    <DatasetDetailView detail={selectedDetail} />
-                  )}
-                  {isExpanded && detailLoading && (
-                    <div className="flex items-center justify-center py-6">
-                      <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
-                    </div>
-                  )}
-                </div>
-              );
-            })}
+                        {/* Actions */}
+                        <td className="px-3 py-2" onClick={(e) => e.stopPropagation()}>
+                          {isConfirmingDelete ? (
+                            <span className="flex items-center gap-1">
+                              <button
+                                onClick={() => handleDelete(ds.id)}
+                                disabled={deleteLoading}
+                                className="text-xs text-red-600 font-medium hover:text-red-800"
+                              >
+                                {deleteLoading ? "..." : "Confirm"}
+                              </button>
+                              <button
+                                onClick={() => setDeletingId(null)}
+                                className="text-xs text-gray-400 hover:text-gray-600"
+                              >
+                                Cancel
+                              </button>
+                            </span>
+                          ) : (
+                            <button
+                              onClick={() => setDeletingId(ds.id)}
+                              className="text-xs text-gray-400 hover:text-red-600 transition"
+                            >
+                              Delete
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+
+                      {/* Expanded detail row */}
+                      {isExpanded && selectedDetail && (
+                        <tr>
+                          <td colSpan={DATASET_TABLE_COLS} className="bg-gray-50/50 px-6 py-4">
+                            <DatasetDetailView detail={selectedDetail} />
+                          </td>
+                        </tr>
+                      )}
+                      {isExpanded && detailLoading && (
+                        <tr>
+                          <td colSpan={DATASET_TABLE_COLS} className="px-6 py-6">
+                            <div className="flex items-center justify-center">
+                              <div className="h-6 w-6 animate-spin rounded-full border-2 border-blue-600 border-t-transparent" />
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </section>
@@ -1191,7 +1325,17 @@ function DatasetDetailView({ detail }: { detail: DatasetDetail }) {
   }
 
   return (
-    <div className="mt-2 rounded-lg border border-gray-200 bg-white p-4 space-y-4">
+    <div className="space-y-4">
+      {/* System prompt */}
+      {detail.system_prompt && (
+        <div>
+          <div className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-1">System Prompt</div>
+          <pre className="text-xs text-gray-600 bg-white rounded border border-gray-200 p-3 whitespace-pre-wrap max-h-32 overflow-y-auto">
+            {detail.system_prompt}
+          </pre>
+        </div>
+      )}
+
       {/* Summary */}
       {detail.metadata && (
         <div className="flex items-center gap-6 text-xs text-gray-500">
@@ -1225,7 +1369,7 @@ function DatasetDetailView({ detail }: { detail: DatasetDetail }) {
                 <span
                   className={`inline-block rounded-full px-2.5 py-0.5 text-xs font-semibold border ${hashColor(cat.type)}`}
                 >
-                  {cat.type.replace("_", " ")}
+                  {cat.type.replace(/_/g, " ")}
                 </span>
                 <span className="text-xs font-mono text-gray-500">
                   {cat.generated ?? catQuestions.length} / {cat.count}
@@ -1244,7 +1388,7 @@ function DatasetDetailView({ detail }: { detail: DatasetDetail }) {
       {expandedType && questionsByType[expandedType] && (
         <div className="rounded border border-gray-200 overflow-hidden">
           <div className="bg-gray-50 px-4 py-2 text-xs font-semibold text-gray-600 uppercase tracking-wider border-b border-gray-200">
-            {expandedType.replace("_", " ")} questions ({questionsByType[expandedType].length})
+            {expandedType.replace(/_/g, " ")} questions ({questionsByType[expandedType].length})
           </div>
           <div className="divide-y divide-gray-100 max-h-96 overflow-y-auto">
             {questionsByType[expandedType].map((q) => (
