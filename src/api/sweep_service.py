@@ -4,6 +4,7 @@ import hashlib
 import itertools
 import json
 import queue
+import re
 import threading
 import time
 from datetime import datetime, timezone
@@ -38,6 +39,44 @@ _EMBEDDING_DIMENSIONS: dict[str, int] = {
     "BAAI/bge-small-en-v1.5": 384,
     "BAAI/bge-base-en-v1.5": 768,
 }
+
+
+_PARAM_ABBREVIATIONS: dict[str, str] = {
+    "chunking.chunk_size": "cs",
+    "chunking.chunk_overlap": "co",
+    "embedding.model_name": "em",
+    "retrieval.top_k": "k",
+    "retrieval.sparse_weight": "sw",
+    "retrieval.sparse_type": "st",
+    "retrieval.fusion_method": "fm",
+    "reranker.type": "rr",
+    "vector_db.distance_metric": "dm",
+    "vector_db.backend": "be",
+}
+
+
+def _short_model_name(model: str) -> str:
+    """Abbreviate embedding model name for display."""
+    m = re.search(r"MiniLM-L(\d+)", model, re.IGNORECASE)
+    if m:
+        return f"miniLM_L{m.group(1)}"
+    m = re.search(r"bge-(\w+)", model, re.IGNORECASE)
+    if m:
+        return f"bge_{m.group(1)}"
+    return model.split("/")[-1][:12]
+
+
+def _param_short_name(param_dict: dict) -> str:
+    """Generate short name from swept param values, e.g. 'cs512_co128'."""
+    parts = []
+    for path, value in sorted(param_dict.items()):
+        abbr = _PARAM_ABBREVIATIONS.get(path, path.split(".")[-1])
+        if path == "embedding.model_name":
+            val_str = _short_model_name(str(value))
+        else:
+            val_str = str(value)
+        parts.append(f"{abbr}{val_str}")
+    return "_".join(parts)
 
 
 def compute_cartesian_configs(
@@ -130,6 +169,7 @@ class SweepService:
                 ds_data = json.load(f)
             questions = ds_data.get("questions", [])
             total_questions = len(questions)
+            eval_dataset_name = ds_data.get("name", request.eval_dataset_id)
 
             # 4. Instantiate collection service (used for warnings + per-config loop)
             svc = CollectionService()
@@ -186,18 +226,20 @@ class SweepService:
             # Cache for per-collection mapping results
             _mapping_cache: dict[str, dict[str, list[str]]] = {}
 
-            # 5. Generate sweep ID
+            # 5. Generate sweep ID and resolve sweep name
             sweep_ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
             sweep_hash = hashlib.sha256(
                 json.dumps(request.model_dump(), sort_keys=True, default=str).encode()
             ).hexdigest()[:8]
             sweep_id = f"sweep_{sweep_hash}_{sweep_ts}"
+            human_ts = datetime.now(timezone.utc).strftime("%b%d_%H%M")
+            sweep_name = request.name or f"{eval_dataset_name}_Sweep_{human_ts}"
 
             yield _sse("sweep_started", {
                 "sweep_id": sweep_id,
                 "total_configs": total_configs,
                 "total_questions_per_config": total_questions,
-                "sweep_name": request.name or sweep_id,
+                "sweep_name": sweep_name,
             })
 
             # 6. Run each config sequentially
@@ -267,11 +309,15 @@ class SweepService:
                         mapped_gt = cached
                         eval_mode = "mapped"
 
-                # 5d. Update config with resolved values
+                # 5d. Update config with resolved values and descriptive name
                 merged_dump = config.model_dump()
                 merged_dump["dataset"]["collection_name"] = col_name
                 merged_dump["dataset"]["questions_file"] = str(dataset_path)
                 merged_dump["generation"]["highlight_chunks"] = False
+                if param_dict:
+                    merged_dump["name"] = f"{sweep_name}__{_param_short_name(param_dict)}"
+                else:
+                    merged_dump["name"] = sweep_name
                 final_cfg = BenchmarkConfig.model_validate(merged_dump)
 
                 # 5e. Run benchmark with progress callback (threaded)
@@ -299,6 +345,7 @@ class SweepService:
                 def _worker(
                     _mgt: dict | None = _mapped_gt,
                     _em: str = _eval_mode,
+                    _edn: str = eval_dataset_name,
                 ) -> None:
                     try:
                         runner = ParameterizedBenchmarkRunner(config=final_cfg)
@@ -307,6 +354,7 @@ class SweepService:
                             progress_callback=_progress_callback,
                             mapped_ground_truth=_mgt,
                             evaluation_mode=_em,
+                            eval_dataset_name=_edn,
                         )
                         result_holder.append(result)
                     except Exception as exc:
@@ -378,7 +426,7 @@ class SweepService:
             # 6. Save sweep metadata
             sweep_meta = {
                 "sweep_id": sweep_id,
-                "sweep_name": request.name or sweep_id,
+                "sweep_name": sweep_name,
                 "timestamp": sweep_ts,
                 "preset": request.preset,
                 "sweep_params": request.sweep_params,

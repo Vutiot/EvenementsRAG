@@ -1,22 +1,29 @@
 """Benchmark result file endpoints."""
 
 import json
+import logging
 import re
+from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import APIRouter, HTTPException
 
-from src.api.dependencies import RESULTS_DIR
+from src.api.dependencies import DATASETS_DIR, RESULTS_DIR
 from src.api.schemas import (
     NormalizedBenchmarkResult,
     NormalizedQuestion,
     ResultFileInfo,
 )
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter()
 
 # Simple mtime-based cache: {filepath: (mtime, parsed_info)}
 _file_info_cache: dict[str, tuple[float, ResultFileInfo]] = {}
+
+# Cache for dataset name lookups: {eval_dataset_id: name}
+_dataset_name_cache: dict[str, str] = {}
 
 
 def _infer_phase_name(filename: str, data: dict) -> str:
@@ -262,6 +269,110 @@ def _normalize_result(filename: str, data: dict) -> NormalizedBenchmarkResult:
         )
 
 
+def _sweep_ts_to_iso(ts: str) -> str:
+    """Convert sweep timestamp '20260323T134650Z' to ISO-8601 '2026-03-23T13:46:50Z'."""
+    try:
+        dt = datetime.strptime(ts, "%Y%m%dT%H%M%SZ").replace(tzinfo=timezone.utc)
+        return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
+    except (ValueError, TypeError):
+        return ts or ""
+
+
+def _lookup_dataset_name(eval_dataset_id: str | None) -> str | None:
+    """Resolve eval_dataset_id to its human name, with caching."""
+    if not eval_dataset_id:
+        return None
+    if eval_dataset_id in _dataset_name_cache:
+        return _dataset_name_cache[eval_dataset_id]
+    ds_path = DATASETS_DIR / f"{eval_dataset_id}.json"
+    if ds_path.exists():
+        try:
+            ds_data = json.loads(ds_path.read_text(encoding="utf-8"))
+            name = ds_data.get("name", eval_dataset_id)
+        except (json.JSONDecodeError, OSError):
+            name = eval_dataset_id
+    else:
+        name = eval_dataset_id
+    _dataset_name_cache[eval_dataset_id] = name
+    return name
+
+
+def _build_sweep_parents(
+    infos: list[ResultFileInfo],
+    results_dir: Path,
+) -> list[ResultFileInfo]:
+    """Read sweep metadata files and build virtual parent ResultFileInfo rows."""
+    sweeps_dir = results_dir / "sweeps"
+    if not sweeps_dir.is_dir():
+        return []
+
+    infos_by_filename = {i.filename: i for i in infos}
+    parents: list[ResultFileInfo] = []
+
+    for meta_path in sorted(sweeps_dir.glob("sweep_meta_*.json")):
+        try:
+            meta = json.loads(meta_path.read_text(encoding="utf-8"))
+        except (json.JSONDecodeError, OSError):
+            continue
+
+        if not isinstance(meta, dict) or "sweep_id" not in meta:
+            continue
+
+        child_filenames = meta.get("result_files", [])
+        swept_params = meta.get("sweep_params", {})
+
+        # Find the first available child to derive config_summary & evaluation_mode
+        config_summary = None
+        evaluation_mode = None
+        eval_dataset_name_from_child = None
+        for fn in child_filenames:
+            child = infos_by_filename.get(fn)
+            if child:
+                config_summary = child.config_summary
+                evaluation_mode = child.evaluation_mode
+                eval_dataset_name_from_child = child.eval_dataset_name
+                break
+
+        # Resolve eval_dataset_name: prefer child's value, fall back to dataset lookup
+        eval_dataset_name = (
+            eval_dataset_name_from_child
+            or _lookup_dataset_name(meta.get("eval_dataset_id"))
+        )
+
+        rel_path = f"sweeps/{meta_path.name}"
+
+        parent = ResultFileInfo(
+            filename=rel_path,
+            phase_name=meta.get("sweep_name", meta["sweep_id"]),
+            timestamp=_sweep_ts_to_iso(meta.get("timestamp", "")),
+            total_questions=0,
+            format="benchmark_result",
+            avg_mrr=0.0,
+            avg_recall_at_5=None,
+            avg_recall_at_10=None,
+            total_wall_time_s=None,
+            avg_doc_precision_at_5=None,
+            avg_doc_mrr=None,
+            avg_chunk_precision_at_5=None,
+            avg_context_precision=None,
+            avg_entity_precision_at_5=None,
+            avg_entity_recall_at_5=None,
+            avg_entity_mrr=None,
+            config_summary=config_summary,
+            sweep_meta={
+                "sweep_id": meta["sweep_id"],
+                "child_filenames": child_filenames,
+                "swept_params": swept_params,
+            },
+            run_name=meta.get("sweep_name", meta["sweep_id"]),
+            eval_dataset_name=eval_dataset_name,
+            evaluation_mode=evaluation_mode,
+        )
+        parents.append(parent)
+
+    return parents
+
+
 @router.get("/results", response_model=list[ResultFileInfo])
 def list_results():
     """List all JSON result files from the results/ directory."""
@@ -273,6 +384,12 @@ def list_results():
         info = _parse_file_info(path)
         if info is not None:
             infos.append(info)
+
+    # Build virtual sweep parent rows and exclude raw sweep meta files
+    sweep_parents = _build_sweep_parents(infos, RESULTS_DIR)
+    infos = [i for i in infos if not i.filename.startswith("sweeps/")]
+    infos.extend(sweep_parents)
+
     return infos
 
 
