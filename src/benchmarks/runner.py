@@ -163,6 +163,16 @@ class BenchmarkResult:
             if "avg_bert_score_f1" in gen_summary:
                 print(f"  Avg BERTScore F1: {gen_summary['avg_bert_score_f1']:.3f}")
 
+        # Entity-level metrics
+        entity_summary = self.metrics_summary.get("entity")
+        if entity_summary:
+            n = entity_summary.get("num_questions_scored", 0)
+            print("-" * 70)
+            print(f"Entity-Level Metrics ({n} questions):")
+            print(f"  Avg Entity P@5 : {entity_summary['avg_entity_precision_at_5']:.3f}")
+            print(f"  Avg Entity R@5 : {entity_summary['avg_entity_recall_at_5']:.3f}")
+            print(f"  Avg Entity MRR : {entity_summary['avg_entity_mrr']:.3f}")
+
         # RAGAS metrics
         ragas_summary = self.metrics_summary.get("ragas")
         if ragas_summary:
@@ -300,6 +310,7 @@ class ParameterizedBenchmarkRunner:
                 or self.config.evaluation.compute_bert_score
                 or self.config.evaluation.compute_ragas
                 or self.config.evaluation.compute_context_precision
+                or self.config.evaluation.compute_entity_metrics
             )
         )
         if needs_questions:
@@ -323,6 +334,9 @@ class ParameterizedBenchmarkRunner:
             and not self.config.evaluation.compute_ragas
         ):
             collector.compute_context_precision_only(per_q, questions_by_id)
+
+        if self.config.generation.enabled and self.config.evaluation.compute_entity_metrics:
+            collector.compute_entity_metrics(per_q, questions_by_id)
 
         collector.compute_latency_metrics(per_q)
 

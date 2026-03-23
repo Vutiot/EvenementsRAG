@@ -29,6 +29,9 @@ export interface ResultFileInfo {
   avg_doc_mrr: number | null;
   avg_chunk_precision_at_5: number | null;
   avg_context_precision: number | null;
+  avg_entity_precision_at_5: number | null;
+  avg_entity_recall_at_5: number | null;
+  avg_entity_mrr: number | null;
   total_wall_time_s: number | null;
   config_summary: {
     technique: string | null;
@@ -277,6 +280,7 @@ export interface BenchmarkConfig {
     k_values: number[];
     compute_ragas: boolean;
     compute_context_precision: boolean;
+    compute_entity_metrics: boolean;
     compute_bert_score: boolean;
     compute_rouge: boolean;
     ragas_metrics: string[];
@@ -389,6 +393,7 @@ export interface SweepConfigCompleteEvent {
   avg_doc_mrr?: number;
   avg_doc_precision_at_5?: number;
   avg_context_precision?: number;
+  avg_entity_recall_at_5?: number;
   total_wall_time_s?: number;
 }
 

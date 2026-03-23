@@ -96,10 +96,10 @@ graph TD
   E6F14T2["⚪ E6-F14-T2: Creation Time column in CollectionManager"]
   E6F14T3["🔵 E6-F14-T3: Rename Timestamp in RunHistory"]
 
-  E6F15T1["🔵 E6-F15-T1: LLM entity extraction utility"]
-  E6F15T2["⚪ E6-F15-T2: Entity precision & recall metrics"]
-  E6F15T3["⚪ E6-F15-T3: Wire entity metrics into runner"]
-  E6F15T4["⚪ E6-F15-T4: Display entity metrics in UI"]
+  E6F15T1["✅ E6-F15-T1: LLM entity extraction utility"]
+  E6F15T2["✅ E6-F15-T2: Entity precision & recall metrics"]
+  E6F15T3["✅ E6-F15-T3: Wire entity metrics into runner"]
+  E6F15T4["✅ E6-F15-T4: Display entity metrics in UI"]
 
   E6F8T1 --> E6F8T2
   E6F8T1 --> E6F8T4
@@ -170,10 +170,10 @@ graph TD
   style E6F14T1 fill:#3b82f6
   style E6F14T2 fill:#6b7280
   style E6F14T3 fill:#3b82f6
-  style E6F15T1 fill:#3b82f6
-  style E6F15T2 fill:#6b7280
-  style E6F15T3 fill:#6b7280
-  style E6F15T4 fill:#6b7280
+  style E6F15T1 fill:#22c55e
+  style E6F15T2 fill:#22c55e
+  style E6F15T3 fill:#22c55e
+  style E6F15T4 fill:#22c55e
 ```
 
 **Legend**: blue = ready, gray = pending, green = done, amber = in progress
@@ -550,30 +550,30 @@ Add creation time to the collection table and rename the run history timestamp c
 
 Add entity-level precision, recall, and MRR metrics using LLM-based named entity extraction (rewritten from RAGAS's `ContextEntityRecall` pattern but decoupled from the RAGAS library). Uses the same NVIDIA API / OpenAI-compatible endpoint as the rest of the project. Provides a fourth metric tier alongside Document-ID, Chunk-ID, and LLM Context metrics.
 
-##### 🔵 E6-F15-T1: LLM-based entity extraction utility
+##### ✅ E6-F15-T1: LLM-based entity extraction utility
 - blocked_by: []
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Create `src/evaluation/entity_extractor.py`. Class `EntityExtractor` with `__init__(self, model: str = "nvidia/nemotron-3-nano-30b-a3b", base_url: str = None)` using OpenAI client (same pattern as `dataset_service.py` LLM calls). Method `extract_entities(text: str) -> set[str]`: send prompt asking the LLM to extract all named entities (PERSON, GPE, ORG, DATE, EVENT, LOC) from the text and return them as a JSON list. Parse response, normalize (lowercase, strip), return as `set[str]`. Add retry logic (3 retries, exponential backoff). Method `extract_entities_batch(texts: list[str]) -> list[set[str]]`: batch extraction with rate limiting (reuse the 3s wait pattern from dataset_service). Cache results keyed by `hash(text)` to avoid re-extracting for the same chunk across questions. Add `_ENTITY_EXTRACTION_PROMPT` template. Tests: `tests/unit/evaluation/test_entity_extractor.py` -- mock OpenAI client, test parsing, test caching, test error handling.
 - description: LLM-based entity extraction using the same NVIDIA API as the rest of the project. Follows RAGAS's ContextEntityRecall extraction approach but as a standalone utility. Supports caching and rate limiting.
 
-##### ⚪ E6-F15-T2: Entity precision & recall metrics
+##### ✅ E6-F15-T2: Entity precision & recall metrics
 - blocked_by: [E6-F15-T1]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: In `src/evaluation/metrics.py`: (1) `entity_recall_at_k(retrieved_texts: list[str], ground_truth_text: str, k: int, extractor: EntityExtractor) -> float`: extract entities from `ground_truth_text` as `gt_entities` and from concatenated `retrieved_texts[:k]` as `ret_entities`. Return `len(gt_entities & ret_entities) / len(gt_entities)` if non-empty, else 0.0. (2) `entity_precision_at_k(...)`: same but return `len(gt_entities & ret_entities) / len(ret_entities)` if non-empty. (3) `entity_mrr(retrieved_texts, ground_truth_text, extractor)`: return `1/rank` of first chunk containing any ground truth entity. (4) Add to `RetrievalMetrics`: `entity_precision_at_5, entity_recall_at_5, entity_mrr` (all float = 0.0). (5) Add to `EvaluationResults`: `avg_entity_precision_at_5, avg_entity_recall_at_5, avg_entity_mrr`. Tests: `tests/unit/evaluation/test_entity_metrics.py`.
 - description: Entity precision@K, recall@K, and MRR using LLM entity extraction. Compute set intersection ratios between entities in ground truth and retrieved chunks.
 
-##### ⚪ E6-F15-T3: Wire entity metrics into runner and results
+##### ✅ E6-F15-T3: Wire entity metrics into runner and results
 - blocked_by: [E6-F15-T2]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: (1) Add `compute_entity_metrics: bool = False` to `EvaluationConfig` in `src/benchmarks/config.py`. (2) In `src/evaluation/benchmark_runner.py`, when enabled: create `EntityExtractor` singleton, call entity metrics per question using `retrieved_texts` and `expected_answer_hint` as ground truth. (3) Aggregate: compute means for `avg_entity_precision_at_5`, `avg_entity_recall_at_5`, `avg_entity_mrr`. (4) Add to `print_summary()` as "--- Entity-Level Metrics ---" section. (5) Thread config through `ParameterizedBenchmarkRunner.run()`. (6) Add toggle in `ParameterModal.tsx` Evaluation section: "Entity Metrics (LLM NER)". (7) Update types.ts, schemas.py, default.yaml.
 - description: Wire entity metrics into pipeline with `compute_entity_metrics` config toggle. When enabled, runs LLM entity extraction and computes entity precision/recall/MRR per question.
 
-##### ⚪ E6-F15-T4: Display entity metrics in UI
+##### ✅ E6-F15-T4: Display entity metrics in UI
 - blocked_by: [E6-F15-T3]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: (1) Add `avg_entity_precision_at_5`, `avg_entity_recall_at_5`, `avg_entity_mrr` to `ResultFileInfo` (types.ts + schemas.py). (2) Extract from result JSON in results parser. (3) In RunHistoryTable: add columns "Ent P@5", "Ent R@5", "Ent MRR" after existing metric columns. Use `fmt()` helper, em dash if null. (4) In result viewer: add "Entity-Level" section as fourth tier in precision tiers display. (5) Entity metrics are valid across collections (like doc-level), show in sweep child rows.
 - description: Display entity metrics in RunHistoryTable and result viewer as a fourth precision tier alongside Doc-ID, Chunk-ID, and LLM Context.
@@ -751,3 +751,11 @@ Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 - **eval_dataset_name stored in result JSON**: Added as a top-level field in the BenchmarkResult JSON (not inside config) since the eval dataset is an external input, not a config parameter. Resolved from dataset JSON `name` field at run time in `BenchmarkService`.
 - **Run naming**: Optional `name` field on `BenchmarkRunRequest` overrides `config.name` before the runner executes. The config name becomes the `phase_name` in results, so user-provided names propagate naturally through the existing save path.
 - **Component decomposition**: RunHistoryTable split into `NormalRow`, `SweepParentRow`, `SweepChildRow` subcomponents + `ParamCell` helper for DRY parameter rendering with optional `sweptValues` stacked display.
+
+### E6-F15: Entity-Level Retrieval Metrics (completed 2026-03-23)
+- **Standalone EntityExtractor**: Decoupled from RAGAS library — uses raw OpenAI-compatible client (NVIDIA API) with a JSON-list extraction prompt. Supports PERSON, GPE, ORG, DATE, EVENT, LOC entity types. Caches results keyed by SHA-256 hash of input text so the same chunk is never extracted twice across questions.
+- **Rate limiting + retry**: 3s between LLM calls (matching dataset_service pattern), 3 retries with exponential backoff (10s, 20s base). Failed extractions cached as empty set to avoid re-trying.
+- **Entity metrics as set operations**: `entity_recall_at_k` = `|gt ∩ ret| / |gt|`, `entity_precision_at_k` = `|gt ∩ ret| / |ret|`, `entity_mrr` = `1/rank` of first chunk containing any ground-truth entity. Ground truth extracted from `expected_answer_hint` field, retrieved entities from concatenated top-K chunk texts.
+- **Collector pattern**: Entity metrics wired through `MetricsCollector.compute_entity_metrics()` following the same pattern as RAGAS — lazy-init `EntityExtractor` singleton, in-place mutation of `per_question` list, aggregate into `metrics_summary["entity"]` dict.
+- **UI display**: Single "Ent R@5" column in RunHistoryTable (most informative single metric). Full P@5, R@5, MRR breakdown shown in BenchmarkViewer PrecisionTiers as "Tier 4 — Entity (NER)" card with emerald color scheme. Grid changed from 3-col to responsive 2/4-col layout.
+- **Toggle**: `compute_entity_metrics: bool = False` in `EvaluationConfig`, exposed as "Entity Metrics (LLM NER)" toggle in ParameterModal Evaluation section. Requires generation enabled (same guard as other LLM-based metrics).

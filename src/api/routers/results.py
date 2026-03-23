@@ -87,6 +87,12 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         .get("avg_context_precision")
     )
 
+    # Entity metrics from entity metrics summary
+    entity_summary = data.get("metrics_summary", {}).get("entity", {})
+    avg_entity_precision_at_5 = entity_summary.get("avg_entity_precision_at_5")
+    avg_entity_recall_at_5 = entity_summary.get("avg_entity_recall_at_5")
+    avg_entity_mrr = entity_summary.get("avg_entity_mrr")
+
     phase_name = _infer_phase_name(filepath.name, data)
 
     # Extract config summary for new-format results
@@ -147,6 +153,9 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         avg_doc_mrr=round(avg_doc_mrr, 4) if avg_doc_mrr is not None else None,
         avg_chunk_precision_at_5=round(avg_chunk_precision_at_5, 4) if avg_chunk_precision_at_5 is not None else None,
         avg_context_precision=round(avg_context_precision, 4) if avg_context_precision is not None else None,
+        avg_entity_precision_at_5=round(avg_entity_precision_at_5, 4) if avg_entity_precision_at_5 is not None else None,
+        avg_entity_recall_at_5=round(avg_entity_recall_at_5, 4) if avg_entity_recall_at_5 is not None else None,
+        avg_entity_mrr=round(avg_entity_mrr, 4) if avg_entity_mrr is not None else None,
         config_summary=config_summary,
         sweep_meta=sweep_meta,
         run_name=run_name,
