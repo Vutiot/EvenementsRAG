@@ -438,6 +438,8 @@ Later-phase implementations for advanced retrieval methods.
 
 Merge Query, Benchmark, and Sweep interfaces into a single Testing page. Full roadmap in `roadmap_unification.md`.
 
+**Next features (F12-F15):** Cross-collection eval dataset mapping via char offset overlap (F12), eval dataset table redesign with metadata columns (F13), collection creation time + run history rename (F14), LLM-based entity-level retrieval metrics (F15).
+
 #### E6-F6: Cleanup & Integration
 
 ##### ✅ E6-F6-T1: Remove old pages & dead routes

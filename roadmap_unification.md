@@ -83,6 +83,24 @@ graph TD
   E6F11T1["✅ E6-F11-T1: Filter eval datasets by collection"]
   E6F11T2["✅ E6-F11-T2: Runtime eval dataset warning"]
 
+  E6F12T1["🔵 E6-F12-T1: Store char offsets in eval dataset"]
+  E6F12T2["⚪ E6-F12-T2: Chunk overlap mapping function"]
+  E6F12T3["⚪ E6-F12-T3: Wire mapping into benchmark/sweep"]
+  E6F12T4["⚪ E6-F12-T4: UI indicator for mapped evaluation"]
+
+  E6F13T1["⚪ E6-F13-T1: Redesign dataset list as table"]
+  E6F13T2["🔵 E6-F13-T2: Update dataset naming convention"]
+  E6F13T3["⚪ E6-F13-T3: Dataset detail row expansion"]
+
+  E6F14T1["🔵 E6-F14-T1: Add created_at to collection API"]
+  E6F14T2["⚪ E6-F14-T2: Creation Time column in CollectionManager"]
+  E6F14T3["🔵 E6-F14-T3: Rename Timestamp in RunHistory"]
+
+  E6F15T1["🔵 E6-F15-T1: LLM entity extraction utility"]
+  E6F15T2["⚪ E6-F15-T2: Entity precision & recall metrics"]
+  E6F15T3["⚪ E6-F15-T3: Wire entity metrics into runner"]
+  E6F15T4["⚪ E6-F15-T4: Display entity metrics in UI"]
+
   E6F8T1 --> E6F8T2
   E6F8T1 --> E6F8T4
   E6F8T3 --> E6F8T4
@@ -96,6 +114,19 @@ graph TD
   E6F10T1 --> E6F10T3
 
   E6F11T1 --> E6F11T2
+
+  E6F12T1 --> E6F12T2
+  E6F12T2 --> E6F12T3
+  E6F12T3 --> E6F12T4
+
+  E6F13T2 --> E6F13T1
+  E6F13T1 --> E6F13T3
+
+  E6F14T1 --> E6F14T2
+
+  E6F15T1 --> E6F15T2
+  E6F15T2 --> E6F15T3
+  E6F15T3 --> E6F15T4
 
   style E6F1T1 fill:#22c55e
   style E6F1T2 fill:#22c55e
@@ -129,6 +160,20 @@ graph TD
   style E6F10T3 fill:#22c55e
   style E6F11T1 fill:#22c55e
   style E6F11T2 fill:#22c55e
+  style E6F12T1 fill:#3b82f6
+  style E6F12T2 fill:#6b7280
+  style E6F12T3 fill:#6b7280
+  style E6F12T4 fill:#6b7280
+  style E6F13T1 fill:#6b7280
+  style E6F13T2 fill:#3b82f6
+  style E6F13T3 fill:#6b7280
+  style E6F14T1 fill:#3b82f6
+  style E6F14T2 fill:#6b7280
+  style E6F14T3 fill:#3b82f6
+  style E6F15T1 fill:#3b82f6
+  style E6F15T2 fill:#6b7280
+  style E6F15T3 fill:#6b7280
+  style E6F15T4 fill:#6b7280
 ```
 
 **Legend**: blue = ready, gray = pending, green = done, amber = in progress
@@ -413,13 +458,144 @@ Ensure eval datasets are correctly filtered based on collection compatibility. I
 
 ---
 
+#### E6-F12: Eval Dataset Mapping (Cross-Collection Evaluation)
+
+Store character offsets in eval questions and use overlap matching to map ground truth to any collection's chunks. When benchmark/sweep collection differs from the eval dataset's source, automatically map questions via `char_start`/`char_end` overlap (Stage 2 from `inspiration/rag_eval_prompt.md`). This makes chunk-level metrics valid across all chunking configurations.
+
+##### 🔵 E6-F12-T1: Store char offsets in eval dataset generation
+- blocked_by: []
+- status: ready
+- effort: M
+- agent_hint: (1) In `src/preprocessing/text_chunker.py` `chunk_document()`, after generating chunks compute `char_start` for each chunk by `content.find(chunk_text, search_from)` advancing `search_from` past each match; set `char_end = char_start + len(chunk_text)`. Fall back to cumulative offset if `find()` returns -1. (2) In `src/vector_store/indexer.py` `prepare_for_indexing()`, add `"char_start": chunk.get("char_start", 0), "char_end": chunk.get("char_end", 0)` to payload. (3) In `src/api/dataset_service.py` `_load_chunks()`, extract `char_start`/`char_end` from payload; in `_generate_for_chunk()`, save `q["char_start"]`, `q["char_end"]`, `q["source_doc_id"]`. (4) Update `DatasetQuestion` in `frontend/src/api/types.ts` with optional `char_start`, `char_end`, `source_doc_id`. (5) Handle legacy datasets/collections gracefully (0 = no offset data).
+- description: During eval question generation, extract char offsets from source chunks and save in each question record. Requires adding offset tracking to the chunker and indexer payload. Foundation for the mapping mechanism.
+
+##### ⚪ E6-F12-T2: Implement chunk overlap mapping function
+- blocked_by: [E6-F12-T1]
+- status: pending
+- effort: M
+- agent_hint: Create `src/evaluation/dataset_mapper.py`. `MappedGroundTruth` dataclass: `question_id, question, expected_answer_hint, source_doc_id, char_start, char_end, relevant_chunk_ids: list[str]`. Main function `map_dataset_to_chunks(eval_questions, target_chunks, overlap_threshold=0.5) -> list[MappedGroundTruth]`. Per question: filter target chunks by matching `source_doc_id`/`source_article_id`; compute `overlap_ratio = max(0, min(q.char_end, c.char_end) - max(q.char_start, c.char_start)) / (q.char_end - q.char_start)`; include chunk if `>= threshold`. Fallback to threshold/2 if no matches, then to original `source_chunk_id`. Add `load_chunks_from_collection(collection_name)` helper wrapping Qdrant scroll. Tests: `tests/unit/evaluation/test_dataset_mapper.py`.
+- description: Overlap matching algorithm from `inspiration/rag_eval_prompt.md` Stage 2. Maps eval questions to target collection chunks using character offset overlap ratios.
+
+##### ⚪ E6-F12-T3: Wire mapping into benchmark/sweep execution
+- blocked_by: [E6-F12-T1, E6-F12-T2]
+- status: pending
+- effort: L
+- agent_hint: (1) In `src/api/benchmark_service.py`, after mismatch detection: if questions have `char_start`/`char_end`, call `map_dataset_to_chunks()` and build `mapped_ground_truth: dict[question_id, list[chunk_id]]`. Yield SSE `info` event with mapping stats. (2) Add optional `mapped_ground_truth` param to `ParameterizedBenchmarkRunner.run()` and `BenchmarkRunner.run_benchmark_on_questions()`. Use mapped chunk IDs for retrieval metrics when provided. (3) Same logic in `src/api/sweep_service.py` with per-collection caching to avoid re-mapping. (4) Store `evaluation_mode: "direct" | "mapped"` in result JSON. (5) Fall back to warning-only for legacy datasets without offsets.
+- description: When eval dataset collection mismatches benchmark/sweep collection, automatically map via char offsets. Replaces warning-only behavior with valid cross-collection chunk-level evaluation.
+
+##### ⚪ E6-F12-T4: UI indicator for mapped vs direct evaluation
+- blocked_by: [E6-F12-T3]
+- status: pending
+- effort: S
+- agent_hint: (1) Add `evaluation_mode?: "direct" | "mapped"` to `ResultFileInfo` (types.ts + schemas.py). (2) Extract from result JSON in results parsing. (3) In RunHistoryTable, show blue "Mapped" pill badge next to eval dataset name when mapped, subtle green "Direct" otherwise. Tooltip explains mapping. (4) Show info SSE event as blue banner during execution.
+- description: Visual indicator in RunHistoryTable and execution progress showing whether chunk metrics used direct or mapped evaluation.
+
+---
+
+#### E6-F13: Eval Dataset Table Redesign
+
+Redesign the eval dataset list in DatasetManager from its current card/row layout into a proper data table matching RunHistoryTable conventions. Update dataset naming to `PresetName_timestamp`. Add expand/collapse for categories and inline detail expansion.
+
+##### 🔵 E6-F13-T2: Update dataset naming convention
+- blocked_by: []
+- status: ready
+- effort: S
+- agent_hint: In `DatasetManager.tsx`, find where `datasetName` is computed from preset name + collection name + count. Change to `"{PresetName}_{YYYYMMDD_HHmmss}"`. The preset name comes from the active `CategoryPreset.name`. No backend change needed (name is passed through `DatasetCreateRequest.name`).
+- description: Dataset names become `PresetName_timestamp` instead of `PresetName_CollectionName_Nq`. Shorter and avoids embedding collection params in the name.
+
+##### ⚪ E6-F13-T1: Redesign dataset list as table
+- blocked_by: [E6-F13-T2]
+- status: pending
+- effort: M
+- agent_hint: (1) In `DatasetManager.tsx`, replace the "Existing Evaluation Sets" card rows with `overflow-x-auto <table>`. Columns: Name (sticky left, `font-mono text-xs`), Creation Time (`formatTimestamp` helper), Source Collection (`font-mono text-xs`), Categories (colored pills via `hashColor()` -- show first 3 types, "+N more" expandable on click using `useState<Set<string>>`), Model (short name extracted from category model field, e.g. "nemotron-3-nano" from full path), System Prompt (truncate ~80 chars with `title` tooltip for full text), Questions (count), Status (green/amber/red badge), Actions (delete). (2) Backend: in `dataset_service.py` `list_datasets()`, add `system_prompt` and `model` to returned dict. (3) Update `DatasetInfo` in schemas.py (`system_prompt: str = ""`, `model: str = ""`) and types.ts. (4) Match RunHistoryTable header styling: `text-xs font-medium text-gray-500 uppercase tracking-wider`.
+- description: Proper data table for eval datasets with metadata columns. Categories use expandable pill badges. System prompt shows truncated preview with tooltip.
+
+##### ⚪ E6-F13-T3: Dataset detail row expansion
+- blocked_by: [E6-F13-T1]
+- status: pending
+- effort: S
+- agent_hint: In the new table, clicking a row expands an inline `<tr>` with `<td colSpan={N}>` containing: full system prompt in `<pre>`, complete category details with generated/total counts, scrollable question list (reuse existing rendering). Toggle: click again collapses; only one row expanded at a time (`expandedId` state). Chevron icon rotates on expand. Same UX pattern as RunHistoryTable sweep rows.
+- description: Inline detail expansion for dataset rows showing full system prompt, category breakdown, and question list.
+
+---
+
+#### E6-F14: Collection & Run History Table Polish
+
+Add creation time to the collection table and rename the run history timestamp column for clarity.
+
+##### 🔵 E6-F14-T1: Add created_at to collection API
+- blocked_by: []
+- status: ready
+- effort: M
+- agent_hint: (1) In `src/vector_store/qdrant_manager.py` `create_collection()`, pass `metadata={"created_at": datetime.now(timezone.utc).isoformat()}`. In `get_collection_info()`, extract from `info.config.metadata`. (2) FAISS: use sidecar JSON file `stat().st_mtime` converted to ISO string. (3) pgvector: return None initially. (4) Add `created_at: str | None = None` to `CollectionInfo` in schemas.py and types.ts. (5) Optional: `scripts/backfill_collection_metadata.py` for existing Qdrant collections.
+- description: Extract or store creation timestamps for collections. Qdrant uses config.metadata, FAISS uses file mtime, pgvector returns None.
+
+##### ⚪ E6-F14-T2: Add Creation Time column to CollectionManager UI
+- blocked_by: [E6-F14-T1]
+- status: pending
+- effort: S
+- agent_hint: In `CollectionManager.tsx` collection table: add `<th>Creation Time</th>` after Name. In row, add `<td>` with `formatTimestamp(c.created_at)` (or em dash if null). Style: `text-xs text-gray-500`. Format: "Mar 22, 2026 14:30" via `toLocaleString()`.
+- description: New "Creation Time" column in collection table showing formatted timestamps.
+
+##### 🔵 E6-F14-T3: Rename Timestamp to Creation Time in RunHistoryTable
+- blocked_by: []
+- status: ready
+- effort: S
+- agent_hint: In `RunHistoryTable.tsx` line 253, change `Timestamp` to `Creation Time`. Single string change, no logic changes.
+- description: Rename "Timestamp" column to "Creation Time" for consistency and clarity.
+
+---
+
+#### E6-F15: Entity-Level Retrieval Metrics
+
+Add entity-level precision, recall, and MRR metrics using LLM-based named entity extraction (rewritten from RAGAS's `ContextEntityRecall` pattern but decoupled from the RAGAS library). Uses the same NVIDIA API / OpenAI-compatible endpoint as the rest of the project. Provides a fourth metric tier alongside Document-ID, Chunk-ID, and LLM Context metrics.
+
+##### 🔵 E6-F15-T1: LLM-based entity extraction utility
+- blocked_by: []
+- status: ready
+- effort: M
+- agent_hint: Create `src/evaluation/entity_extractor.py`. Class `EntityExtractor` with `__init__(self, model: str = "nvidia/nemotron-3-nano-30b-a3b", base_url: str = None)` using OpenAI client (same pattern as `dataset_service.py` LLM calls). Method `extract_entities(text: str) -> set[str]`: send prompt asking the LLM to extract all named entities (PERSON, GPE, ORG, DATE, EVENT, LOC) from the text and return them as a JSON list. Parse response, normalize (lowercase, strip), return as `set[str]`. Add retry logic (3 retries, exponential backoff). Method `extract_entities_batch(texts: list[str]) -> list[set[str]]`: batch extraction with rate limiting (reuse the 3s wait pattern from dataset_service). Cache results keyed by `hash(text)` to avoid re-extracting for the same chunk across questions. Add `_ENTITY_EXTRACTION_PROMPT` template. Tests: `tests/unit/evaluation/test_entity_extractor.py` -- mock OpenAI client, test parsing, test caching, test error handling.
+- description: LLM-based entity extraction using the same NVIDIA API as the rest of the project. Follows RAGAS's ContextEntityRecall extraction approach but as a standalone utility. Supports caching and rate limiting.
+
+##### ⚪ E6-F15-T2: Entity precision & recall metrics
+- blocked_by: [E6-F15-T1]
+- status: pending
+- effort: M
+- agent_hint: In `src/evaluation/metrics.py`: (1) `entity_recall_at_k(retrieved_texts: list[str], ground_truth_text: str, k: int, extractor: EntityExtractor) -> float`: extract entities from `ground_truth_text` as `gt_entities` and from concatenated `retrieved_texts[:k]` as `ret_entities`. Return `len(gt_entities & ret_entities) / len(gt_entities)` if non-empty, else 0.0. (2) `entity_precision_at_k(...)`: same but return `len(gt_entities & ret_entities) / len(ret_entities)` if non-empty. (3) `entity_mrr(retrieved_texts, ground_truth_text, extractor)`: return `1/rank` of first chunk containing any ground truth entity. (4) Add to `RetrievalMetrics`: `entity_precision_at_5, entity_recall_at_5, entity_mrr` (all float = 0.0). (5) Add to `EvaluationResults`: `avg_entity_precision_at_5, avg_entity_recall_at_5, avg_entity_mrr`. Tests: `tests/unit/evaluation/test_entity_metrics.py`.
+- description: Entity precision@K, recall@K, and MRR using LLM entity extraction. Compute set intersection ratios between entities in ground truth and retrieved chunks.
+
+##### ⚪ E6-F15-T3: Wire entity metrics into runner and results
+- blocked_by: [E6-F15-T2]
+- status: pending
+- effort: M
+- agent_hint: (1) Add `compute_entity_metrics: bool = False` to `EvaluationConfig` in `src/benchmarks/config.py`. (2) In `src/evaluation/benchmark_runner.py`, when enabled: create `EntityExtractor` singleton, call entity metrics per question using `retrieved_texts` and `expected_answer_hint` as ground truth. (3) Aggregate: compute means for `avg_entity_precision_at_5`, `avg_entity_recall_at_5`, `avg_entity_mrr`. (4) Add to `print_summary()` as "--- Entity-Level Metrics ---" section. (5) Thread config through `ParameterizedBenchmarkRunner.run()`. (6) Add toggle in `ParameterModal.tsx` Evaluation section: "Entity Metrics (LLM NER)". (7) Update types.ts, schemas.py, default.yaml.
+- description: Wire entity metrics into pipeline with `compute_entity_metrics` config toggle. When enabled, runs LLM entity extraction and computes entity precision/recall/MRR per question.
+
+##### ⚪ E6-F15-T4: Display entity metrics in UI
+- blocked_by: [E6-F15-T3]
+- status: pending
+- effort: S
+- agent_hint: (1) Add `avg_entity_precision_at_5`, `avg_entity_recall_at_5`, `avg_entity_mrr` to `ResultFileInfo` (types.ts + schemas.py). (2) Extract from result JSON in results parser. (3) In RunHistoryTable: add columns "Ent P@5", "Ent R@5", "Ent MRR" after existing metric columns. Use `fmt()` helper, em dash if null. (4) In result viewer: add "Entity-Level" section as fourth tier in precision tiers display. (5) Entity metrics are valid across collections (like doc-level), show in sweep child rows.
+- description: Display entity metrics in RunHistoryTable and result viewer as a fourth precision tier alongside Doc-ID, Chunk-ID, and LLM Context.
+
+---
+
 ## Critical Path
 
-**All E6 core tasks complete.** E6-F1 → F2 → F3 → F4 → F5 → F6 → F8 → F9 → F10 → F11 (all done)
+**All E6 core tasks (F1-F11) complete.**
 
-**Critical path**: Finished. No remaining blocking tasks.
+**New feature critical paths:**
+- 🔴 E6-F12: T1 → T2 → T3 → T4 (4 tasks, M+M+L+S)
+- 🔴 E6-F15: T1 → T2 → T3 → T4 (4 tasks, M+M+M+S)
+- E6-F13: T2 → T1 → T3 (3 tasks, S+M+S)
+- E6-F14: T1 → T2 (2 tasks, M+S); T3 independent (S)
 
-**Remaining**: Only the suggested features (E6-F7) are left, all optional.
+**Parallel opportunities:**
+- F12 and F15 are fully independent -- can run in parallel worktrees
+- F13 and F14 are independent of each other and of F12/F15
+- F14-T3 (rename Timestamp) has zero blockers -- immediate
+
+**Remaining from before**: Suggested features (E6-F7) are optional.
 
 ---
 
@@ -473,7 +649,18 @@ Ensure eval datasets are correctly filtered based on collection compatibility. I
 | L      | 1     | F10-T1 |
 | **Subtotal (E6-F8→F11)** | **13** | 5S + 7M + 1L |
 
-**Grand total**: 32 tasks (19 done/pending + 13 new).
+**Grand total (F1-F11)**: 32 tasks (19 core + 13 new).
+
+**Evaluation & polish features (E6-F12 to F15):**
+
+| Effort | Count | Tasks |
+|--------|-------|-------|
+| S      | 5     | F12-T4, F13-T2, F13-T3, F14-T2, F14-T3 |
+| M      | 8     | F12-T1, F12-T2, F13-T1, F14-T1, F15-T1, F15-T2, F15-T3, F15-T4 |
+| L      | 1     | F12-T3 |
+| **Subtotal (E6-F12→F15)** | **14** | 5S + 8M + 1L |
+
+**Grand total**: 46 tasks (32 from F1-F11 + 14 from F12-F15).
 
 Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 
@@ -513,6 +700,12 @@ Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 | `frontend/src/pages/DatasetManager.tsx` | Multi-select collections + system prompt |
 | `src/api/dataset_service.py` | System prompt pass-through + collection creation |
 | `src/api/routers/datasets.py` | Collection filter param + ensure-collections endpoint |
+| `src/preprocessing/text_chunker.py` | Add char_start/char_end to chunk output (F12) |
+| `src/vector_store/indexer.py` | Store char offsets in payload (F12) |
+| `src/evaluation/dataset_mapper.py` | **New** -- overlap mapping for cross-collection eval (F12) |
+| `src/evaluation/entity_extractor.py` | **New** -- LLM-based NER entity extraction (F15) |
+| `src/vector_store/qdrant_manager.py` | Store created_at in collection metadata (F14) |
+| `frontend/src/pages/CollectionManager.tsx` | Creation Time column (F14) |
 
 ---
 
