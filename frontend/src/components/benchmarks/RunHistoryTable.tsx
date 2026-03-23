@@ -250,7 +250,7 @@ export default function RunHistoryTable({ results, activeRun }: Props) {
               Name
             </th>
             <th className="px-3 py-2">Type</th>
-            <th className="px-3 py-2">Timestamp</th>
+            <th className="px-3 py-2">Creation Time</th>
             <th className="px-3 py-2">Dataset</th>
             <th className="px-3 py-2">Eval Dataset</th>
             <th className="px-3 py-2">Technique</th>

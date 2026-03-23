@@ -71,6 +71,7 @@ class BaseVectorStore(ABC):
 
         Returns a list of dicts, each containing at least:
         ``{"name", "vector_size", "distance", "points_count"}``.
+        May also include ``"created_at"`` (ISO 8601 string or None).
         """
         ...
 

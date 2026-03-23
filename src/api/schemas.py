@@ -106,6 +106,7 @@ class CollectionInfo(BaseModel):
     vector_size: int | None = None
     distance: str | None = None
     points_count: int | None = None
+    created_at: str | None = None
 
 
 class CollectionListResponse(BaseModel):

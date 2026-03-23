@@ -267,6 +267,7 @@ export default function CollectionManager() {
                 <tr className="border-b border-gray-200 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   <th className="pb-2 pr-4">Name</th>
                   <th className="pb-2 pr-4">Backend</th>
+                  <th className="pb-2 pr-4">Creation Time</th>
                   <th className="pb-2 pr-4">Distance</th>
                   <th className="pb-2 pr-4 text-right">Dimension</th>
                   <th className="pb-2 pr-4 text-right">Vectors</th>
@@ -291,6 +292,17 @@ export default function CollectionManager() {
                         >
                           {c.backend}
                         </span>
+                      </td>
+                      <td className="py-2.5 pr-4 text-xs text-gray-500">
+                        {c.created_at
+                          ? new Date(c.created_at).toLocaleString(undefined, {
+                              year: "numeric",
+                              month: "short",
+                              day: "numeric",
+                              hour: "2-digit",
+                              minute: "2-digit",
+                            })
+                          : "\u2014"}
                       </td>
                       <td className="py-2.5 pr-4 text-gray-600">
                         {c.distance ?? "\u2014"}

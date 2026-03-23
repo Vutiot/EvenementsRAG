@@ -92,9 +92,9 @@ graph TD
   E6F13T2["🔵 E6-F13-T2: Update dataset naming convention"]
   E6F13T3["⚪ E6-F13-T3: Dataset detail row expansion"]
 
-  E6F14T1["🔵 E6-F14-T1: Add created_at to collection API"]
-  E6F14T2["⚪ E6-F14-T2: Creation Time column in CollectionManager"]
-  E6F14T3["🔵 E6-F14-T3: Rename Timestamp in RunHistory"]
+  E6F14T1["✅ E6-F14-T1: Add created_at to collection API"]
+  E6F14T2["✅ E6-F14-T2: Creation Time column in CollectionManager"]
+  E6F14T3["✅ E6-F14-T3: Rename Timestamp in RunHistory"]
 
   E6F15T1["🔵 E6-F15-T1: LLM entity extraction utility"]
   E6F15T2["⚪ E6-F15-T2: Entity precision & recall metrics"]
@@ -167,9 +167,9 @@ graph TD
   style E6F13T1 fill:#6b7280
   style E6F13T2 fill:#3b82f6
   style E6F13T3 fill:#6b7280
-  style E6F14T1 fill:#3b82f6
-  style E6F14T2 fill:#6b7280
-  style E6F14T3 fill:#3b82f6
+  style E6F14T1 fill:#22c55e
+  style E6F14T2 fill:#22c55e
+  style E6F14T3 fill:#22c55e
   style E6F15T1 fill:#3b82f6
   style E6F15T2 fill:#6b7280
   style E6F15T3 fill:#6b7280
@@ -523,23 +523,23 @@ Redesign the eval dataset list in DatasetManager from its current card/row layou
 
 Add creation time to the collection table and rename the run history timestamp column for clarity.
 
-##### 🔵 E6-F14-T1: Add created_at to collection API
+##### ✅ E6-F14-T1: Add created_at to collection API
 - blocked_by: []
-- status: ready
+- status: done
 - effort: M
 - agent_hint: (1) In `src/vector_store/qdrant_manager.py` `create_collection()`, pass `metadata={"created_at": datetime.now(timezone.utc).isoformat()}`. In `get_collection_info()`, extract from `info.config.metadata`. (2) FAISS: use sidecar JSON file `stat().st_mtime` converted to ISO string. (3) pgvector: return None initially. (4) Add `created_at: str | None = None` to `CollectionInfo` in schemas.py and types.ts. (5) Optional: `scripts/backfill_collection_metadata.py` for existing Qdrant collections.
 - description: Extract or store creation timestamps for collections. Qdrant uses config.metadata, FAISS uses file mtime, pgvector returns None.
 
-##### ⚪ E6-F14-T2: Add Creation Time column to CollectionManager UI
+##### ✅ E6-F14-T2: Add Creation Time column to CollectionManager UI
 - blocked_by: [E6-F14-T1]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: In `CollectionManager.tsx` collection table: add `<th>Creation Time</th>` after Name. In row, add `<td>` with `formatTimestamp(c.created_at)` (or em dash if null). Style: `text-xs text-gray-500`. Format: "Mar 22, 2026 14:30" via `toLocaleString()`.
 - description: New "Creation Time" column in collection table showing formatted timestamps.
 
-##### 🔵 E6-F14-T3: Rename Timestamp to Creation Time in RunHistoryTable
+##### ✅ E6-F14-T3: Rename Timestamp to Creation Time in RunHistoryTable
 - blocked_by: []
-- status: ready
+- status: done
 - effort: S
 - agent_hint: In `RunHistoryTable.tsx` line 253, change `Timestamp` to `Creation Time`. Single string change, no logic changes.
 - description: Rename "Timestamp" column to "Creation Time" for consistency and clarity.
