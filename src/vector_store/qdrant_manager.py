@@ -20,6 +20,7 @@ Usage:
     results = manager.search(collection_name="ww2_events", query_vector=query_embedding, limit=5)
 """
 
+from datetime import datetime, timezone
 from typing import Dict, List, Optional, Union
 from uuid import uuid4
 
@@ -111,6 +112,11 @@ class QdrantManager:
             self.client.create_collection(
                 collection_name=collection_name,
                 vectors_config=VectorParams(size=vector_size, distance=distance),
+            )
+
+            self.client.update_collection(
+                collection_name=collection_name,
+                metadata={"created_at": datetime.now(timezone.utc).isoformat()},
             )
 
             logger.info(f"Successfully created collection: {collection_name}")
@@ -306,12 +312,16 @@ class QdrantManager:
         """Get information about a collection."""
         try:
             info = self.client.get_collection(collection_name)
+            created_at = None
+            if info.config.metadata:
+                created_at = info.config.metadata.get("created_at")
             return {
                 "name": collection_name,
                 "vector_size": info.config.params.vectors.size,
                 "distance": info.config.params.vectors.distance.name,
                 "points_count": info.points_count,
                 "indexed_vectors_count": info.indexed_vectors_count,
+                "created_at": created_at,
             }
         except Exception as e:
             logger.error(f"Failed to get collection info: {e}")

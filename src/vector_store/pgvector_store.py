@@ -383,6 +383,7 @@ class PgVectorStore(BaseVectorStore):
             "vector_size": meta.get("vector_size"),
             "distance": meta.get("distance", DistanceMetric.COSINE).value,
             "points_count": count,
+            "created_at": None,
         }
 
     def count_vectors(

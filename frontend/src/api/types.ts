@@ -109,6 +109,7 @@ export interface CollectionInfo {
   vector_size: number | null;
   distance: string | null;
   points_count: number | null;
+  created_at: string | null;
 }
 
 export interface CollectionListResponse {

@@ -382,11 +382,20 @@ class FAISSStore(BaseVectorStore):
 
     def get_collection_info(self, collection_name: str) -> Dict:
         coll = self._get(collection_name)
+        created_at = None
+        if self._persist_dir is not None:
+            meta_path = self._persist_dir / f"{coll.name}.meta.pkl"
+            if meta_path.exists():
+                from datetime import datetime, timezone
+
+                mtime = meta_path.stat().st_mtime
+                created_at = datetime.fromtimestamp(mtime, tz=timezone.utc).isoformat()
         return {
             "name": coll.name,
             "vector_size": coll.vector_size,
             "distance": coll.distance.value,
             "points_count": coll.index.ntotal,
+            "created_at": created_at,
         }
 
     def count_vectors(
