@@ -16,11 +16,14 @@ Usage:
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 from typing import Sequence
 
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
+
+_DEFAULT_ARTICLES_DIR = Path("data/raw/wikipedia_articles_10000")
 
 
 @dataclass
@@ -133,8 +136,15 @@ def map_dataset_to_chunks(
     return results
 
 
-def load_chunks_from_collection(collection_name: str) -> list[dict]:
+def load_chunks_from_collection(
+    collection_name: str,
+    articles_dir: str | Path | None = None,
+) -> list[dict]:
     """Load all chunks with char offsets from a Qdrant collection.
+
+    If the collection lacks ``char_start`` / ``char_end`` in its payloads
+    (legacy collections indexed before E6-F12), offsets are recovered
+    on-the-fly from article files in *articles_dir*.
 
     Returns list of dicts with keys: chunk_id, article_id, char_start, char_end.
     """
@@ -158,9 +168,27 @@ def load_chunks_from_collection(collection_name: str) -> list[dict]:
                 "article_id": str(pt.payload.get("pageid", "")),
                 "char_start": pt.payload.get("char_start", 0),
                 "char_end": pt.payload.get("char_end", 0),
+                "content": pt.payload.get("content", ""),
+                "article_title": pt.payload.get("article_title", ""),
+                "chunk_index": pt.payload.get("chunk_index", 0),
             })
         if next_offset is None:
             break
         offset = next_offset
+
+    # Recover offsets for legacy collections that lack char_start/char_end
+    needs_recovery = any(
+        (c.get("char_start") or 0) == 0 and (c.get("char_end") or 0) == 0
+        for c in chunks
+    )
+    if needs_recovery:
+        from src.evaluation.offset_recovery import recover_chunk_offsets
+        recover_chunk_offsets(chunks, articles_dir or _DEFAULT_ARTICLES_DIR)
+
+    # Strip bulky fields not needed downstream
+    for c in chunks:
+        c.pop("content", None)
+        c.pop("article_title", None)
+        c.pop("chunk_index", None)
 
     return chunks

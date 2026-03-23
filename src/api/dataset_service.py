@@ -348,6 +348,15 @@ class DatasetService:
                 break
             offset = next_offset
 
+        # Recover offsets for legacy collections missing char_start/char_end
+        needs_recovery = any(
+            (c.get("char_start") or 0) == 0 and (c.get("char_end") or 0) == 0
+            for c in chunks
+        )
+        if needs_recovery:
+            from src.evaluation.offset_recovery import recover_chunk_offsets
+            recover_chunk_offsets(chunks)
+
         return chunks
 
     def _generate_for_chunk(

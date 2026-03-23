@@ -141,6 +141,22 @@ class SweepService:
                 for q in questions
             )
 
+            # 4a-bis. Recover offsets for legacy datasets where all questions have 0/0
+            if not has_offsets and ds_col:
+                try:
+                    from src.evaluation.offset_recovery import recover_question_offsets
+                    n_recovered = recover_question_offsets(questions, ds_col)
+                    if n_recovered:
+                        has_offsets = True
+                        yield _sse("info", {
+                            "message": (
+                                f"Recovered char offsets for {n_recovered}/{len(questions)} "
+                                f"questions from source collection '{ds_col}'."
+                            ),
+                        })
+                except Exception as exc:
+                    logger.warning("Offset recovery failed: %s", exc)
+
             # 4b. Warn if sweep has multiple chunk configurations
             chunk_combos = {
                 (c.chunking.chunk_size, c.chunking.chunk_overlap)
