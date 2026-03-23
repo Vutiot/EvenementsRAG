@@ -116,6 +116,7 @@ class DatasetService:
                     data = json.load(f)
                 if collection_name and data.get("collection_name") != collection_name:
                     continue
+                cats = data.get("categories", [])
                 datasets.append({
                     "id": data["id"],
                     "name": data["name"],
@@ -123,7 +124,9 @@ class DatasetService:
                     "status": data["status"],
                     "collection_name": data["collection_name"],
                     "total_questions": data.get("total_questions", 0),
-                    "categories": data.get("categories", []),
+                    "categories": cats,
+                    "system_prompt": data.get("system_prompt", ""),
+                    "model": (cats[0].get("model", "") if cats and isinstance(cats[0], dict) else ""),
                 })
             except (json.JSONDecodeError, KeyError) as exc:
                 logger.warning(f"Skipping invalid dataset file {fp}: {exc}")

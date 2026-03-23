@@ -199,10 +199,13 @@ export interface DatasetInfo {
   collection_name: string;
   total_questions: number;
   categories: DatasetCategoryConfig[];
+  system_prompt?: string;
+  model?: string;
 }
 
 export interface DatasetDetail extends DatasetInfo {
   questions: DatasetQuestion[];
+  system_prompt?: string;
   metadata?: {
     total_generated: number;
     unique_articles: number;

@@ -179,6 +179,8 @@ class DatasetInfo(BaseModel):
     collection_name: str
     total_questions: int
     categories: list[dict]
+    system_prompt: str = ""
+    model: str = ""
 
 
 class DatasetListResponse(BaseModel):
@@ -194,6 +196,8 @@ class DatasetDetail(BaseModel):
     total_questions: int
     categories: list[dict]
     questions: list[dict]
+    system_prompt: str = ""
+    metadata: dict | None = None
 
 
 class BenchmarkRunRequest(BaseModel):

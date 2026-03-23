@@ -88,9 +88,9 @@ graph TD
   E6F12T3["✅ E6-F12-T3: Wire mapping into benchmark/sweep"]
   E6F12T4["✅ E6-F12-T4: UI indicator for mapped evaluation"]
 
-  E6F13T1["⚪ E6-F13-T1: Redesign dataset list as table"]
-  E6F13T2["🔵 E6-F13-T2: Update dataset naming convention"]
-  E6F13T3["⚪ E6-F13-T3: Dataset detail row expansion"]
+  E6F13T1["✅ E6-F13-T1: Redesign dataset list as table"]
+  E6F13T2["✅ E6-F13-T2: Update dataset naming convention"]
+  E6F13T3["✅ E6-F13-T3: Dataset detail row expansion"]
 
   E6F14T1["🔵 E6-F14-T1: Add created_at to collection API"]
   E6F14T2["⚪ E6-F14-T2: Creation Time column in CollectionManager"]
@@ -164,9 +164,9 @@ graph TD
   style E6F12T2 fill:#22c55e
   style E6F12T3 fill:#22c55e
   style E6F12T4 fill:#22c55e
-  style E6F13T1 fill:#6b7280
-  style E6F13T2 fill:#3b82f6
-  style E6F13T3 fill:#6b7280
+  style E6F13T1 fill:#22c55e
+  style E6F13T2 fill:#22c55e
+  style E6F13T3 fill:#22c55e
   style E6F14T1 fill:#3b82f6
   style E6F14T2 fill:#6b7280
   style E6F14T3 fill:#3b82f6
@@ -496,23 +496,23 @@ Store character offsets in eval questions and use overlap matching to map ground
 
 Redesign the eval dataset list in DatasetManager from its current card/row layout into a proper data table matching RunHistoryTable conventions. Update dataset naming to `PresetName_timestamp`. Add expand/collapse for categories and inline detail expansion.
 
-##### 🔵 E6-F13-T2: Update dataset naming convention
+##### ✅ E6-F13-T2: Update dataset naming convention
 - blocked_by: []
-- status: ready
+- status: done
 - effort: S
 - agent_hint: In `DatasetManager.tsx`, find where `datasetName` is computed from preset name + collection name + count. Change to `"{PresetName}_{YYYYMMDD_HHmmss}"`. The preset name comes from the active `CategoryPreset.name`. No backend change needed (name is passed through `DatasetCreateRequest.name`).
 - description: Dataset names become `PresetName_timestamp` instead of `PresetName_CollectionName_Nq`. Shorter and avoids embedding collection params in the name.
 
-##### ⚪ E6-F13-T1: Redesign dataset list as table
+##### ✅ E6-F13-T1: Redesign dataset list as table
 - blocked_by: [E6-F13-T2]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: (1) In `DatasetManager.tsx`, replace the "Existing Evaluation Sets" card rows with `overflow-x-auto <table>`. Columns: Name (sticky left, `font-mono text-xs`), Creation Time (`formatTimestamp` helper), Source Collection (`font-mono text-xs`), Categories (colored pills via `hashColor()` -- show first 3 types, "+N more" expandable on click using `useState<Set<string>>`), Model (short name extracted from category model field, e.g. "nemotron-3-nano" from full path), System Prompt (truncate ~80 chars with `title` tooltip for full text), Questions (count), Status (green/amber/red badge), Actions (delete). (2) Backend: in `dataset_service.py` `list_datasets()`, add `system_prompt` and `model` to returned dict. (3) Update `DatasetInfo` in schemas.py (`system_prompt: str = ""`, `model: str = ""`) and types.ts. (4) Match RunHistoryTable header styling: `text-xs font-medium text-gray-500 uppercase tracking-wider`.
 - description: Proper data table for eval datasets with metadata columns. Categories use expandable pill badges. System prompt shows truncated preview with tooltip.
 
-##### ⚪ E6-F13-T3: Dataset detail row expansion
+##### ✅ E6-F13-T3: Dataset detail row expansion
 - blocked_by: [E6-F13-T1]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: In the new table, clicking a row expands an inline `<tr>` with `<td colSpan={N}>` containing: full system prompt in `<pre>`, complete category details with generated/total counts, scrollable question list (reuse existing rendering). Toggle: click again collapses; only one row expanded at a time (`expandedId` state). Chevron icon rotates on expand. Same UX pattern as RunHistoryTable sweep rows.
 - description: Inline detail expansion for dataset rows showing full system prompt, category breakdown, and question list.
