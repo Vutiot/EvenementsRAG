@@ -136,7 +136,7 @@ function buildDisplayRows(results: ResultFileInfo[]): DisplayRow[] {
 /* Constants                                                           */
 /* ------------------------------------------------------------------ */
 
-const TOTAL_COLS = 27;
+const TOTAL_COLS = 28;
 
 const stickyCls = "sticky left-0 z-10 bg-white";
 const stickyStyle: React.CSSProperties = {
@@ -273,6 +273,7 @@ export default function RunHistoryTable({ results, activeRun }: Props) {
             <th className="px-3 py-2 text-right">Doc P@5</th>
             <th className="px-3 py-2 text-right">Doc MRR</th>
             <th className="px-3 py-2 text-right">Ctx Prec</th>
+            <th className="px-3 py-2 text-right">Ent R@5</th>
             <th className="px-3 py-2 text-right">Time</th>
           </tr>
         </thead>
@@ -476,6 +477,9 @@ function NormalRow({
       <td className="px-3 py-2 text-right font-mono text-gray-700">
         {fmt(r.avg_context_precision)}
       </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_entity_recall_at_5)}
+      </td>
       <td className="px-3 py-2 text-right text-gray-500">
         {fmtTime(r.total_wall_time_s)}
       </td>
@@ -575,6 +579,7 @@ function SweepParentRow({
       <td className="px-3 py-2 text-right font-mono text-gray-300"></td>
       <td className="px-3 py-2 text-right font-mono text-gray-300"></td>
       <td className="px-3 py-2 text-right font-mono text-gray-300"></td>
+      <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
@@ -688,6 +693,9 @@ function SweepChildRow({
       </td>
       <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
         {fmt(r.avg_context_precision)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_entity_recall_at_5)}
       </td>
       <td className={`px-3 py-2 text-right ${isBest ? "text-green-600 font-semibold" : "text-gray-500"}`}>
         {fmtTime(r.total_wall_time_s)}

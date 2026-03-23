@@ -26,12 +26,20 @@ function PrecisionTiers({ result }: { result: NormalizedBenchmarkResult }) {
     | undefined;
   const ctxPrec = ragasAgg?.avg_context_precision as number | undefined;
 
+  const entityAgg = result.metrics_summary?.entity as
+    | Record<string, unknown>
+    | undefined;
+  const entP5 = entityAgg?.avg_entity_precision_at_5 as number | undefined;
+  const entR5 = entityAgg?.avg_entity_recall_at_5 as number | undefined;
+  const entMrr = entityAgg?.avg_entity_mrr as number | undefined;
+
   // Only show if at least one tier has data
   const hasDocTier = docP5 != null || docMrr != null || docRecall5 != null;
   const hasChunkTier = chunkP5 != null || chunkHit5 != null;
   const hasCtxTier = ctxPrec != null;
+  const hasEntityTier = entP5 != null || entR5 != null || entMrr != null;
 
-  if (!hasDocTier && !hasChunkTier && !hasCtxTier) return null;
+  if (!hasDocTier && !hasChunkTier && !hasCtxTier && !hasEntityTier) return null;
 
   const fmtVal = (v: number | null | undefined): string =>
     v != null ? v.toFixed(4) : "\u2014";
@@ -41,7 +49,7 @@ function PrecisionTiers({ result }: { result: NormalizedBenchmarkResult }) {
       <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-slate-400">
         Precision Tiers
       </h3>
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {/* Tier 1: Document-level */}
         <div className="rounded border border-purple-100 bg-purple-50/30 p-3">
           <p className="text-[10px] font-semibold uppercase tracking-wider text-purple-500 mb-2">
@@ -93,6 +101,27 @@ function PrecisionTiers({ result }: { result: NormalizedBenchmarkResult }) {
             <div className="flex justify-between">
               <span className="text-slate-500">Ctx Precision</span>
               <span className="font-mono font-medium text-slate-800">{fmtVal(ctxPrec)}</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Tier 4: Entity-level (LLM NER) */}
+        <div className="rounded border border-emerald-100 bg-emerald-50/30 p-3">
+          <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 mb-2">
+            Tier 4 &mdash; Entity (NER)
+          </p>
+          <div className="space-y-1 text-sm">
+            <div className="flex justify-between">
+              <span className="text-slate-500">Ent P@5</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(entP5)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Ent R@5</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(entR5)}</span>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-slate-500">Ent MRR</span>
+              <span className="font-mono font-medium text-slate-800">{fmtVal(entMrr)}</span>
             </div>
           </div>
         </div>

@@ -357,6 +357,7 @@ class SweepService:
                 result_files.append(rel_filename)
 
                 ctx_prec = result.metrics_summary.get("ragas", {}).get("avg_context_precision")
+                ent_r5 = result.metrics_summary.get("entity", {}).get("avg_entity_recall_at_5")
 
                 yield _sse("config_complete", {
                     "config_index": config_index + 1,
@@ -370,6 +371,7 @@ class SweepService:
                     "avg_doc_mrr": round(result.evaluation.avg_doc_mrr, 4),
                     "avg_doc_precision_at_5": round(result.evaluation.avg_doc_precision_at_k.get(5, 0.0), 4),
                     "avg_context_precision": round(ctx_prec, 4) if ctx_prec is not None else None,
+                    "avg_entity_recall_at_5": round(ent_r5, 4) if ent_r5 is not None else None,
                     "total_wall_time_s": round(result.total_wall_time_s, 2),
                 })
 

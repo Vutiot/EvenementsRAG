@@ -65,6 +65,11 @@ class RetrievalMetrics:
     chunk_precision_at_5: float = 0.0
     chunk_precision_at_10: float = 0.0
 
+    # Entity-level metrics (LLM-based NER, E6-F15)
+    entity_precision_at_5: float = 0.0
+    entity_recall_at_5: float = 0.0
+    entity_mrr: float = 0.0
+
     # -- Derived binary hit properties (backward-compatible) ----------------
 
     @property
@@ -139,6 +144,11 @@ class EvaluationResults:
 
     # Chunk-level precision averages
     avg_chunk_precision_at_k: Dict[int, float] = field(default_factory=dict)
+
+    # Entity-level metric averages (E6-F15)
+    avg_entity_precision_at_5: float = 0.0
+    avg_entity_recall_at_5: float = 0.0
+    avg_entity_mrr: float = 0.0
 
     # Per-question-type breakdown
     metrics_by_type: Dict[str, RetrievalMetrics] = field(default_factory=dict)
@@ -456,6 +466,81 @@ def doc_mrr_score(
     return 1.0 / rank if rank is not None else 0.0
 
 
+def entity_recall_at_k(
+    retrieved_texts: List[str],
+    ground_truth_text: str,
+    k: int,
+    extractor,
+) -> float:
+    """Entity recall@K: fraction of ground-truth entities found in top-K retrieved texts.
+
+    Args:
+        retrieved_texts: Chunk text contents (ordered by relevance).
+        ground_truth_text: Reference text containing expected entities.
+        k: Number of top results to consider.
+        extractor: EntityExtractor instance.
+
+    Returns:
+        Recall between 0.0 and 1.0.
+    """
+    gt_entities = extractor.extract_entities(ground_truth_text)
+    if not gt_entities:
+        return 0.0
+    combined = " ".join(retrieved_texts[:k])
+    ret_entities = extractor.extract_entities(combined)
+    return len(gt_entities & ret_entities) / len(gt_entities)
+
+
+def entity_precision_at_k(
+    retrieved_texts: List[str],
+    ground_truth_text: str,
+    k: int,
+    extractor,
+) -> float:
+    """Entity precision@K: fraction of retrieved entities that are in ground truth.
+
+    Args:
+        retrieved_texts: Chunk text contents (ordered by relevance).
+        ground_truth_text: Reference text containing expected entities.
+        k: Number of top results to consider.
+        extractor: EntityExtractor instance.
+
+    Returns:
+        Precision between 0.0 and 1.0.
+    """
+    gt_entities = extractor.extract_entities(ground_truth_text)
+    combined = " ".join(retrieved_texts[:k])
+    ret_entities = extractor.extract_entities(combined)
+    if not ret_entities:
+        return 0.0
+    return len(gt_entities & ret_entities) / len(ret_entities)
+
+
+def entity_mrr_score(
+    retrieved_texts: List[str],
+    ground_truth_text: str,
+    extractor,
+) -> float:
+    """Entity MRR: 1/rank of first retrieved chunk containing any ground-truth entity.
+
+    Args:
+        retrieved_texts: Individual chunk text contents (ordered by relevance).
+        ground_truth_text: Reference text containing expected entities.
+        extractor: EntityExtractor instance.
+
+    Returns:
+        MRR between 0.0 and 1.0.
+    """
+    gt_entities = extractor.extract_entities(ground_truth_text)
+    if not gt_entities:
+        return 0.0
+    for i, chunk_text in enumerate(retrieved_texts, 1):
+        chunk_entities = extractor.extract_entities(chunk_text)
+        if gt_entities & chunk_entities:
+            return 1.0 / i
+    return 0.0
+
+
 def compute_retrieval_metrics(
     retrieved_chunks: List[str],
     ground_truth_chunks: List[str],
@@ -592,6 +677,11 @@ def aggregate_metrics(all_metrics: List[RetrievalMetrics]) -> Dict[str, float]:
         aggregated[f"avg_{cp_attr}"] = sum(getattr(m, cp_attr, 0.0) for m in all_metrics) / n
     aggregated["avg_doc_mrr"] = sum(m.doc_mrr for m in all_metrics) / n
 
+    # Entity-level metrics
+    aggregated["avg_entity_precision_at_5"] = sum(m.entity_precision_at_5 for m in all_metrics) / n
+    aggregated["avg_entity_recall_at_5"] = sum(m.entity_recall_at_5 for m in all_metrics) / n
+    aggregated["avg_entity_mrr"] = sum(m.entity_mrr for m in all_metrics) / n
+
     return aggregated
 
 
@@ -648,6 +738,9 @@ def compute_metrics_by_type(
             chunk_precision_at_3=sum(m.chunk_precision_at_3 for m in metrics_list) / n,
             chunk_precision_at_5=sum(m.chunk_precision_at_5 for m in metrics_list) / n,
             chunk_precision_at_10=sum(m.chunk_precision_at_10 for m in metrics_list) / n,
+            entity_precision_at_5=sum(m.entity_precision_at_5 for m in metrics_list) / n,
+            entity_recall_at_5=sum(m.entity_recall_at_5 for m in metrics_list) / n,
+            entity_mrr=sum(m.entity_mrr for m in metrics_list) / n,
         )
         averaged_by_type[q_type] = averaged
 

@@ -603,6 +603,33 @@ export default function ParameterModal({
                 />
               </button>
             </div>
+            <div className="flex items-center justify-between mt-3">
+              <div>
+                <span className="text-sm font-medium text-gray-700">Entity Metrics (LLM NER)</span>
+                <p className="text-xs text-gray-400">Entity precision/recall via LLM entity extraction</p>
+              </div>
+              <button
+                onClick={() =>
+                  handleChange(
+                    "evaluation.compute_entity_metrics",
+                    !(effective("evaluation.compute_entity_metrics") as boolean),
+                  )
+                }
+                className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
+                  (effective("evaluation.compute_entity_metrics") as boolean)
+                    ? "bg-blue-600"
+                    : "bg-gray-200"
+                }`}
+              >
+                <span
+                  className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
+                    (effective("evaluation.compute_entity_metrics") as boolean)
+                      ? "translate-x-6"
+                      : "translate-x-1"
+                  }`}
+                />
+              </button>
+            </div>
           </Section>
           )}
 

@@ -255,6 +255,7 @@ export default function ExecutionPanel({
                 <th className="pb-1.5 pr-2">Params</th>
                 <th className="pb-1.5 pr-2 text-right">Doc MRR</th>
                 <th className="pb-1.5 pr-2 text-right">Ctx Prec</th>
+                <th className="pb-1.5 pr-2 text-right">Ent R@5</th>
                 <th className="pb-1.5 pr-2 text-right">Time</th>
                 <th className="pb-1.5">Status</th>
               </tr>
@@ -277,6 +278,9 @@ export default function ExecutionPanel({
                   </td>
                   <td className="py-1 pr-2 text-right font-mono">
                     {r.status === "ok" ? (r.avg_context_precision?.toFixed(4) ?? "\u2014") : "\u2014"}
+                  </td>
+                  <td className="py-1 pr-2 text-right font-mono">
+                    {r.status === "ok" ? (r.avg_entity_recall_at_5?.toFixed(4) ?? "\u2014") : "\u2014"}
                   </td>
                   <td className="py-1 pr-2 text-right font-mono">
                     {r.status === "ok" ? `${r.total_wall_time_s?.toFixed(1)}s` : "\u2014"}
