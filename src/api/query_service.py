@@ -191,6 +191,8 @@ class QueryService:
 
             full_answer_parts: list[str] = []
             for chunk in stream:
+                if not chunk.choices:
+                    continue
                 delta = chunk.choices[0].delta
                 if delta.content:
                     full_answer_parts.append(delta.content)
