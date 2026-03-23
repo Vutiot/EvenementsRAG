@@ -83,10 +83,10 @@ graph TD
   E6F11T1["✅ E6-F11-T1: Filter eval datasets by collection"]
   E6F11T2["✅ E6-F11-T2: Runtime eval dataset warning"]
 
-  E6F12T1["🔵 E6-F12-T1: Store char offsets in eval dataset"]
-  E6F12T2["⚪ E6-F12-T2: Chunk overlap mapping function"]
-  E6F12T3["⚪ E6-F12-T3: Wire mapping into benchmark/sweep"]
-  E6F12T4["⚪ E6-F12-T4: UI indicator for mapped evaluation"]
+  E6F12T1["✅ E6-F12-T1: Store char offsets in eval dataset"]
+  E6F12T2["✅ E6-F12-T2: Chunk overlap mapping function"]
+  E6F12T3["✅ E6-F12-T3: Wire mapping into benchmark/sweep"]
+  E6F12T4["✅ E6-F12-T4: UI indicator for mapped evaluation"]
 
   E6F13T1["⚪ E6-F13-T1: Redesign dataset list as table"]
   E6F13T2["🔵 E6-F13-T2: Update dataset naming convention"]
@@ -160,10 +160,10 @@ graph TD
   style E6F10T3 fill:#22c55e
   style E6F11T1 fill:#22c55e
   style E6F11T2 fill:#22c55e
-  style E6F12T1 fill:#3b82f6
-  style E6F12T2 fill:#6b7280
-  style E6F12T3 fill:#6b7280
-  style E6F12T4 fill:#6b7280
+  style E6F12T1 fill:#22c55e
+  style E6F12T2 fill:#22c55e
+  style E6F12T3 fill:#22c55e
+  style E6F12T4 fill:#22c55e
   style E6F13T1 fill:#6b7280
   style E6F13T2 fill:#3b82f6
   style E6F13T3 fill:#6b7280
@@ -462,30 +462,30 @@ Ensure eval datasets are correctly filtered based on collection compatibility. I
 
 Store character offsets in eval questions and use overlap matching to map ground truth to any collection's chunks. When benchmark/sweep collection differs from the eval dataset's source, automatically map questions via `char_start`/`char_end` overlap (Stage 2 from `inspiration/rag_eval_prompt.md`). This makes chunk-level metrics valid across all chunking configurations.
 
-##### 🔵 E6-F12-T1: Store char offsets in eval dataset generation
+##### ✅ E6-F12-T1: Store char offsets in eval dataset generation
 - blocked_by: []
-- status: ready
+- status: done
 - effort: M
 - agent_hint: (1) In `src/preprocessing/text_chunker.py` `chunk_document()`, after generating chunks compute `char_start` for each chunk by `content.find(chunk_text, search_from)` advancing `search_from` past each match; set `char_end = char_start + len(chunk_text)`. Fall back to cumulative offset if `find()` returns -1. (2) In `src/vector_store/indexer.py` `prepare_for_indexing()`, add `"char_start": chunk.get("char_start", 0), "char_end": chunk.get("char_end", 0)` to payload. (3) In `src/api/dataset_service.py` `_load_chunks()`, extract `char_start`/`char_end` from payload; in `_generate_for_chunk()`, save `q["char_start"]`, `q["char_end"]`, `q["source_doc_id"]`. (4) Update `DatasetQuestion` in `frontend/src/api/types.ts` with optional `char_start`, `char_end`, `source_doc_id`. (5) Handle legacy datasets/collections gracefully (0 = no offset data).
 - description: During eval question generation, extract char offsets from source chunks and save in each question record. Requires adding offset tracking to the chunker and indexer payload. Foundation for the mapping mechanism.
 
-##### ⚪ E6-F12-T2: Implement chunk overlap mapping function
+##### ✅ E6-F12-T2: Implement chunk overlap mapping function
 - blocked_by: [E6-F12-T1]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Create `src/evaluation/dataset_mapper.py`. `MappedGroundTruth` dataclass: `question_id, question, expected_answer_hint, source_doc_id, char_start, char_end, relevant_chunk_ids: list[str]`. Main function `map_dataset_to_chunks(eval_questions, target_chunks, overlap_threshold=0.5) -> list[MappedGroundTruth]`. Per question: filter target chunks by matching `source_doc_id`/`source_article_id`; compute `overlap_ratio = max(0, min(q.char_end, c.char_end) - max(q.char_start, c.char_start)) / (q.char_end - q.char_start)`; include chunk if `>= threshold`. Fallback to threshold/2 if no matches, then to original `source_chunk_id`. Add `load_chunks_from_collection(collection_name)` helper wrapping Qdrant scroll. Tests: `tests/unit/evaluation/test_dataset_mapper.py`.
 - description: Overlap matching algorithm from `inspiration/rag_eval_prompt.md` Stage 2. Maps eval questions to target collection chunks using character offset overlap ratios.
 
-##### ⚪ E6-F12-T3: Wire mapping into benchmark/sweep execution
+##### ✅ E6-F12-T3: Wire mapping into benchmark/sweep execution
 - blocked_by: [E6-F12-T1, E6-F12-T2]
-- status: pending
+- status: done
 - effort: L
 - agent_hint: (1) In `src/api/benchmark_service.py`, after mismatch detection: if questions have `char_start`/`char_end`, call `map_dataset_to_chunks()` and build `mapped_ground_truth: dict[question_id, list[chunk_id]]`. Yield SSE `info` event with mapping stats. (2) Add optional `mapped_ground_truth` param to `ParameterizedBenchmarkRunner.run()` and `BenchmarkRunner.run_benchmark_on_questions()`. Use mapped chunk IDs for retrieval metrics when provided. (3) Same logic in `src/api/sweep_service.py` with per-collection caching to avoid re-mapping. (4) Store `evaluation_mode: "direct" | "mapped"` in result JSON. (5) Fall back to warning-only for legacy datasets without offsets.
 - description: When eval dataset collection mismatches benchmark/sweep collection, automatically map via char offsets. Replaces warning-only behavior with valid cross-collection chunk-level evaluation.
 
-##### ⚪ E6-F12-T4: UI indicator for mapped vs direct evaluation
+##### ✅ E6-F12-T4: UI indicator for mapped vs direct evaluation
 - blocked_by: [E6-F12-T3]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: (1) Add `evaluation_mode?: "direct" | "mapped"` to `ResultFileInfo` (types.ts + schemas.py). (2) Extract from result JSON in results parsing. (3) In RunHistoryTable, show blue "Mapped" pill badge next to eval dataset name when mapped, subtle green "Direct" otherwise. Tooltip explains mapping. (4) Show info SSE event as blue banner during execution.
 - description: Visual indicator in RunHistoryTable and execution progress showing whether chunk metrics used direct or mapped evaluation.

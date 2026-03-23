@@ -50,6 +50,7 @@ export interface ResultFileInfo {
   sweep_meta: SweepMeta | null;
   run_name: string | null;
   eval_dataset_name: string | null;
+  evaluation_mode: "direct" | "mapped" | null;
 }
 
 /** Sweep metadata for grouped sweep runs */
@@ -219,6 +220,9 @@ export interface DatasetQuestion {
   source_article_id: string;
   source_chunk_id: string;
   source_chunk_index?: number;
+  source_doc_id?: string;
+  char_start?: number;
+  char_end?: number;
   model: string;
   generated_at: string;
 }

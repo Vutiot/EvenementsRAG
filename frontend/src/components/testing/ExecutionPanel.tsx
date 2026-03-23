@@ -16,8 +16,9 @@ export interface ExecutionPanelProps {
   // Benchmark-specific
   benchPhase?: BenchPhase;
   activeRun?: ActiveRun | null;
-  // Warnings
+  // Warnings & info messages
   warnings?: string[];
+  infoMessages?: string[];
   // Sweep-specific
   combinationCount?: number;
   sweepPhase?: SweepPhase;
@@ -39,6 +40,7 @@ export default function ExecutionPanel({
   benchPhase,
   activeRun,
   warnings = [],
+  infoMessages = [],
   combinationCount = 1,
   sweepPhase,
   sweepProgress,
@@ -186,6 +188,33 @@ export default function ExecutionPanel({
               />
             </div>
           </div>
+        </div>
+      )}
+
+      {/* ── Info messages (e.g. eval mapping) ── */}
+      {infoMessages.length > 0 && (
+        <div className="mt-3 space-y-2">
+          {infoMessages.map((msg, i) => (
+            <div
+              key={i}
+              className="flex items-start gap-2 rounded border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-800"
+            >
+              <svg
+                className="w-4 h-4 mt-0.5 shrink-0 text-blue-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="m11.25 11.25.041-.02a.75.75 0 0 1 1.063.852l-.708 2.836a.75.75 0 0 0 1.063.853l.041-.021M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9-3.75h.008v.008H12V8.25Z"
+                />
+              </svg>
+              <span>{msg}</span>
+            </div>
+          ))}
         </div>
       )}
 

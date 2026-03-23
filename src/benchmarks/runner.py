@@ -93,6 +93,7 @@ class BenchmarkResult:
     total_wall_time_s: float = 0.0
     metrics_summary: dict = field(default_factory=dict)
     eval_dataset_name: str | None = None
+    evaluation_mode: str = "direct"  # "direct" | "mapped"
 
     def to_dict(self) -> dict:
         """Serialize to a plain dictionary."""
@@ -105,6 +106,7 @@ class BenchmarkResult:
             "per_question_full": self.per_question_full,
             "total_wall_time_s": self.total_wall_time_s,
             "metrics_summary": self.metrics_summary,
+            "evaluation_mode": self.evaluation_mode,
             **({"eval_dataset_name": self.eval_dataset_name} if self.eval_dataset_name else {}),
         }
 
@@ -222,6 +224,8 @@ class ParameterizedBenchmarkRunner:
         output_dir=None,
         progress_callback: Optional[Callable[[int, int, Dict], None]] = None,
         eval_dataset_name: Optional[str] = None,
+        mapped_ground_truth: Optional[Dict[str, List[str]]] = None,
+        evaluation_mode: Optional[str] = None,
     ) -> BenchmarkResult:
         """Run a full benchmark and return a BenchmarkResult.
 
@@ -273,6 +277,7 @@ class ParameterizedBenchmarkRunner:
             phase_name=self.config.name,
             max_questions=max_questions,
             progress_callback=progress_callback,
+            mapped_ground_truth=mapped_ground_truth,
         )
 
         # Work on a mutable copy of per-question results
@@ -336,6 +341,7 @@ class ParameterizedBenchmarkRunner:
             total_wall_time_s=time.time() - wall_start,
             metrics_summary=collector.get_summary(),
             eval_dataset_name=eval_dataset_name,
+            evaluation_mode=evaluation_mode or "direct",
         )
 
         if output_dir is not None:

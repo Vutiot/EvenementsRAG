@@ -120,12 +120,14 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         if sm and isinstance(sm, dict):
             sweep_meta = sm
 
-    # Extract run name and eval dataset name
+    # Extract run name, eval dataset name, and evaluation mode
     run_name = None
     eval_dataset_name = None
+    evaluation_mode = None
     if is_new_format:
         run_name = data.get("config", {}).get("name")
         eval_dataset_name = data.get("eval_dataset_name")
+        evaluation_mode = data.get("evaluation_mode")
 
     # Store path relative to RESULTS_DIR so frontend can fetch subdirectory files
     try:
@@ -151,6 +153,7 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         sweep_meta=sweep_meta,
         run_name=run_name,
         eval_dataset_name=eval_dataset_name,
+        evaluation_mode=evaluation_mode,
     )
     _file_info_cache[cache_key] = (mtime, info)
     return info

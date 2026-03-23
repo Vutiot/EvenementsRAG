@@ -338,6 +338,8 @@ class DatasetService:
                     "article_title": pt.payload.get("article_title", ""),
                     "article_id": str(pt.payload.get("pageid", "")),
                     "chunk_index": pt.payload.get("chunk_index", 0),
+                    "char_start": pt.payload.get("char_start", 0),
+                    "char_end": pt.payload.get("char_end", 0),
                 })
             if next_offset is None:
                 break
@@ -425,6 +427,9 @@ Output ONLY the JSON array, no other text:
             q["source_chunk_index"] = chunk.get("chunk_index", 0)
             q["source_article"] = chunk["article_title"]
             q["source_article_id"] = chunk["article_id"]
+            q["source_doc_id"] = chunk["article_id"]
+            q["char_start"] = chunk.get("char_start", 0)
+            q["char_end"] = chunk.get("char_end", 0)
             q["generated_at"] = datetime.now().isoformat()
             q["model"] = cat.model
 

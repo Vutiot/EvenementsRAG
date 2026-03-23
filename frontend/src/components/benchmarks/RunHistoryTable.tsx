@@ -420,7 +420,23 @@ function NormalRow({
         {r.config_summary?.dataset_name ?? "\u2014"}
       </td>
       <td className="px-3 py-2 text-xs text-gray-500">
-        {r.eval_dataset_name ?? "\u2014"}
+        <span>{r.eval_dataset_name ?? "\u2014"}</span>
+        {r.evaluation_mode === "mapped" && (
+          <span
+            className="ml-1.5 inline-block rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
+            title="Chunk metrics were mapped from the source collection via char-offset overlap"
+          >
+            Mapped
+          </span>
+        )}
+        {r.evaluation_mode === "direct" && r.eval_dataset_name && (
+          <span
+            className="ml-1.5 inline-block rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-600"
+            title="Eval dataset matches the benchmark collection — chunk metrics are direct"
+          >
+            Direct
+          </span>
+        )}
       </td>
       <td className="px-3 py-2">
         {r.config_summary?.technique ? (
@@ -515,7 +531,23 @@ function SweepParentRow({
         {cs?.dataset_name ?? "\u2014"}
       </td>
       <td className="px-3 py-2 text-xs text-gray-500">
-        {r.eval_dataset_name ?? "\u2014"}
+        <span>{r.eval_dataset_name ?? "\u2014"}</span>
+        {r.evaluation_mode === "mapped" && (
+          <span
+            className="ml-1.5 inline-block rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
+            title="Chunk metrics were mapped from the source collection via char-offset overlap"
+          >
+            Mapped
+          </span>
+        )}
+        {r.evaluation_mode === "direct" && r.eval_dataset_name && (
+          <span
+            className="ml-1.5 inline-block rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-600"
+            title="Eval dataset matches the benchmark collection — chunk metrics are direct"
+          >
+            Direct
+          </span>
+        )}
       </td>
       <td className="px-3 py-2">
         {cs?.technique ? (
@@ -604,7 +636,23 @@ function SweepChildRow({
         {r.config_summary?.dataset_name ?? "\u2014"}
       </td>
       <td className="px-3 py-2 text-xs text-gray-500">
-        {r.eval_dataset_name ?? "\u2014"}
+        <span>{r.eval_dataset_name ?? "\u2014"}</span>
+        {r.evaluation_mode === "mapped" && (
+          <span
+            className="ml-1.5 inline-block rounded-full bg-blue-100 px-1.5 py-0.5 text-[10px] font-medium text-blue-700"
+            title="Chunk metrics were mapped from the source collection via char-offset overlap"
+          >
+            Mapped
+          </span>
+        )}
+        {r.evaluation_mode === "direct" && r.eval_dataset_name && (
+          <span
+            className="ml-1.5 inline-block rounded-full bg-green-50 px-1.5 py-0.5 text-[10px] font-medium text-green-600"
+            title="Eval dataset matches the benchmark collection — chunk metrics are direct"
+          >
+            Direct
+          </span>
+        )}
       </td>
       <td className="px-3 py-2">
         {r.config_summary?.technique ? (

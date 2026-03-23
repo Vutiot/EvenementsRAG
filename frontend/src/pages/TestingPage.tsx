@@ -96,8 +96,9 @@ export default function TestingPage() {
   const [sweepResults, setSweepResults] = useState<SweepConfigCompleteEvent[]>([]);
   const [sweepAbort, setSweepAbort] = useState<AbortController | null>(null);
 
-  // ── Warning state (shared by benchmark & sweep) ─────────────────
+  // ── Warning & info state (shared by benchmark & sweep) ──────────
   const [warnings, setWarnings] = useState<string[]>([]);
+  const [infoMessages, setInfoMessages] = useState<string[]>([]);
 
   // ── Collection preview state (sweep) ────────────────────────────
   const [existingCollections, setExistingCollections] = useState<CollectionInfo[]>([]);
@@ -206,6 +207,7 @@ export default function TestingPage() {
   const handleModeChange = useCallback((newMode: TestingMode) => {
     setError(null);
     setWarnings([]);
+    setInfoMessages([]);
     setMode(newMode);
   }, []);
 
@@ -381,6 +383,7 @@ export default function TestingPage() {
     setBenchPhase("ensuring");
     setError(null);
     setWarnings([]);
+    setInfoMessages([]);
     setActiveRun({ status: "running", progress: { current: 0, total: 0 } });
 
     let finalOverrides: Record<string, unknown> =
@@ -428,6 +431,9 @@ export default function TestingPage() {
         onWarning: (e) => {
           setWarnings((prev) => [...prev, e.message]);
         },
+        onInfo: (e) => {
+          setInfoMessages((prev) => [...prev, e.message]);
+        },
         onProgress: (e) => {
           setActiveRun({
             status: "running",
@@ -468,6 +474,7 @@ export default function TestingPage() {
     setSweepResults([]);
     setError(null);
     setWarnings([]);
+    setInfoMessages([]);
 
     const controller = runSweep(
       {
@@ -480,6 +487,9 @@ export default function TestingPage() {
       {
         onWarning: (e) => {
           setWarnings((prev) => [...prev, e.message]);
+        },
+        onInfo: (e) => {
+          setInfoMessages((prev) => [...prev, e.message]);
         },
         onSweepStarted: (e) => {
           setSweepProgress({
@@ -714,6 +724,7 @@ export default function TestingPage() {
             benchPhase={benchPhase}
             activeRun={activeRun}
             warnings={warnings}
+            infoMessages={infoMessages}
           />
           {error && mode === "benchmark" && (
             <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
@@ -749,6 +760,7 @@ export default function TestingPage() {
             sweepProgress={sweepProgress}
             sweepResults={sweepResults}
             warnings={warnings}
+            infoMessages={infoMessages}
           />
           {error && mode === "sweep" && (
             <div className="rounded border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

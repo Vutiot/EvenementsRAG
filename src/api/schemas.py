@@ -76,6 +76,7 @@ class ResultFileInfo(BaseModel):
     sweep_meta: dict | None = None  # {sweep_id, child_filenames, swept_params}
     run_name: str | None = None
     eval_dataset_name: str | None = None
+    evaluation_mode: str | None = None  # "direct" | "mapped"
 
 
 class NormalizedQuestion(BaseModel):

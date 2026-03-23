@@ -168,6 +168,8 @@ class DocumentIndexer:
                 "pageid": chunk.get("pageid"),
                 "token_count": chunk.get("token_count", 0),
                 "char_count": chunk.get("char_count", 0),
+                "char_start": chunk.get("char_start", 0),
+                "char_end": chunk.get("char_end", 0),
                 "embedding_model": chunk.get("embedding_model", ""),
                 "chunk_id": chunk_identifier,  # Store original ID for reference
             }

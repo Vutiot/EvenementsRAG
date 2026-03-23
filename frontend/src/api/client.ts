@@ -315,6 +315,7 @@ export function runBenchmark(
     onProgress: (e: BenchmarkProgressEvent) => void;
     onComplete: (e: BenchmarkCompleteEvent) => void;
     onWarning?: (e: WarningEvent) => void;
+    onInfo?: (e: WarningEvent) => void;
     onError: (msg: string) => void;
   },
 ): AbortController {
@@ -360,6 +361,7 @@ export function runBenchmark(
             const data = JSON.parse(line.slice(6));
             if (currentEvent === "started") callbacks.onStarted(data);
             else if (currentEvent === "warning") callbacks.onWarning?.(data);
+            else if (currentEvent === "info") callbacks.onInfo?.(data);
             else if (currentEvent === "progress") callbacks.onProgress(data);
             else if (currentEvent === "complete") callbacks.onComplete(data);
             else if (currentEvent === "error") callbacks.onError(data.message);
@@ -393,6 +395,7 @@ export function runSweep(
     onConfigComplete: (e: SweepConfigCompleteEvent) => void;
     onSweepComplete: (e: SweepCompleteEvent) => void;
     onWarning?: (e: WarningEvent) => void;
+    onInfo?: (e: WarningEvent) => void;
     onError: (msg: string) => void;
   },
 ): AbortController {
@@ -439,6 +442,9 @@ export function runSweep(
             switch (currentEvent) {
               case "warning":
                 callbacks.onWarning?.(data);
+                break;
+              case "info":
+                callbacks.onInfo?.(data);
                 break;
               case "sweep_started":
                 callbacks.onSweepStarted(data);

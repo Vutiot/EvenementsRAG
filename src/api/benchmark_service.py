@@ -95,16 +95,50 @@ class BenchmarkService:
             total_questions = len(questions)
             eval_dataset_name = ds_data.get("name", request.eval_dataset_id)
 
-            # Check eval dataset collection compatibility
+            # Check eval dataset collection compatibility & attempt mapping
             ds_col = ds_data.get("collection_name")
+            mapped_ground_truth: dict[str, list[str]] | None = None
+            evaluation_mode = "direct"
+
             if ds_col and ds_col != col_name:
-                yield _sse("warning", {
-                    "message": (
-                        f"Eval dataset was generated from collection '{ds_col}' "
-                        f"but benchmark uses '{col_name}'. "
-                        "Chunk-ID metrics may be unreliable."
-                    ),
-                })
+                # Check if questions have char offsets for mapping
+                has_offsets = any(
+                    q.get("char_start", 0) != 0 or q.get("char_end", 0) != 0
+                    for q in questions
+                )
+                if has_offsets:
+                    try:
+                        from src.evaluation.dataset_mapper import (
+                            load_chunks_from_collection,
+                            map_dataset_to_chunks,
+                        )
+                        target_chunks = load_chunks_from_collection(col_name)
+                        mapped = map_dataset_to_chunks(questions, target_chunks)
+                        mapped_ground_truth = {
+                            m.question_id: m.relevant_chunk_ids
+                            for m in mapped
+                            if m.relevant_chunk_ids
+                        }
+                        evaluation_mode = "mapped"
+                        yield _sse("info", {
+                            "message": (
+                                f"Mapped {len(mapped_ground_truth)}/{len(questions)} questions "
+                                f"from '{ds_col}' to '{col_name}' via char-offset overlap."
+                            ),
+                        })
+                    except Exception as exc:
+                        logger.warning(f"Eval mapping failed, falling back to warning: {exc}")
+                        mapped_ground_truth = None
+                        evaluation_mode = "direct"
+
+                if evaluation_mode == "direct":
+                    yield _sse("warning", {
+                        "message": (
+                            f"Eval dataset was generated from collection '{ds_col}' "
+                            f"but benchmark uses '{col_name}'. "
+                            "Chunk-ID metrics may be unreliable."
+                        ),
+                    })
 
             yield _sse("started", {
                 "total_questions": total_questions,
@@ -159,6 +193,8 @@ class BenchmarkService:
                         output_dir=RESULTS_DIR,
                         progress_callback=_progress_callback,
                         eval_dataset_name=eval_dataset_name,
+                        mapped_ground_truth=mapped_ground_truth,
+                        evaluation_mode=evaluation_mode,
                     )
                     result_holder.append(result)
                 except Exception as exc:

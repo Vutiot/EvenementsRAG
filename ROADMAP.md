@@ -1000,6 +1000,17 @@ Rationale: the `/runs` route is a history-only view under the "Results" sidebar 
 **Removed non-streaming `executeQuery()` from API client.**
 Rationale: superseded by `executeQueryStreaming()` used by `TestingPage`. Keeping the dead export risks developers using the inferior synchronous variant instead of the streaming one.
 
+### E6-F12 — Eval Dataset Mapping (Cross-Collection Evaluation)
+
+**Char offsets tracked from chunker through indexer to eval questions.**
+`TextChunker.chunk_document()` computes `char_start`/`char_end` for each chunk by `content.find()` with advancing `search_from`. Stored in Qdrant payload and propagated to eval dataset questions via `dataset_service._generate_for_chunk()`.
+
+**Overlap mapping uses a two-tier fallback strategy.** `map_dataset_to_chunks()` first matches at `overlap_threshold` (default 0.5), falls back to `threshold/2` if no matches, then to original `source_chunk_id`. This handles edge cases where chunking boundaries shift dramatically.
+
+**Mapping is cached per collection in sweep execution.** `sweep_service.py` maintains `_mapping_cache: dict[col_name, dict[q_id, chunk_ids]]` to avoid re-loading and re-mapping the same collection across multiple sweep configs.
+
+**`evaluation_mode: "direct" | "mapped"` stored in result JSON.** Parsed and displayed in RunHistoryTable as pill badges (blue "Mapped" / green "Direct"). Legacy results without the field show neither badge.
+
 ## Notes
 
 - Tasks marked ✅ are **done**

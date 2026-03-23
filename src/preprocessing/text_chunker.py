@@ -291,14 +291,34 @@ class TextChunker:
             )
             text_chunks = text_chunks[:self.max_chunks_per_doc]
 
+        # Compute char offsets for each chunk within the original content
+        search_from = 0
+        char_offsets: list[tuple[int, int]] = []
+        for chunk_text in text_chunks:
+            pos = content.find(chunk_text, search_from)
+            if pos == -1:
+                # Fallback: cumulative offset (structure-based chunking may
+                # have joined paragraphs with "\n\n" that don't appear verbatim)
+                char_start = search_from
+            else:
+                char_start = pos
+            char_end = char_start + len(chunk_text)
+            char_offsets.append((char_start, char_end))
+            search_from = char_start + 1  # advance past start to avoid re-match
+
         # Create chunk objects with metadata
         chunks = []
         for i, chunk_text in enumerate(text_chunks):
+            char_start, char_end = char_offsets[i]
             chunk = {
                 # Content
                 "content": chunk_text,
                 "chunk_index": i,
                 "total_chunks": len(text_chunks),
+
+                # Character offsets within original document
+                "char_start": char_start,
+                "char_end": char_end,
 
                 # Source metadata
                 "title": article_data.get("title", ""),

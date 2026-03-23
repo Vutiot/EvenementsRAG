@@ -230,6 +230,7 @@ class BenchmarkRunner:
         self,
         question: Dict,
         query_result: Dict,
+        ground_truth_override: Optional[List[str]] = None,
     ) -> Dict:
         """
         Evaluate retrieval performance for a single question.
@@ -237,12 +238,18 @@ class BenchmarkRunner:
         Args:
             question: Question dictionary
             query_result: Query result from query_for_question
+            ground_truth_override: If provided, use these chunk IDs as ground
+                truth instead of computing from question metadata (used by
+                cross-collection eval mapping).
 
         Returns:
             Dictionary with question, results, and metrics
         """
         # Get ground truth
-        ground_truth_chunks = self.compute_ground_truth_chunks(question)
+        if ground_truth_override is not None:
+            ground_truth_chunks = ground_truth_override
+        else:
+            ground_truth_chunks = self.compute_ground_truth_chunks(question)
 
         # If no pre-computed ground truth, match by source article
         if not ground_truth_chunks:
@@ -290,6 +297,7 @@ class BenchmarkRunner:
         phase_name: str = "default",
         max_questions: Optional[int] = None,
         progress_callback: Optional[Callable[[int, int, Dict], None]] = None,
+        mapped_ground_truth: Optional[Dict[str, List[str]]] = None,
     ) -> EvaluationResults:
         """
         Run complete benchmark evaluation.
@@ -298,6 +306,8 @@ class BenchmarkRunner:
             collection_name: Qdrant collection name
             phase_name: Name of RAG phase being evaluated
             max_questions: Maximum questions to evaluate (None = all)
+            mapped_ground_truth: Optional dict mapping question_id → list of
+                target chunk IDs (from cross-collection eval mapping).
 
         Returns:
             EvaluationResults object with complete results
@@ -338,8 +348,12 @@ class BenchmarkRunner:
                 top_k=max(self.k_values),
             )
 
-            # Evaluate
-            evaluation = self.evaluate_question(question, query_result)
+            # Evaluate — use mapped ground truth if available
+            gt_override = None
+            if mapped_ground_truth is not None:
+                q_id = question.get("id", "")
+                gt_override = mapped_ground_truth.get(q_id)
+            evaluation = self.evaluate_question(question, query_result, ground_truth_override=gt_override)
             per_question_results.append(evaluation)
 
             total_retrieval_time += evaluation["retrieval_time_ms"]

@@ -134,12 +134,19 @@ class SweepService:
             # 4. Instantiate collection service (used for warnings + per-config loop)
             svc = CollectionService()
 
-            # 4a. Warn if sweep has multiple chunk configurations
+            # 4a. Check if eval questions have char offsets (enable cross-collection mapping)
+            ds_col = ds_data.get("collection_name")
+            has_offsets = any(
+                q.get("char_start", 0) != 0 or q.get("char_end", 0) != 0
+                for q in questions
+            )
+
+            # 4b. Warn if sweep has multiple chunk configurations
             chunk_combos = {
                 (c.chunking.chunk_size, c.chunking.chunk_overlap)
                 for _, c in configs
             }
-            if len(chunk_combos) > 1:
+            if len(chunk_combos) > 1 and not has_offsets:
                 yield _sse("warning", {
                     "message": (
                         "Sweep uses multiple chunk configurations. "
@@ -147,10 +154,16 @@ class SweepService:
                         "Chunk-ID metrics only valid for the collection matching the eval dataset."
                     ),
                 })
+            elif len(chunk_combos) > 1 and has_offsets:
+                yield _sse("info", {
+                    "message": (
+                        "Sweep uses multiple chunk configurations. "
+                        "Eval mapping will automatically map ground truth per collection."
+                    ),
+                })
 
-            # 4b. Warn if eval dataset collection doesn't match any sweep config
-            ds_col = ds_data.get("collection_name")
-            if ds_col:
+            # 4c. Warn if eval dataset collection doesn't match any sweep config (legacy only)
+            if ds_col and not has_offsets:
                 for _, config in configs:
                     test_col = svc.derive_collection_name(
                         dataset_name=config.dataset.dataset_name,
@@ -169,6 +182,9 @@ class SweepService:
                             ),
                         })
                         break
+
+            # Cache for per-collection mapping results
+            _mapping_cache: dict[str, dict[str, list[str]]] = {}
 
             # 5. Generate sweep ID
             sweep_ts = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -224,14 +240,41 @@ class SweepService:
                 except Exception as exc:
                     logger.warning(f"Collection check/create failed for {col_name}: {exc}")
 
-                # 5c. Update config with resolved values
+                # 5c. Compute eval mapping for this collection (cached)
+                mapped_gt: dict[str, list[str]] | None = None
+                eval_mode = "direct"
+
+                if has_offsets and ds_col and ds_col != col_name:
+                    if col_name not in _mapping_cache:
+                        try:
+                            from src.evaluation.dataset_mapper import (
+                                load_chunks_from_collection,
+                                map_dataset_to_chunks,
+                            )
+                            target_chunks = load_chunks_from_collection(col_name)
+                            mapped = map_dataset_to_chunks(questions, target_chunks)
+                            _mapping_cache[col_name] = {
+                                m.question_id: m.relevant_chunk_ids
+                                for m in mapped
+                                if m.relevant_chunk_ids
+                            }
+                        except Exception as exc:
+                            logger.warning(f"Eval mapping failed for {col_name}: {exc}")
+                            _mapping_cache[col_name] = {}
+
+                    cached = _mapping_cache[col_name]
+                    if cached:
+                        mapped_gt = cached
+                        eval_mode = "mapped"
+
+                # 5d. Update config with resolved values
                 merged_dump = config.model_dump()
                 merged_dump["dataset"]["collection_name"] = col_name
                 merged_dump["dataset"]["questions_file"] = str(dataset_path)
                 merged_dump["generation"]["highlight_chunks"] = False
                 final_cfg = BenchmarkConfig.model_validate(merged_dump)
 
-                # 5d. Run benchmark with progress callback (threaded)
+                # 5e. Run benchmark with progress callback (threaded)
                 from src.benchmarks.runner import ParameterizedBenchmarkRunner
 
                 progress_queue: queue.Queue[str | None] = queue.Queue()
@@ -239,6 +282,8 @@ class SweepService:
                 error_holder: list[str] = []
 
                 ci = config_index  # capture for closure
+                _mapped_gt = mapped_gt  # capture for closure
+                _eval_mode = eval_mode
 
                 def _progress_callback(idx: int, total: int, evaluation: dict, _ci: int = ci) -> None:
                     progress_queue.put(_sse("config_progress", {
@@ -251,12 +296,17 @@ class SweepService:
                         "retrieval_time_ms": round(evaluation.get("retrieval_time_ms", 0), 1),
                     }))
 
-                def _worker() -> None:
+                def _worker(
+                    _mgt: dict | None = _mapped_gt,
+                    _em: str = _eval_mode,
+                ) -> None:
                     try:
                         runner = ParameterizedBenchmarkRunner(config=final_cfg)
                         result = runner.run(
                             output_dir=RESULTS_DIR,
                             progress_callback=_progress_callback,
+                            mapped_ground_truth=_mgt,
+                            evaluation_mode=_em,
                         )
                         result_holder.append(result)
                     except Exception as exc:
