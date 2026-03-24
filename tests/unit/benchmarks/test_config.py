@@ -112,15 +112,10 @@ class TestYAMLIO:
         assert path.exists()
         assert path.stat().st_size > 0
 
-    def test_preset_yaml_files_load(self):
-        phase1_path = Path("config/benchmarks/phase1_vanilla.yaml")
-        phase2_path = Path("config/benchmarks/phase2_hybrid.yaml")
-
-        cfg1 = BenchmarkConfig.from_yaml(phase1_path)
-        assert cfg1.retrieval.technique == "vanilla"
-
-        cfg2 = BenchmarkConfig.from_yaml(phase2_path)
-        assert cfg2.retrieval.technique == "hybrid"
+    def test_default_yaml_file_loads(self):
+        default_path = Path("config/benchmarks/default.yaml")
+        cfg = BenchmarkConfig.from_yaml(default_path)
+        assert cfg.name == "default"
 
 
 # ---------------------------------------------------------------------------
@@ -210,12 +205,6 @@ class TestSweeps:
             cfgs = BenchmarkConfig.chunk_overlap_sweep(base=base, overlaps=[0, 512, 600])
         assert len(cfgs) == 1  # only overlap=0 is valid
 
-    def test_sweep_yaml_files_loadable(self):
-        sweep_files = sorted(Path("config/benchmarks").glob("sweep_*.yaml"))
-        assert len(sweep_files) == 6
-        for f in sweep_files:
-            cfg = BenchmarkConfig.from_yaml(f)
-            assert cfg.chunking.chunk_size >= 64
 
 
 # ---------------------------------------------------------------------------
@@ -247,15 +236,6 @@ class TestDistanceMetricSweep:
         configs = BenchmarkConfig.distance_metric_sweep()
         metrics = [c.vector_db.distance_metric for c in configs]
         assert "manhattan" not in metrics
-
-    def test_yaml_presets_load(self):
-        from pathlib import Path
-
-        for metric in ("cosine", "euclidean", "dot_product"):
-            path = Path(f"config/benchmarks/wiki_dm_{metric}.yaml")
-            cfg = BenchmarkConfig.from_yaml(path)
-            assert cfg.vector_db.distance_metric == metric
-            assert cfg.dataset.collection_name == f"ww2_dm_{metric}"
 
     def test_all_use_vanilla_baseline(self):
         configs = BenchmarkConfig.distance_metric_sweep()

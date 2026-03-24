@@ -55,7 +55,7 @@ class TestQueryEndpoint:
     def test_returns_200_with_expected_fields(self, client):
         resp = client.post(
             "/api/query",
-            json={"query": "What happened on D-Day?", "preset": "phase1_vanilla.yaml"},
+            json={"query": "What happened on D-Day?", "preset": "default.yaml"},
         )
         assert resp.status_code == 200
         data = resp.json()
@@ -70,7 +70,7 @@ class TestQueryEndpoint:
     def test_chunk_structure_has_flat_fields(self, client):
         resp = client.post(
             "/api/query",
-            json={"query": "Test", "preset": "phase1_vanilla.yaml"},
+            json={"query": "Test", "preset": "default.yaml"},
         )
         chunk = resp.json()["retrieved_chunks"][0]
         assert "chunk_id" in chunk
@@ -83,7 +83,7 @@ class TestQueryEndpoint:
     def test_latency_fields_present_and_numeric(self, client):
         resp = client.post(
             "/api/query",
-            json={"query": "Test", "preset": "phase1_vanilla.yaml"},
+            json={"query": "Test", "preset": "default.yaml"},
         )
         data = resp.json()
         assert data["retrieval_time_ms"] > 0
@@ -92,7 +92,7 @@ class TestQueryEndpoint:
     def test_config_hash_is_16_hex_chars(self, client):
         resp = client.post(
             "/api/query",
-            json={"query": "Test", "preset": "phase1_vanilla.yaml"},
+            json={"query": "Test", "preset": "default.yaml"},
         )
         h = resp.json()["config_hash"]
         assert len(h) == 16
@@ -108,7 +108,7 @@ class TestQueryEndpoint:
     def test_missing_query_field_returns_422(self, client):
         resp = client.post(
             "/api/query",
-            json={"preset": "phase1_vanilla.yaml"},
+            json={"preset": "default.yaml"},
         )
         assert resp.status_code == 422
 
@@ -127,7 +127,7 @@ class TestQueryEndpoint:
         )
         resp = client.post(
             "/api/query",
-            json={"query": "Test", "preset": "phase1_vanilla.yaml"},
+            json={"query": "Test", "preset": "default.yaml"},
         )
         assert resp.status_code == 409
         assert "does not exist" in resp.json()["detail"]
@@ -136,7 +136,7 @@ class TestQueryEndpoint:
         _patch_query_service.execute_query.side_effect = RuntimeError("boom")
         resp = client.post(
             "/api/query",
-            json={"query": "Test", "preset": "phase1_vanilla.yaml"},
+            json={"query": "Test", "preset": "default.yaml"},
         )
         assert resp.status_code == 502
         assert "Pipeline error" in resp.json()["detail"]

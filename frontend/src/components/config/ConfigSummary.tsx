@@ -51,7 +51,7 @@ export default function ConfigSummary({ config }: Props) {
   if (!config) {
     return (
       <div className="rounded border border-gray-200 bg-white p-4 text-sm text-gray-400">
-        Select a preset to view its configuration.
+        Loading configuration...
       </div>
     );
   }

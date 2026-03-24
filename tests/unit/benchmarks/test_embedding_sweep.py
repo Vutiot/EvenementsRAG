@@ -2,7 +2,6 @@
 runner model_name plumbing, and cache-hash model isolation.
 """
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -66,13 +65,6 @@ class TestEmbeddingModelSweep:
             assert reloaded.embedding.model_name == cfg.embedding.model_name
             assert reloaded.embedding.dimension == cfg.embedding.dimension
 
-    def test_yaml_presets_load(self):
-        short_names = ["minilm_l6", "minilm_l12", "bge_small", "bge_base"]
-        for short in short_names:
-            path = Path(f"config/benchmarks/wiki_em_{short}.yaml")
-            cfg = BenchmarkConfig.from_yaml(path)
-            assert cfg.dataset.collection_name == f"ww2_em_{short}"
-            assert cfg.name == f"wiki_em_{short}"
 
 
 # ---------------------------------------------------------------------------

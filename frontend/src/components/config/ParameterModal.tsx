@@ -5,7 +5,6 @@ import ParamChips from "./ParamChips";
 import MultiSelectChips from "./MultiSelectChips";
 import ParamSlider from "./ParamSlider";
 import CollectionSection from "./CollectionSection";
-import PresetSelector from "./PresetSelector";
 import type { BenchmarkConfig } from "../../api/types";
 import type { ParsedCollectionParams } from "../../constants/paramOptions";
 import {
@@ -80,8 +79,6 @@ interface ParameterModalProps {
   onOverrideChange: (path: string, value: unknown) => void;
   onReset: () => void;
   hideSections?: Set<string>;
-  selectedPreset?: string;
-  onPresetChange?: (filename: string) => void;
   multiSelect?: boolean;
 }
 
@@ -95,8 +92,6 @@ export default function ParameterModal({
   onOverrideChange,
   onReset,
   hideSections,
-  selectedPreset,
-  onPresetChange,
   multiSelect = false,
 }: ParameterModalProps) {
   // When a collection is imported, stores the imported values as the new preset baseline for chips
@@ -257,23 +252,9 @@ export default function ParameterModal({
 
         {/* Body */}
         <div className="px-6 pb-4 space-y-5">
-          {/* ── Part 0: Preset ── */}
-          {onPresetChange && (
-            <Section title="Preset">
-              <PresetSelector selected={selectedPreset ?? ""} onSelect={onPresetChange} />
-              <button
-                type="button"
-                onClick={() => onPresetChange("default.yaml")}
-                className="mt-2 text-xs text-blue-600 hover:text-blue-800 transition"
-              >
-                Reset to default
-              </button>
-            </Section>
-          )}
-
           {!hasConfig && (
             <p className="text-sm text-gray-400 text-center py-8">
-              Select a preset above to configure parameters.
+              Loading configuration...
             </p>
           )}
 
@@ -693,7 +674,7 @@ export default function ParameterModal({
             onClick={onReset}
             className="rounded-lg px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 transition"
           >
-            Reset to Preset
+            Reset to Default
           </button>
           <button
             onClick={onClose}

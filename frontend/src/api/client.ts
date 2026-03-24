@@ -22,8 +22,6 @@ import type {
   EnsureCollectionsRequest,
   HighlightChunksResponse,
   NormalizedBenchmarkResult,
-  PresetInfo,
-
   ResultFileInfo,
   SweepCompleteEvent,
   SweepConfigCompleteEvent,
@@ -47,10 +45,6 @@ async function fetchJSON<T>(url: string, init?: RequestInit): Promise<T> {
 
 export function getHealth(): Promise<{ status: string }> {
   return fetchJSON(`${BASE}/health`);
-}
-
-export function getPresets(): Promise<PresetInfo[]> {
-  return fetchJSON(`${BASE}/presets`);
 }
 
 export function getPresetConfig(filename: string): Promise<BenchmarkConfig> {

@@ -1,7 +1,6 @@
-"""Unit tests for BenchmarkConfig.hybrid_weight_sweep() and YAML presets."""
+"""Unit tests for BenchmarkConfig.hybrid_weight_sweep()."""
 
 import pytest
-from pathlib import Path
 
 from src.benchmarks.config import BenchmarkConfig
 
@@ -54,19 +53,6 @@ class TestHybridWeightSweep:
             assert restored.retrieval.dense_weight == cfg.retrieval.dense_weight
             assert restored.dataset.collection_name == cfg.dataset.collection_name
             assert restored.retrieval.technique == "hybrid"
-
-    def test_preset_files_exist(self):
-        preset_dir = Path("config/benchmarks")
-        for pct in [0, 10, 15, 20, 30, 50]:
-            path = preset_dir / f"wiki_hybrid_w{pct}.yaml"
-            assert path.exists(), f"Missing YAML preset: {path}"
-
-    def test_preset_files_load_without_error(self):
-        preset_dir = Path("config/benchmarks")
-        for pct in [0, 10, 15, 20, 30, 50]:
-            path = preset_dir / f"wiki_hybrid_w{pct}.yaml"
-            cfg = BenchmarkConfig.from_yaml(path)
-            assert cfg.retrieval.technique == "hybrid"
 
     def test_custom_base_config(self):
         base = BenchmarkConfig.phase2_hybrid()

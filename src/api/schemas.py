@@ -7,12 +7,6 @@ class HealthResponse(BaseModel):
     status: str = "ok"
 
 
-class PresetInfo(BaseModel):
-    filename: str
-    name: str
-    description: str
-
-
 class RetrievedChunk(BaseModel):
     chunk_id: str
     content: str

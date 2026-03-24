@@ -53,7 +53,6 @@ export default function TestingPage() {
   const [mode, setMode] = useState<TestingMode>("query");
 
   // ── Shared config state ───────────────────────────────────────────
-  const [preset, setPreset] = useState("");
   const [baseConfig, setBaseConfig] = useState<BenchmarkConfig | null>(null);
   const [overrides, setOverrides] = useState<Record<string, unknown>>({});
   const [paramsOpen, setParamsOpen] = useState(false);
@@ -173,9 +172,9 @@ export default function TestingPage() {
       .catch(() => {});
   }, [mode, effectiveConfig]);
 
-  // Auto-load default preset on mount
+  // Auto-load default config on mount
   useEffect(() => {
-    handlePresetChange("default.yaml");
+    loadDefaultConfig();
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reset eval selection when filtered list changes
@@ -211,18 +210,13 @@ export default function TestingPage() {
     setMode(newMode);
   }, []);
 
-  const handlePresetChange = useCallback(async (filename: string) => {
-    setPreset(filename);
+  const loadDefaultConfig = useCallback(async () => {
     setStreamingChunks(null);
     setStreamingTokens([]);
     setError(null);
     setOverrides({});
-    if (!filename) {
-      setBaseConfig(null);
-      return;
-    }
     try {
-      const cfg = await getPresetConfig(filename);
+      const cfg = await getPresetConfig("default.yaml");
       setBaseConfig(cfg);
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : String(e));
@@ -260,7 +254,7 @@ export default function TestingPage() {
   // ── Query-mode handler ────────────────────────────────────────────
 
   const handleQueryExecute = useCallback(async () => {
-    if (!query.trim() || !preset || !effectiveConfig) return;
+    if (!query.trim() || !effectiveConfig) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     // Abort any previous streaming request
@@ -314,7 +308,7 @@ export default function TestingPage() {
 
     const controller = executeQueryStreaming(
       query,
-      preset,
+      "default.yaml",
       Object.keys(finalOverrides).length > 0 ? finalOverrides : undefined,
       {
         onRetrievalComplete: (e) => {
@@ -372,12 +366,12 @@ export default function TestingPage() {
     );
 
     streamControllerRef.current = controller;
-  }, [query, preset, overrides, overrideCount, effectiveConfig]);
+  }, [query, overrides, overrideCount, effectiveConfig]);
 
   // ── Benchmark-mode handlers ───────────────────────────────────────
 
   const handleBenchmarkRun = useCallback(async () => {
-    if (!preset || !effectiveConfig || !selectedDatasetId) return;
+    if (!effectiveConfig || !selectedDatasetId) return;
     window.scrollTo({ top: 0, behavior: "smooth" });
 
     setBenchPhase("ensuring");
@@ -419,7 +413,7 @@ export default function TestingPage() {
 
     const controller = runBenchmark(
       {
-        preset,
+        preset: "default.yaml",
         config_overrides: Object.keys(finalOverrides).length > 0 ? finalOverrides : null,
         eval_dataset_id: selectedDatasetId,
         ...(runName ? { name: runName } : {}),
@@ -454,7 +448,7 @@ export default function TestingPage() {
     );
 
     setAbortController(controller);
-  }, [preset, effectiveConfig, selectedDatasetId, overrides, overrideCount, runName]);
+  }, [effectiveConfig, selectedDatasetId, overrides, overrideCount, runName]);
 
   const handleBenchmarkCancel = useCallback(() => {
     abortController?.abort();
@@ -465,7 +459,7 @@ export default function TestingPage() {
   // ── Sweep-mode handlers ───────────────────────────────────────────
 
   const handleSweepRun = useCallback(() => {
-    if (!preset || !selectedDatasetId) return;
+    if (!effectiveConfig || !selectedDatasetId) return;
 
     const { sweepParams, configOverrides } = extractSweepParams(overrides);
 
@@ -478,7 +472,7 @@ export default function TestingPage() {
 
     const controller = runSweep(
       {
-        preset,
+        preset: "default.yaml",
         sweep_params: sweepParams,
         eval_dataset_id: selectedDatasetId,
         config_overrides: Object.keys(configOverrides).length > 0 ? configOverrides : null,
@@ -529,7 +523,7 @@ export default function TestingPage() {
     );
 
     setSweepAbort(controller);
-  }, [preset, selectedDatasetId, overrides, runName]);
+  }, [effectiveConfig, selectedDatasetId, overrides, runName]);
 
   const handleSweepCancel = useCallback(() => {
     sweepAbort?.abort();
@@ -754,7 +748,7 @@ export default function TestingPage() {
             isRunning={isSweepRunning}
             onRun={handleSweepRun}
             onCancel={handleSweepCancel}
-            disabled={!preset || !selectedDatasetId}
+            disabled={!effectiveConfig || !selectedDatasetId}
             combinationCount={combinationCount}
             sweepPhase={sweepPhase}
             sweepProgress={sweepProgress}
@@ -779,8 +773,6 @@ export default function TestingPage() {
         onOverrideChange={handleOverrideChange}
         onReset={handleResetOverrides}
         hideSections={hideSections}
-        selectedPreset={preset}
-        onPresetChange={handlePresetChange}
         multiSelect={mode === "sweep"}
       />
 

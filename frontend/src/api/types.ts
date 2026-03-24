@@ -1,11 +1,5 @@
 /** TypeScript types matching the FastAPI response schemas. */
 
-export interface PresetInfo {
-  filename: string;
-  name: string;
-  description: string;
-}
-
 export interface RetrievedChunk {
   chunk_id: string;
   content: string;
