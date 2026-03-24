@@ -71,7 +71,6 @@ export interface NormalizedQuestion {
   generated_answer: string | null;
   generation_time_ms: number | null;
   retrieved_contexts: string[] | null;
-  generation_metrics: Record<string, number> | null;
   ragas_metrics: Record<string, number> | null;
 }
 
@@ -283,8 +282,6 @@ export interface BenchmarkConfig {
     compute_ragas: boolean;
     compute_context_precision: boolean;
     compute_entity_metrics: boolean;
-    compute_bert_score: boolean;
-    compute_rouge: boolean;
     ragas_metrics: string[];
     ragas_evaluator_model: string;
     ragas_max_workers: number;

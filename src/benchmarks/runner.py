@@ -155,16 +155,6 @@ class BenchmarkResult:
                       f"p95={latency['generation_p95_ms']:.1f}ms  "
                       f"p99={latency['generation_p99_ms']:.1f}ms")
 
-        # Generation quality averages
-        gen_summary = self.metrics_summary.get("generation")
-        if gen_summary:
-            print("-" * 70)
-            print(f"Generation Quality ({gen_summary['num_questions_scored']} questions):")
-            if "avg_rouge_l_f1" in gen_summary:
-                print(f"  Avg ROUGE-L F1 : {gen_summary['avg_rouge_l_f1']:.3f}")
-            if "avg_bert_score_f1" in gen_summary:
-                print(f"  Avg BERTScore F1: {gen_summary['avg_bert_score_f1']:.3f}")
-
         # Entity-level metrics
         entity_summary = self.metrics_summary.get("entity")
         if entity_summary:
@@ -254,9 +244,7 @@ class ParameterizedBenchmarkRunner:
 
         # Auto-disable generation when no metric needs it
         needs_generation = (
-            self.config.evaluation.compute_rouge
-            or self.config.evaluation.compute_bert_score
-            or self.config.evaluation.compute_ragas
+            self.config.evaluation.compute_ragas
             or self.config.evaluation.compute_context_precision
             or self.config.evaluation.compute_entity_metrics
         )
@@ -323,9 +311,7 @@ class ParameterizedBenchmarkRunner:
         questions_by_id = {}
         needs_questions = (
             self.config.generation.enabled and (
-                self.config.evaluation.compute_rouge
-                or self.config.evaluation.compute_bert_score
-                or self.config.evaluation.compute_ragas
+                self.config.evaluation.compute_ragas
                 or self.config.evaluation.compute_context_precision
                 or self.config.evaluation.compute_entity_metrics
             )
@@ -335,12 +321,6 @@ class ParameterizedBenchmarkRunner:
                 q_data = json.load(f)
             q_list = q_data.get("questions", [])
             questions_by_id = {q.get("id"): q for q in q_list}
-
-        if (
-            self.config.generation.enabled
-            and (self.config.evaluation.compute_rouge or self.config.evaluation.compute_bert_score)
-        ):
-            collector.compute_generation_metrics(per_q, questions_by_id)
 
         if self.config.generation.enabled and self.config.evaluation.compute_ragas:
             collector.compute_ragas_metrics(per_q, questions_by_id)

@@ -1,14 +1,13 @@
-export type TabKey = "retrieval" | "generation" | "latency" | "ragas";
+export type TabKey = "retrieval" | "latency" | "ragas";
 
 interface TabDef {
   key: TabKey;
   label: string;
-  enabledProp: "hasRetrieval" | "hasGeneration" | "hasLatency" | "hasRagas";
+  enabledProp: "hasRetrieval" | "hasLatency" | "hasRagas";
 }
 
 const TABS: TabDef[] = [
   { key: "retrieval", label: "Retrieval", enabledProp: "hasRetrieval" },
-  { key: "generation", label: "Generation", enabledProp: "hasGeneration" },
   { key: "latency", label: "Latency", enabledProp: "hasLatency" },
   { key: "ragas", label: "RAGAS", enabledProp: "hasRagas" },
 ];
@@ -17,7 +16,6 @@ interface Props {
   activeTab: TabKey;
   onTabChange: (tab: TabKey) => void;
   hasRetrieval: boolean;
-  hasGeneration: boolean;
   hasLatency: boolean;
   hasRagas: boolean;
 }

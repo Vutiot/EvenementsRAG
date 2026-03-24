@@ -99,7 +99,6 @@ BENCHMARK_RESULT = {
             "generated_answer": "Germany invaded Poland in September 1939.",
             "generation_time_ms": 450.0,
             "retrieved_contexts": ["Context chunk 1", "Context chunk 2"],
-            "generation_metrics": {"rouge_l_f1": 0.45},
             "ragas_metrics": {"faithfulness": 0.8, "answer_relevancy": 0.9},
         },
     ],

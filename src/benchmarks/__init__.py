@@ -22,7 +22,6 @@ from src.benchmarks.config import (
 from src.benchmarks.dataset_manager import DATASET_REGISTRY, DatasetManager
 from src.benchmarks.runner import BenchmarkResult, ParameterizedBenchmarkRunner
 from src.evaluation.metrics_collector import (
-    GenerationMetrics,
     LatencyMetrics,
     MetricsCollector,
 )
@@ -48,7 +47,6 @@ __all__ = [
     "BenchmarkResult",
     "ParameterizedBenchmarkRunner",
     # Metrics
-    "GenerationMetrics",
     "LatencyMetrics",
     "MetricsCollector",
     # RAGAS

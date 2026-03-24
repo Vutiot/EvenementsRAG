@@ -1,9 +1,9 @@
 """
 Evaluation metrics for RAG system.
 
-Implements both retrieval and generation metrics:
+Implements retrieval and entity metrics:
 - Retrieval: Recall@K, MRR, NDCG
-- Generation: ROUGE-L, BERTScore, RAGAS (faithfulness, answer relevance)
+- Entity: precision@K, recall@K, MRR
 
 Usage:
     from src.evaluation.metrics import compute_retrieval_metrics, RetrievalMetrics

@@ -205,7 +205,6 @@ def _normalize_question_new(q: dict) -> NormalizedQuestion:
         generated_answer=q.get("generated_answer"),
         generation_time_ms=q.get("generation_time_ms"),
         retrieved_contexts=q.get("retrieved_contexts"),
-        generation_metrics=q.get("generation_metrics"),
         ragas_metrics=q.get("ragas_metrics"),
     )
 

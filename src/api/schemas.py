@@ -89,7 +89,6 @@ class NormalizedQuestion(BaseModel):
     generated_answer: str | None = None
     generation_time_ms: float | None = None
     retrieved_contexts: list[str] | None = None
-    generation_metrics: dict[str, float] | None = None
     ragas_metrics: dict[str, float] | None = None
 
 

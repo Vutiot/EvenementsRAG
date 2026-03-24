@@ -43,8 +43,6 @@ pyvis = "^0.3.2"
 
 # Evaluation
 ragas = "^0.1.1"
-rouge-score = "^0.1.2"
-bert-score = "^0.3.13"
 datasets = "^2.16.0"
 
 # Web API

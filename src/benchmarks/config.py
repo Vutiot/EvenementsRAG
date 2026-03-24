@@ -176,8 +176,6 @@ class EvaluationConfig(BaseModel):
     k_values: list[int] = [1, 3, 5, 10]
     compute_ragas: bool = False
     compute_context_precision: bool = False
-    compute_bert_score: bool = False
-    compute_rouge: bool = True
     compute_entity_metrics: bool = False
 
     ragas_metrics: list[str] = Field(default_factory=lambda: [

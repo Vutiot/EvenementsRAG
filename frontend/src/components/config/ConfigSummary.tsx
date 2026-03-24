@@ -114,8 +114,6 @@ export default function ConfigSummary({ config }: Props) {
 
       <Section title="Evaluation">
         <Field label="K values" value={config.evaluation.k_values.join(", ")} />
-        <Field label="ROUGE" value={config.evaluation.compute_rouge ? "Yes" : "No"} />
-        <Field label="BERTScore" value={config.evaluation.compute_bert_score ? "Yes" : "No"} />
         <Field label="RAGAS" value={config.evaluation.compute_ragas ? "Yes" : "No"} />
       </Section>
 

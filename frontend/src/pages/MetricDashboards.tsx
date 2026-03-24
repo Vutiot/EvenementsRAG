@@ -6,7 +6,6 @@ import ConfigSummary from "../components/config/ConfigSummary";
 import ResultFileSelector from "../components/benchmarks/ResultFileSelector";
 import MetricTabs, { type TabKey } from "../components/metrics/MetricTabs";
 import RetrievalTab from "../components/metrics/RetrievalTab";
-import GenerationTab from "../components/metrics/GenerationTab";
 import LatencyTab from "../components/metrics/LatencyTab";
 import RagasTab from "../components/metrics/RagasTab";
 
@@ -43,10 +42,6 @@ export default function MetricDashboards() {
   }, []);
 
   const hasRetrieval = result != null && result.per_question.length > 0;
-  const hasGeneration = useMemo(
-    () => result?.per_question.some((q) => q.generation_metrics != null) ?? false,
-    [result],
-  );
   const hasLatency = useMemo(
     () => result?.per_question.some((q) => q.retrieval_time_ms != null) ?? false,
     [result],
@@ -123,14 +118,12 @@ export default function MetricDashboards() {
               activeTab={activeTab}
               onTabChange={setActiveTab}
               hasRetrieval={hasRetrieval}
-              hasGeneration={hasGeneration}
               hasLatency={hasLatency}
               hasRagas={hasRagas}
             />
 
             {/* Active tab content */}
             {activeTab === "retrieval" && <RetrievalTab result={result} />}
-            {activeTab === "generation" && <GenerationTab result={result} />}
             {activeTab === "latency" && <LatencyTab result={result} />}
             {activeTab === "ragas" && <RagasTab result={result} />}
           </div>

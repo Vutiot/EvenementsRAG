@@ -172,20 +172,6 @@ export default function QuestionExplorer({ questions, isLegacy }: Props) {
             </div>
           )}
 
-          {/* Generation metrics */}
-          {selected.generation_metrics && Object.keys(selected.generation_metrics).length > 0 && (
-            <div>
-              <h4 className="mb-1.5 text-xs font-semibold uppercase tracking-wider text-slate-400">
-                Generation Metrics
-              </h4>
-              <div className="rounded border border-slate-200 bg-slate-50/50 px-3 py-2 text-xs divide-y divide-slate-100">
-                {Object.entries(selected.generation_metrics).map(([k, v]) => (
-                  <MetricRow key={k} label={k} value={v.toFixed(4)} />
-                ))}
-              </div>
-            </div>
-          )}
-
           {/* RAGAS per-question */}
           {selected.ragas_metrics && Object.keys(selected.ragas_metrics).length > 0 && (
             <RagasMetricsGrid metrics={selected.ragas_metrics} title="Per-Question RAGAS" />

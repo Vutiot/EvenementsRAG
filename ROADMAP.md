@@ -554,8 +554,8 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - **Unit tests**: `tests/unit/benchmarks/test_embedding_sweep.py` — 18 tests (sweep, validator, runner plumbing, cache hash)
 
 ✅ **E1-F2-T1 – Metric Collection System**
-- `MetricsCollector` class in `src/evaluation/metrics_collector.py` — computes ROUGE-L, BERTScore (lazy-imported), latency percentiles (p50/p95/p99)
-- `GenerationMetrics`, `LatencyMetrics`, `AggregatedGenerationMetrics` dataclasses
+- `MetricsCollector` class in `src/evaluation/metrics_collector.py` — computes latency percentiles (p50/p95/p99), delegates to RAGAS and entity metrics
+- `LatencyMetrics` dataclass
 - Wired into `ParameterizedBenchmarkRunner.run()` — `metrics_summary` field on `BenchmarkResult`
 - Fixed pre-existing `self._qdrant` → `self._vector_store` bug in runner.py
 - **Unit tests**: `tests/unit/evaluation/test_metrics_collector.py` — 31 tests (all mocked, no heavy deps)
@@ -769,13 +769,10 @@ Before: `md5(text)`. After: `md5(f"{self.model_name}::{text}")`. Prevents cross-
 ### E1-F2-T1 — MetricsCollector
 
 **`MetricsCollector` as a standalone class in `src/evaluation/`** (not inside the runner or BenchmarkResult).
-Rationale: keeps generation-quality and latency logic separate from retrieval metrics (which stay in the legacy `BenchmarkRunner`). The collector only adds new dimensions on top, making it an ideal extension point for RAGAS (E1-F2-T2) without modifying existing metric code.
+Rationale: keeps LLM-based evaluation and latency logic separate from retrieval metrics (which stay in the legacy `BenchmarkRunner`). The collector only adds new dimensions on top, making it an ideal extension point for RAGAS (E1-F2-T2) without modifying existing metric code.
 
-**Lazy import of `rouge_score` and `bert_score`** via `_ensure_rouge_scorer()` / `_ensure_bert_scorer()`.
-Rationale: both packages pull in large transitive deps (nltk, torch model downloads for BERTScore). By lazy-importing only when the corresponding `EvaluationConfig` flag is True, the benchmark runner stays fast for retrieval-only runs.
-
-**In-place mutation of `per_question` dicts** (adds `"generation_metrics"` key).
-Rationale: matches the pattern established by `_run_generation_pass()` which already mutates `per_q` entries in-place. Avoids creating a parallel data structure that would need joining later.
+**ML metrics (ROUGE-L, BERTScore) removed** — only LLM-based metrics (RAGAS, entity metrics) remain.
+Rationale: ML text-similarity metrics provided limited signal compared to LLM-based evaluation. Removed `rouge-score` and `bert-score` dependencies, `GenerationMetrics`/`AggregatedGenerationMetrics` dataclasses, `compute_rouge`/`compute_bert_score` config flags, and the frontend Generation tab.
 
 **`metrics_summary` as a plain `dict` field on `BenchmarkResult`** (not a typed dataclass).
 Rationale: the summary shape evolves as new metric types are added (RAGAS in E1-F2-T2). A plain dict serializes to JSON without extra mapping and allows the collector to add sections freely.
