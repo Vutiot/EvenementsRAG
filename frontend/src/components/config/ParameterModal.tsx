@@ -14,7 +14,8 @@ import {
   SPARSE_TYPE_OPTIONS,
   SPARSE_WEIGHT_OPTIONS,
   FUSION_OPTIONS,
-  RETRIEVER_K_OPTIONS,
+  RETRIEVER_K_NO_RERANKER,
+  RETRIEVER_K_WITH_RERANKER,
   RERANK_TOP_K_OPTIONS,
   LLM_MODELS,
   MAX_TOKENS_OPTIONS,
@@ -27,7 +28,7 @@ import {
   DISTANCE_OPTIONS,
   BACKEND_OPTIONS,
 } from "../../constants/paramOptions";
-import { computeSweepCombinations } from "../../utils/configHelpers";
+import { computeSweepCombinations, isGenerationDisabled } from "../../utils/configHelpers";
 
 // ── Helpers ──────────────────────────────────────────────────────────
 
@@ -134,6 +135,15 @@ export default function ParameterModal({
     if (overrideVal !== undefined) return overrideVal;
     return getPath(base, path);
   }
+
+  /** True when at least one eval metric toggle requires LLM generation. */
+  const needsGeneration =
+    !!(effective("evaluation.compute_context_precision") as boolean) ||
+    !!(effective("evaluation.compute_entity_metrics") as boolean);
+
+  /** Dynamic Retriever Top K options based on reranker selection. */
+  const hasReranker = (effective("reranker.type") as string) !== "none";
+  const topKOptions = hasReranker ? RETRIEVER_K_WITH_RERANKER : RETRIEVER_K_NO_RERANKER;
 
   /** Get base/preset value. */
   function preset(path: string): unknown {
@@ -373,7 +383,7 @@ export default function ParameterModal({
                   />
                   <MultiSelectChips
                     label="Top K"
-                    options={RETRIEVER_K_OPTIONS}
+                    options={topKOptions}
                     values={effectiveArray<number>("retrieval.top_k")}
                     presetValue={preset("retrieval.top_k") as number}
                     onChange={(vs) => handleArrayChange("retrieval.top_k", vs)}
@@ -418,7 +428,7 @@ export default function ParameterModal({
                   />
                   <ParamChips
                     label="Top K"
-                    options={RETRIEVER_K_OPTIONS}
+                    options={topKOptions}
                     value={effective("retrieval.top_k") as number}
                     presetValue={preset("retrieval.top_k") as number}
                     onChange={(v) => handleChange("retrieval.top_k", v)}
@@ -490,11 +500,13 @@ export default function ParameterModal({
                       handleChange("reranker.type", v);
                       if (v === "none") {
                         handleChange("reranker.model_name", null);
+                        handleChange("retrieval.top_k", 20);
                       } else {
                         const models = RERANKER_MODEL_OPTIONS[v as string];
                         if (models?.[0]) {
                           handleChange("reranker.model_name", models[0].value);
                         }
+                        handleChange("retrieval.top_k", 100);
                       }
                     }}
                   />
@@ -520,7 +532,8 @@ export default function ParameterModal({
               )}
             </div>
 
-            {/* Generation */}
+            {/* Generation (visible only when an eval metric needs LLM) */}
+            {needsGeneration && (
             <div className="space-y-3 mt-4">
               <h4 className="text-[11px] font-medium uppercase tracking-wider text-gray-400">
                 Generation
@@ -540,7 +553,7 @@ export default function ParameterModal({
                   }
                 }}
               />
-              {(effective("generation.model") as string) !== "__none__" && (
+              {!isGenerationDisabled(effective("generation.model") as string) && (
               <>
               <ParamSlider
                 label="Temperature"
@@ -561,10 +574,11 @@ export default function ParameterModal({
               </>
               )}
             </div>
+            )}
           </Section>
 
           {/* ── Part 4: System Prompt (hidden when generation disabled) ── */}
-          {(effective("generation.model") as string) !== "__none__" && (
+          {needsGeneration && !isGenerationDisabled(effective("generation.model") as string) && (
           <Section title="System Prompt">
             <SystemPromptSection
               currentPrompt={(effective("generation.system_prompt") as string) ?? ""}
@@ -573,8 +587,7 @@ export default function ParameterModal({
           </Section>
           )}
 
-          {/* ── Part 5: Evaluation Metrics (visible when generation enabled) ── */}
-          {(effective("generation.model") as string) !== "__none__" && (
+          {/* ── Part 5: Evaluation Metrics (always visible) ── */}
           <Section title="Evaluation">
             <div className="flex items-center justify-between">
               <div>
@@ -631,10 +644,9 @@ export default function ParameterModal({
               </button>
             </div>
           </Section>
-          )}
 
           {/* ── Part 6: Results (hidden when generation disabled) ── */}
-          {!hideSections?.has("Results") && (effective("generation.model") as string) !== "__none__" && (
+          {!hideSections?.has("Results") && needsGeneration && !isGenerationDisabled(effective("generation.model") as string) && (
           <Section title="Results">
             <div className="flex items-center justify-between">
               <div>

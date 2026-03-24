@@ -274,7 +274,7 @@ export interface BenchmarkConfig {
   };
   generation: {
     llm_provider: string;
-    model: string;
+    model: string | null;
     temperature: number;
     max_tokens: number;
     top_k_chunks: number;

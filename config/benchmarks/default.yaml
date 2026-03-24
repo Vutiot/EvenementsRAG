@@ -32,7 +32,7 @@ generation:
   max_tokens: 512
   model: nvidia/nemotron-3-nano-30b-a3b
   temperature: 0.0
-  top_k_chunks: 3
+  top_k_chunks: 20
 
 evaluation:
   compute_bert_score: false

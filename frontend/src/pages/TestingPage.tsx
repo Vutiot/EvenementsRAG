@@ -345,7 +345,7 @@ export default function TestingPage() {
                   chunk_id: c.chunk_id,
                   content: c.content,
                 })),
-                ec.generation.model,
+                ec.generation.model ?? undefined,
               );
               const hlMap: Record<string, string> = {};
               const relMap: Record<string, string> = {};

@@ -85,7 +85,14 @@ export const SPARSE_WEIGHT_OPTIONS = [
   { value: 0.5, label: "0.5" },
 ];
 
-export const RETRIEVER_K_OPTIONS = [
+export const RETRIEVER_K_NO_RERANKER = [
+  { value: 5, label: "5" },
+  { value: 10, label: "10" },
+  { value: 15, label: "15" },
+  { value: 20, label: "20" },
+];
+
+export const RETRIEVER_K_WITH_RERANKER = [
   { value: 20, label: "20" },
   { value: 60, label: "60" },
   { value: 80, label: "80" },

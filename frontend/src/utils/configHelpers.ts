@@ -1,4 +1,9 @@
-/** Shared config merge helpers — used by TestingPage and ParameterModal. */
+/** Shared config helpers — used by TestingPage, ParameterModal, and display components. */
+
+/** True when generation is disabled (model is null, undefined, or "__none__"). */
+export function isGenerationDisabled(model: string | null | undefined): boolean {
+  return !model || model === "__none__";
+}
 
 import { deriveCollectionName } from "../constants/paramOptions";
 

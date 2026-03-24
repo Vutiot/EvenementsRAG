@@ -252,6 +252,18 @@ class ParameterizedBenchmarkRunner:
 
         wall_start = time.time()
 
+        # Auto-disable generation when no metric needs it
+        needs_generation = (
+            self.config.evaluation.compute_rouge
+            or self.config.evaluation.compute_bert_score
+            or self.config.evaluation.compute_ragas
+            or self.config.evaluation.compute_context_precision
+            or self.config.evaluation.compute_entity_metrics
+        )
+        if not needs_generation:
+            self.config.generation.enabled = False
+            self.config.generation.model = None
+
         logger.info(
             f"Benchmark run started: {self.config.name}",
             extra={

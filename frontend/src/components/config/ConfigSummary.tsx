@@ -1,5 +1,6 @@
 import { useState } from "react";
 import type { BenchmarkConfig } from "../../api/types";
+import { isGenerationDisabled } from "../../utils/configHelpers";
 
 interface SectionProps {
   title: string;
@@ -101,14 +102,15 @@ export default function ConfigSummary({ config }: Props) {
         )}
       </Section>
 
-      <Section title="Generation" badge={config.generation.model === "__none__" ? "disabled" : config.generation.model.split("/").pop()}>
+      {!isGenerationDisabled(config.generation.model) && (
+      <Section title="Generation" badge={config.generation.model!.split("/").pop()}>
         <Field label="Provider" value={config.generation.llm_provider} />
-        <Field label="Model" value={config.generation.model === "__none__" ? "None" : config.generation.model} />
+        <Field label="Model" value={config.generation.model} />
         <Field label="Temperature" value={config.generation.temperature} />
         <Field label="Max tokens" value={config.generation.max_tokens} />
         <Field label="Top K chunks" value={config.generation.top_k_chunks} />
-        <Field label="Enabled" value={config.generation.enabled ? "Yes" : "No"} />
       </Section>
+      )}
 
       <Section title="Evaluation">
         <Field label="K values" value={config.evaluation.k_values.join(", ")} />

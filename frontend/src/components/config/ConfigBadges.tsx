@@ -1,4 +1,5 @@
 import type { BenchmarkConfig } from "../../api/types";
+import { isGenerationDisabled } from "../../utils/configHelpers";
 
 interface Props {
   config: BenchmarkConfig | null;
@@ -27,9 +28,9 @@ export default function ConfigBadges({ config }: Props) {
     chips.push(`${rerankerShort} rerank ${config.retrieval.rerank_k}`);
   }
 
-  if (config.generation.model !== "__none__") {
-    const modelParts = config.generation.model.split("/");
-    chips.push(modelParts[modelParts.length - 1] ?? config.generation.model);
+  if (!isGenerationDisabled(config.generation.model)) {
+    const modelParts = config.generation.model!.split("/");
+    chips.push(modelParts[modelParts.length - 1] ?? config.generation.model!);
   } else {
     chips.push("No LLM");
   }

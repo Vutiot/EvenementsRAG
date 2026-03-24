@@ -145,10 +145,10 @@ NVIDIA_MODELS: list[str] = [
 
 class GenerationConfig(BaseModel):
     llm_provider: Literal["anthropic", "openai", "nvidia"] = "nvidia"
-    model: str = "mistralai/mistral-small-4-119b-2603"
+    model: Optional[str] = "mistralai/mistral-small-4-119b-2603"
     temperature: float = Field(0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(2000, ge=1, le=8000)
-    top_k_chunks: int = Field(5, ge=1, le=20)
+    top_k_chunks: int = Field(20, ge=1, le=20)
     top_k_articles: Optional[int] = Field(None, ge=1, le=20)
     prompt_template: Optional[str] = None
     system_prompt: Optional[str] = None
