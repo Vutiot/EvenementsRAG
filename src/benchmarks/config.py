@@ -187,6 +187,13 @@ class EvaluationConfig(BaseModel):
     ragas_evaluator_model: str = "mistralai/mistral-small-4-119b-2603"
     ragas_max_workers: int = Field(1, ge=1, le=8)
     ragas_timeout: int = Field(180, ge=30, le=600)
+    ragas_repeat_count: int = Field(
+        1, ge=1, le=10,
+        description=(
+            "Number of times to run LLM-based RAGAS evaluation and average "
+            "results for stability"
+        ),
+    )
 
     @model_validator(mode="after")
     def warn_nonstandard_k_values(self) -> "EvaluationConfig":
