@@ -79,6 +79,7 @@ export interface NormalizedQuestion {
   retrieved_contexts: string[] | null;
   generation_metrics: Record<string, number> | null;
   ragas_metrics: Record<string, number> | null;
+  ragas_metrics_std: Record<string, number> | null;
 }
 
 /** Full normalized benchmark result from GET /api/results/{filename} */
@@ -295,6 +296,7 @@ export interface BenchmarkConfig {
     ragas_evaluator_model: string;
     ragas_max_workers: number;
     ragas_timeout: number;
+    ragas_repeat_count?: number;
   };
   vector_db: {
     backend: string;

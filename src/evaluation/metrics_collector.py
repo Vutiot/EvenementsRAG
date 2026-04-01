@@ -203,15 +203,68 @@ class MetricsCollector:
     ) -> None:
         """Compute RAGAS metrics if the ``compute_ragas`` flag is enabled.
 
-        Delegates to ``RagasEvaluator.evaluate()`` which mutates *per_question*
-        in-place (adds ``"ragas_metrics"`` key to eligible entries).
+        When ``ragas_repeat_count > 1``, the evaluator runs N times and the
+        per-question scores are averaged.  Standard deviations are stored in a
+        ``"ragas_metrics_std"`` key on each entry.  When ``ragas_repeat_count``
+        is 1 (default) the behavior is unchanged — no std is computed.
         """
         if not self._config.compute_ragas:
             logger.info("compute_ragas is False — skipping RAGAS evaluation")
             return
 
-        self._ensure_ragas_evaluator()
-        self._ragas_evaluator.evaluate(per_question, questions_by_id)
+        repeat = self._config.ragas_repeat_count
+
+        if repeat <= 1:
+            # Single run — original behavior
+            self._ensure_ragas_evaluator()
+            self._ragas_evaluator.evaluate(per_question, questions_by_id)
+            return
+
+        # --- Multi-run averaging ---
+        # Collect per-question RAGAS scores from each run.
+        # Each element is a list of dicts (one per question) from that run.
+        all_run_scores: List[List[dict]] = []
+
+        for run_idx in range(repeat):
+            logger.info("RAGAS repeat run %d/%d", run_idx + 1, repeat)
+            # Create a fresh evaluator for each run so internal state is clean
+            self._ragas_evaluator = None
+            self._ensure_ragas_evaluator()
+
+            # Work on a shallow copy so each run writes its own ragas_metrics
+            shadow = [{**entry} for entry in per_question]
+            self._ragas_evaluator.evaluate(shadow, questions_by_id)
+
+            run_scores = [entry.get("ragas_metrics", {}) for entry in shadow]
+            all_run_scores.append(run_scores)
+
+        # Average across runs for each question
+        n_questions = len(per_question)
+        for q_idx in range(n_questions):
+            # Gather all metric names seen for this question across runs
+            metric_names: set = set()
+            for run_scores in all_run_scores:
+                metric_names.update(run_scores[q_idx].keys())
+
+            if not metric_names:
+                continue
+
+            averaged: Dict[str, float] = {}
+            stds: Dict[str, float] = {}
+
+            for metric in sorted(metric_names):
+                values = []
+                for run_scores in all_run_scores:
+                    val = run_scores[q_idx].get(metric)
+                    if val is not None:
+                        values.append(float(val))
+                if values:
+                    arr = np.array(values)
+                    averaged[metric] = float(np.mean(arr))
+                    stds[metric] = float(np.std(arr))
+
+            per_question[q_idx]["ragas_metrics"] = averaged
+            per_question[q_idx]["ragas_metrics_std"] = stds
 
     def compute_context_precision_only(
         self,
