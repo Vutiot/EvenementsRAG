@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Run history</title>
+<style>
+  :root {
+    --bg-primary: #ffffff;
+    --bg-secondary: #f7f7f5;
+    --bg-tertiary: #eeeee9;
+    --text-primary: #1a1a1a;
+    --text-secondary: #6b6b6b;
+    --text-tertiary: #9a9a9a;
+    --border-light: rgba(0,0,0,0.08);
+    --border-medium: rgba(0,0,0,0.15);
+    --font-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', 'Consolas', monospace;
+    --success: #1D9E75;
+    --badge-bench-bg: #E6F1FB;
+    --badge-bench-text: #185FA5;
+    --badge-sweep-bg: #FAEEDA;
+    --badge-sweep-text: #854F0B;
+    --badge-vanilla-bg: #E6F1FB;
+    --badge-vanilla-text: #185FA5;
+    --badge-hybrid-bg: #EAF3DE;
+    --badge-hybrid-text: #3B6D11;
+    --radius: 8px;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg-primary: #1a1a1a;
+      --bg-secondary: #242424;
+      --bg-tertiary: #2e2e2e;
+      --text-primary: #e8e8e8;
+      --text-secondary: #a0a0a0;
+      --text-tertiary: #707070;
+      --border-light: rgba(255,255,255,0.06);
+      --border-medium: rgba(255,255,255,0.12);
+      --success: #5DCAA5;
+      --badge-bench-bg: #0C447C;
+      --badge-bench-text: #B5D4F4;
+      --badge-sweep-bg: #633806;
+      --badge-sweep-text: #FAC775;
+      --badge-vanilla-bg: #0C447C;
+      --badge-vanilla-text: #B5D4F4;
+      --badge-hybrid-bg: #27500A;
+      --badge-hybrid-text: #C0DD97;
+    }
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: var(--font-sans);
+    color: var(--text-primary);
+    background: var(--bg-primary);
+    padding: 24px;
+  }
+
+  .section-label {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    margin-bottom: 12px;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 0.5px solid var(--border-light);
+    border-radius: var(--radius);
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    table-layout: fixed;
+  }
+
+  th {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
+    text-align: left;
+    padding: 8px 10px;
+    border-bottom: 0.5px solid var(--border-medium);
+    white-space: nowrap;
+    background: var(--bg-secondary);
+  }
+
+  td {
+    padding: 10px 10px;
+    border-bottom: 0.5px solid var(--border-light);
+    vertical-align: top;
+    color: var(--text-primary);
+  }
+
+  /* Column widths */
+  col.c-status   { width: 28px;  }
+  col.c-ts       { width: 105px; }
+  col.c-name     { width: 165px; }
+  col.c-type     { width: 58px;  }
+  col.c-tech     { width: 64px;  }
+  col.c-chunk    { width: 56px;  }
+  col.c-topk     { width: 46px;  }
+  col.c-llm      { width: 115px; }
+  col.c-metric   { width: 50px;  }
+  col.c-time     { width: 50px;  }
+
+  /* Row hover */
+  tr.row-hover:hover {
+    background: var(--bg-secondary);
+  }
+
+  /* Status check */
+  .status-ok {
+    color: #5DCAA5;
+    font-size: 14px;
+  }
+
+  /* Badges */
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-size: 11px;
+    font-weight: 500;
+  }
+  .badge-bench   { background: var(--badge-bench-bg);   color: var(--badge-bench-text);   }
+  .badge-sweep   { background: var(--badge-sweep-bg);   color: var(--badge-sweep-text);   }
+  .badge-vanilla { background: var(--badge-vanilla-bg); color: var(--badge-vanilla-text); }
+  .badge-hybrid  { background: var(--badge-hybrid-bg);  color: var(--badge-hybrid-text);  }
+
+  /* Monospace values */
+  .mono {
+    font-family: var(--font-mono);
+    font-size: 12px;
+  }
+
+  /* Text helpers */
+  .muted { color: var(--text-secondary); }
+  .dim   { color: var(--text-tertiary);  }
+  .name  { font-weight: 500; }
+
+  /* Multi-value stacked cell (sweep parameters) */
+  .multi-val {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    line-height: 1.7;
+    color: var(--text-primary);
+  }
+  .multi-val span {
+    display: block;
+  }
+
+  /* Expand/collapse */
+  .expand-row {
+    cursor: pointer;
+  }
+  .chevron {
+    display: inline-block;
+    transition: transform 0.2s ease;
+    font-size: 9px;
+    margin-right: 4px;
+    color: var(--text-tertiary);
+  }
+  .chevron.open {
+    transform: rotate(90deg);
+  }
+
+  /* Child rows */
+  .child-row {
+    background: var(--bg-secondary);
+  }
+  .child-row td {
+    padding: 7px 10px;
+    font-size: 12px;
+    border-bottom: 0.5px solid var(--border-light);
+  }
+  .child-sep td {
+    border-bottom: 1.5px solid var(--border-medium);
+  }
+
+  /* Best performer highlight */
+  .best {
+    color: var(--success);
+    font-weight: 500;
+  }
+</style>
+</head>
+<body>
+
+<div class="section-label">Run history</div>
+
+<div class="table-wrap">
+  <table>
+    <colgroup>
+      <col class="c-status">
+      <col class="c-ts">
+      <col class="c-name">
+      <col class="c-type">
+      <col class="c-tech">
+      <col class="c-chunk">
+      <col class="c-topk">
+      <col class="c-llm">
+      <col class="c-metric">
+      <col class="c-metric">
+      <col class="c-metric">
+      <col class="c-time">
+    </colgroup>
+    <thead>
+      <tr>
+        <th></th>
+        <th>Timestamp</th>
+        <th>Name</th>
+        <th>Type</th>
+        <th>Tech.</th>
+        <th>Chunk</th>
+        <th>Top K</th>
+        <th>LLM</th>
+        <th>MRR</th>
+        <th>R@5</th>
+        <th>R@10</th>
+        <th>Time</th>
+      </tr>
+    </thead>
+    <tbody id="table-body"></tbody>
+  </table>
+</div>
+
+<script>
+// ─── DATA ───────────────────────────────────────────────────────────
+// Each run is either type "bench" (single config) or "sweep" (multiple configs).
+// Sweep rows carry arrays for swept parameter columns and a children[] array.
+
+const runs = [
+  {
+    id: 'b1', type: 'bench',
+    ts: '20 mars, 01:31', name: 'default',
+    tech: 'vanilla', chunk: '512', topk: '100', llm: '__none__',
+    mrr: 0.746, r5: 0.867, r10: 0.900, time: '2.0s'
+  },
+  {
+    id: 'b2', type: 'bench',
+    ts: '20 mars, 01:30', name: 'default',
+    tech: 'vanilla', chunk: '512', topk: '100', llm: 'mistralai/mistral-…',
+    mrr: 0.746, r5: 0.867, r10: 0.900, time: '1m 29s'
+  },
+  {
+    id: 's1', type: 'sweep',
+    ts: '19 mars, 14:20', name: 'chunk_overlap_sweep',
+    // Parameter columns: arrays = swept, strings = fixed
+    tech: ['vanilla'], chunk: ['256', '512', '1024'], topk: ['100'], llm: ['__none__'],
+    children: [
+      { tech: 'vanilla', chunk: '256',  topk: '100', llm: '__none__', extra: 'ovlp:0 · MiniLM-L6',   mrr: 0.482, r5: 0.540, r10: 0.620, time: '1.8s' },
+      { tech: 'vanilla', chunk: '256',  topk: '100', llm: '__none__', extra: 'ovlp:128 · MiniLM-L6',  mrr: 0.510, r5: 0.570, r10: 0.650, time: '1.9s' },
+      { tech: 'vanilla', chunk: '512',  topk: '100', llm: '__none__', extra: 'ovlp:0 · MiniLM-L6',    mrr: 0.596, r5: 0.740, r10: 0.820, time: '2.7s' },
+      { tech: 'vanilla', chunk: '512',  topk: '100', llm: '__none__', extra: 'ovlp:256 · MiniLM-L6',  mrr: 0.622, r5: 0.760, r10: 0.840, time: '2.9s' },
+      { tech: 'vanilla', chunk: '512',  topk: '100', llm: '__none__', extra: 'ovlp:256 · BGE-Small',  mrr: 0.640, r5: 0.780, r10: 0.860, time: '3.0s' },
+      { tech: 'vanilla', chunk: '1024', topk: '100', llm: '__none__', extra: 'ovlp:256 · BGE-Small',  mrr: 0.580, r5: 0.710, r10: 0.790, time: '3.4s' },
+    ]
+  },
+  {
+    id: 'b3', type: 'bench',
+    ts: '19 mars, 22:49', name: 'default',
+    tech: 'vanilla', chunk: '512', topk: '100', llm: '__none__',
+    mrr: 0.596, r5: 0.740, r10: 0.820, time: '2.7s'
+  },
+  {
+    id: 's2', type: 'sweep',
+    ts: '18 mars, 12:00', name: 'topk_reranker_sweep',
+    tech: ['vanilla'], chunk: ['512'], topk: ['20', '60', '100', '200'], llm: ['__none__'],
+    children: [
+      { tech: 'vanilla', chunk: '512', topk: '20',  llm: '__none__', extra: 'reranker: None',          mrr: 0.410, r5: 0.480, r10: 0.540, time: '1.2s' },
+      { tech: 'vanilla', chunk: '512', topk: '20',  llm: '__none__', extra: 'reranker: Cross-Encoder', mrr: 0.520, r5: 0.610, r10: 0.700, time: '4.8s' },
+      { tech: 'vanilla', chunk: '512', topk: '60',  llm: '__none__', extra: 'reranker: FlashRank',     mrr: 0.570, r5: 0.690, r10: 0.780, time: '3.1s' },
+      { tech: 'vanilla', chunk: '512', topk: '100', llm: '__none__', extra: 'reranker: None',           mrr: 0.596, r5: 0.740, r10: 0.820, time: '2.7s' },
+      { tech: 'vanilla', chunk: '512', topk: '200', llm: '__none__', extra: 'reranker: Cross-Encoder', mrr: 0.630, r5: 0.780, r10: 0.860, time: '6.2s' },
+    ]
+  },
+  {
+    id: 'b4', type: 'bench',
+    ts: '18 mars, 00:49', name: 'default',
+    tech: 'vanilla', chunk: '512', topk: '10', llm: 'nvidia/nemotron-3-…',
+    mrr: 0.558, r5: 0.545, r10: 0.636, time: '25.4s'
+  },
+  {
+    id: 'b5', type: 'bench',
+    ts: '18 mars, 00:48', name: 'default',
+    tech: 'vanilla', chunk: '512', topk: '100', llm: '__none__',
+    mrr: 0.522, r5: 0.590, r10: 0.680, time: '2.3s'
+  },
+];
+
+// ─── STATE ──────────────────────────────────────────────────────────
+
+const expanded = {};
+
+// ─── HELPERS ────────────────────────────────────────────────────────
+
+function formatMetric(v) {
+  if (v == null) return '<span class="dim">-</span>';
+  return v.toFixed(3);
+}
+
+// Render a parameter cell: single value = flat mono, array with 1 item = flat mono,
+// array with 2+ items = stacked vertically, one value per line.
+function paramCell(val) {
+  if (typeof val === 'string') {
+    return '<td class="mono">' + val + '</td>';
+  }
+  if (Array.isArray(val) && val.length === 1) {
+    return '<td class="mono">' + val[0] + '</td>';
+  }
+  return '<td><div class="multi-val">' +
+    val.map(function(v) { return '<span>' + v + '</span>'; }).join('') +
+    '</div></td>';
+}
+
+// Find index of child with highest MRR.
+function bestChildIndex(children) {
+  var best = 0;
+  for (var i = 1; i < children.length; i++) {
+    if (children[i].mrr > children[best].mrr) best = i;
+  }
+  return best;
+}
+
+// ─── RENDER ─────────────────────────────────────────────────────────
+
+function render() {
+  var tbody = document.getElementById('table-body');
+  var html = '';
+
+  runs.forEach(function(run) {
+
+    // ── Benchmark row ───────────────────────────────────────────────
+    if (run.type === 'bench') {
+      html += '<tr class="row-hover">' +
+        '<td><span class="status-ok">&#10003;</span></td>' +
+        '<td class="muted">' + run.ts + '</td>' +
+        '<td class="name">' + run.name + '</td>' +
+        '<td><span class="badge badge-bench">bench</span></td>' +
+        '<td><span class="badge badge-vanilla">' + run.tech + '</span></td>' +
+        '<td class="mono">' + run.chunk + '</td>' +
+        '<td class="mono">' + run.topk + '</td>' +
+        '<td class="mono" style="font-size:11px">' + run.llm + '</td>' +
+        '<td class="mono">' + formatMetric(run.mrr) + '</td>' +
+        '<td class="mono">' + formatMetric(run.r5) + '</td>' +
+        '<td class="mono">' + formatMetric(run.r10) + '</td>' +
+        '<td class="muted">' + run.time + '</td>' +
+        '</tr>';
+
+    // ── Sweep row ───────────────────────────────────────────────────
+    } else {
+      var isOpen = expanded[run.id];
+      var childCount = run.children.length;
+
+      // Parent row
+      html += '<tr class="row-hover expand-row" onclick="toggle(\'' + run.id + '\')">' +
+        '<td><span class="status-ok">&#10003;</span></td>' +
+        '<td class="muted">' + run.ts + '</td>' +
+        '<td>' +
+          '<div class="name">' +
+            '<span class="chevron ' + (isOpen ? 'open' : '') + '">&#9654;</span>' +
+            run.name +
+          '</div>' +
+          '<div style="font-size:11px;color:var(--text-tertiary);margin-top:3px;padding-left:13px">' +
+            childCount + ' configs' +
+          '</div>' +
+        '</td>' +
+        '<td><span class="badge badge-sweep">sweep</span></td>' +
+        paramCell(run.tech) +
+        paramCell(run.chunk) +
+        paramCell(run.topk) +
+        paramCell(run.llm) +
+        '<td class="dim">-</td>' +
+        '<td class="dim">-</td>' +
+        '<td class="dim">-</td>' +
+        '<td class="dim">-</td>' +
+        '</tr>';
+
+      // Child rows (only when expanded)
+      if (isOpen) {
+        var bestIdx = bestChildIndex(run.children);
+
+        run.children.forEach(function(child, i) {
+          var isBest = (i === bestIdx);
+          var isLast = (i === run.children.length - 1);
+          var rowClass = 'child-row' + (isLast ? ' child-sep' : '');
+          var metricClass = 'mono' + (isBest ? ' best' : '');
+
+          html += '<tr class="' + rowClass + '">' +
+            '<td></td>' +
+            '<td style="padding-left:24px;font-size:11px;color:var(--text-tertiary)">#' + (i + 1) + '</td>' +
+            '<td style="font-size:11px;color:var(--text-secondary);padding-left:24px">' + (child.extra || '') + '</td>' +
+            '<td></td>' +
+            '<td><span class="badge badge-vanilla" style="font-size:10px;padding:1px 6px">' + child.tech + '</span></td>' +
+            '<td class="mono" style="font-size:11px">' + child.chunk + '</td>' +
+            '<td class="mono" style="font-size:11px">' + child.topk + '</td>' +
+            '<td class="mono" style="font-size:11px">' + child.llm + '</td>' +
+            '<td class="' + metricClass + '" style="font-size:11px">' + formatMetric(child.mrr) + '</td>' +
+            '<td class="' + metricClass + '" style="font-size:11px">' + formatMetric(child.r5) + '</td>' +
+            '<td class="' + metricClass + '" style="font-size:11px">' + formatMetric(child.r10) + '</td>' +
+            '<td class="muted" style="font-size:11px">' + child.time + '</td>' +
+            '</tr>';
+        });
+      }
+    }
+  });
+
+  tbody.innerHTML = html;
+}
+
+// ─── TOGGLE ─────────────────────────────────────────────────────────
+
+function toggle(id) {
+  expanded[id] = !expanded[id];
+  render();
+}
+
+// ─── INIT ───────────────────────────────────────────────────────────
+
+render();
+</script>
+
+</body>
+</html>
