@@ -143,6 +143,7 @@ class BenchmarkService:
             yield _sse("started", {
                 "total_questions": total_questions,
                 "config_hash": cfg.config_hash(),
+                "ragas_repeat_count": cfg.evaluation.ragas_repeat_count,
             })
 
             # 7. Run benchmark with progress callback

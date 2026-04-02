@@ -256,6 +256,7 @@ class SweepService:
                 "total_configs": total_configs,
                 "total_questions_per_config": total_questions,
                 "sweep_name": sweep_name,
+                "ragas_repeat_count": cfg.evaluation.ragas_repeat_count,
             })
 
             # 6. Run each config sequentially

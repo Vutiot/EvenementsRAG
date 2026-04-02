@@ -32,8 +32,8 @@ graph TD
   E7F4T4["⚪ E7-F4-T4: Sweep heatmap & scatter"]
   E7F4T5["⚪ E7-F4-T5: Data table with ranking & export"]
 
-  E7F5T1["🔵 E7-F5-T1: Backend RAGAS repeat config & averaging"]
-  E7F5T2["⚪ E7-F5-T2: Wire repeat into runners"]
+  E7F5T1["✅ E7-F5-T1: Backend RAGAS repeat config & averaging"]
+  E7F5T2["✅ E7-F5-T2: Wire repeat into runners"]
   E7F5T3["⚪ E7-F5-T3: UI controls & confidence display"]
 
   E7F6T1["⚪ E7-F6-T1: RunHistory click-through"]
@@ -89,8 +89,8 @@ graph TD
   style E7F4T3 fill:#6b7280
   style E7F4T4 fill:#6b7280
   style E7F4T5 fill:#6b7280
-  style E7F5T1 fill:#3b82f6
-  style E7F5T2 fill:#6b7280
+  style E7F5T1 fill:#22c55e
+  style E7F5T2 fill:#22c55e
   style E7F5T3 fill:#6b7280
   style E7F6T1 fill:#6b7280
   style E7F6T2 fill:#6b7280
@@ -224,16 +224,16 @@ Complete rebuild of bench/sweep visualization using Apache ECharts-for-React, RA
 
 #### E7-F5: Multi-Run LLM Metric Stabilization
 
-##### 🔵 E7-F5-T1: Backend RAGAS repeat config and averaging logic
+##### ✅ E7-F5-T1: Backend RAGAS repeat config and averaging logic
 - blocked_by: []
-- status: ready
+- status: done
 - effort: M
 - agent_hint: (1) In `src/benchmarks/config.py` `EvaluationConfig`, add `ragas_repeat_count: int = Field(1, ge=1, le=10)`. (2) In `src/evaluation/metrics_collector.py` `compute_ragas_metrics()`: when repeat_count > 1, run evaluator N times, compute per-question mean + std for each metric. Store `ragas_metrics` (averaged) and `ragas_metrics_std` on per-question entries. (3) Add `ragas_repeat_count` to types. (4) Unit test in `tests/unit/evaluation/test_ragas_repeat.py`.
 - description: Configurable RAGAS repeat count. When > 1, runs LLM evaluation N times and averages per-question scores. Stores mean and standard deviation.
 
-##### ⚪ E7-F5-T2: Wire repeat count into benchmark and sweep runners
+##### ✅ E7-F5-T2: Wire repeat count into benchmark and sweep runners
 - blocked_by: [E7-F5-T1]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: (1) Verify `RagasEvaluator.evaluate()` is idempotent (can be called multiple times). (2) Add `ragas_repeat_count` to SSE `benchmark_started` / `sweep_started` events. (3) Add `ragas_run: {current, total}` to `question_progress` SSE events during repeats. (4) Allow `config_overrides` to set `evaluation.ragas_repeat_count`.
 - description: Wire RAGAS repeat count through benchmark/sweep execution. Add repeat progress to SSE events.
