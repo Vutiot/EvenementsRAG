@@ -15,10 +15,10 @@ Rebuild the bench and sweep visualization stack from scratch. Replace Plotly.js 
 ```mermaid
 graph TD
   E7F1T1["✅ E7-F1-T1: Install ECharts, remove Plotly deps"]
-  E7F1T2["🔵 E7-F1-T2: EChartWrapper shared component"]
-  E7F1T3["⚪ E7-F1-T3: Chart type helper factories"]
+  E7F1T2["✅ E7-F1-T2: EChartWrapper shared component"]
+  E7F1T3["✅ E7-F1-T3: Chart type helper factories"]
 
-  E7F2T1["⚪ E7-F2-T1: Metric taxonomy & grouping constants"]
+  E7F2T1["🔵 E7-F2-T1: Metric taxonomy & grouping constants"]
   E7F2T2["⚪ E7-F2-T2: Metric filter toggle component"]
 
   E7F3T1["⚪ E7-F3-T1: BenchViz page shell"]
@@ -76,9 +76,9 @@ graph TD
   E7F7T1 --> E7F7T2
 
   style E7F1T1 fill:#22c55e
-  style E7F1T2 fill:#3b82f6
-  style E7F1T3 fill:#ef4444
-  style E7F2T1 fill:#ef4444
+  style E7F1T2 fill:#22c55e
+  style E7F1T3 fill:#22c55e
+  style E7F2T1 fill:#3b82f6
   style E7F2T2 fill:#6b7280
   style E7F3T1 fill:#ef4444
   style E7F3T2 fill:#ef4444
@@ -117,16 +117,16 @@ Complete rebuild of bench/sweep visualization using Apache ECharts-for-React, RA
 - agent_hint: In `frontend/`, run `npm install echarts echarts-for-react` and `npm uninstall react-plotly.js plotly.js-dist-min @types/react-plotly.js`. Verify package.json is clean. Build will break on old Plotly imports — that is expected and resolved in F7.
 - description: Swap charting library dependencies. Remove react-plotly.js, plotly.js-dist-min, @types/react-plotly.js. Install echarts and echarts-for-react.
 
-##### 🔵 E7-F1-T2: Create EChartWrapper shared component
+##### ✅ E7-F1-T2: Create EChartWrapper shared component
 - blocked_by: [E7-F1-T1]
-- status: ready
+- status: done
 - effort: M
 - agent_hint: Create `frontend/src/components/charts/EChartWrapper.tsx`. Props: `option: EChartsOption`, `height?: number | string` (default 350), `loading?: boolean`, `onEvents?: Record<string, Function>`, `className?: string`. Internally use `ReactECharts` from `echarts-for-react` with `opts={{ renderer: "svg" }}`. Register a custom ECharts theme matching project's slate/blue palette: axis lines `#e2e8f0`, grid `#f1f5f9`, label color `#64748b`, title color `#334155`, series palette `["#3b82f6","#6366f1","#10b981","#f59e0b","#ef4444","#8b5cf6","#14b8a6","#ec4899","#f97316","#0ea5e9"]`. Add loading skeleton overlay. Create barrel export `frontend/src/components/charts/index.ts`.
 - description: Reusable ECharts wrapper with project-consistent theming, SVG rendering, responsive resize, and loading state. Foundation for all new visualizations.
 
-##### 🔴 E7-F1-T3: Create chart type helper factories
+##### ✅ E7-F1-T3: Create chart type helper factories
 - blocked_by: [E7-F1-T2]
-- status: pending
+- status: done
 - effort: M
 - agent_hint: Create `frontend/src/components/charts/chartBuilders.ts`. Export factory functions returning `EChartsOption` objects: (1) `buildBarChart({ categories, series, yAxisFormat?, title?, horizontal? })` — grouped/stacked bar. (2) `buildRadarChart({ indicators, series })` — radar/spider. (3) `buildHeatmapChart({ xData, yData, data, min?, max?, title? })` — heatmap with red-to-green gradient. (4) `buildParallelChart({ dimensions, data, colors? })` — parallel coordinates. (5) `buildBoxplotChart({ categories, data, title? })` — box plot for latency. Include `colorScale(value, min, max, higherIsBetter)`, `formatMetricValue(key, value)`, and `metricDisplayName(key)` utilities.
 - description: Chart option factory functions for bar, radar, heatmap, parallel coordinates, and boxplot. Centralizes ECharts config so pages only supply data.
@@ -135,9 +135,9 @@ Complete rebuild of bench/sweep visualization using Apache ECharts-for-React, RA
 
 #### E7-F2: Shared Metric Grouping Utilities
 
-##### 🔴 E7-F2-T1: Create metric taxonomy and grouping constants
+##### 🔵 E7-F2-T1: Create metric taxonomy and grouping constants
 - blocked_by: [E7-F1-T2]
-- status: pending
+- status: ready
 - effort: S
 - agent_hint: Create `frontend/src/constants/metricGroups.ts`. Define two top-level groups: (1) `RETRIEVAL_METRICS` with sub-groups: Document-Level (Doc P@5, Doc MRR, Doc R@5), Chunk-Level (MRR, R@5, R@10, Chunk P@5), Context/LLM (Context Precision, Context Recall, Context Relevance), Entity/NER (Ent P@5, Ent R@5, Ent MRR). (2) `GENERATION_METRICS` with sub-groups: Faithfulness, Answer Relevancy, Factual Correctness (answer_correctness + answer_similarity), Quality (coherence, correctness, conciseness), Safety (harmfulness, maliciousness — higherIsBetter: false). Export `ALL_METRIC_KEYS`, `HIGHER_IS_BETTER: Record<string, boolean>`, and `getMetricValue(result, key)` helper.
 - description: Central metric taxonomy defining Retrieval and Generation evaluation groups with sub-categories. Maps metric keys to display names, direction, and provides extraction helpers. Single source of truth for all visualization pages.
