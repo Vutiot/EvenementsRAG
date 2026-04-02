@@ -18,15 +18,15 @@ graph TD
   E7F1T2["✅ E7-F1-T2: EChartWrapper shared component"]
   E7F1T3["✅ E7-F1-T3: Chart type helper factories"]
 
-  E7F2T1["🔵 E7-F2-T1: Metric taxonomy & grouping constants"]
-  E7F2T2["⚪ E7-F2-T2: Metric filter toggle component"]
+  E7F2T1["✅ E7-F2-T1: Metric taxonomy & grouping constants"]
+  E7F2T2["✅ E7-F2-T2: Metric filter toggle component"]
 
-  E7F3T1["⚪ E7-F3-T1: BenchViz page shell"]
+  E7F3T1["🔵 E7-F3-T1: BenchViz page shell"]
   E7F3T2["⚪ E7-F3-T2: Retrieval evaluation bar charts"]
   E7F3T3["⚪ E7-F3-T3: Generation evaluation bar charts & radar"]
   E7F3T4["⚪ E7-F3-T4: Heatmaps with LaTeX/Markdown export"]
 
-  E7F4T1["⚪ E7-F4-T1: SweepViz page shell"]
+  E7F4T1["🔵 E7-F4-T1: SweepViz page shell"]
   E7F4T2["⚪ E7-F4-T2: Parameter-grouped vertical bar charts"]
   E7F4T3["⚪ E7-F4-T3: Run comparison view (parallel coords, radar, heatmap)"]
   E7F4T4["⚪ E7-F4-T4: Sweep heatmap & scatter"]
@@ -78,13 +78,13 @@ graph TD
   style E7F1T1 fill:#22c55e
   style E7F1T2 fill:#22c55e
   style E7F1T3 fill:#22c55e
-  style E7F2T1 fill:#3b82f6
-  style E7F2T2 fill:#6b7280
-  style E7F3T1 fill:#ef4444
+  style E7F2T1 fill:#22c55e
+  style E7F2T2 fill:#22c55e
+  style E7F3T1 fill:#3b82f6
   style E7F3T2 fill:#ef4444
   style E7F3T3 fill:#6b7280
   style E7F3T4 fill:#6b7280
-  style E7F4T1 fill:#6b7280
+  style E7F4T1 fill:#3b82f6
   style E7F4T2 fill:#6b7280
   style E7F4T3 fill:#6b7280
   style E7F4T4 fill:#6b7280
@@ -135,16 +135,16 @@ Complete rebuild of bench/sweep visualization using Apache ECharts-for-React, RA
 
 #### E7-F2: Shared Metric Grouping Utilities
 
-##### 🔵 E7-F2-T1: Create metric taxonomy and grouping constants
+##### ✅ E7-F2-T1: Create metric taxonomy and grouping constants
 - blocked_by: [E7-F1-T2]
-- status: ready
+- status: done
 - effort: S
 - agent_hint: Create `frontend/src/constants/metricGroups.ts`. Define two top-level groups: (1) `RETRIEVAL_METRICS` with sub-groups: Document-Level (Doc P@5, Doc MRR, Doc R@5), Chunk-Level (MRR, R@5, R@10, Chunk P@5), Context/LLM (Context Precision, Context Recall, Context Relevance), Entity/NER (Ent P@5, Ent R@5, Ent MRR). (2) `GENERATION_METRICS` with sub-groups: Faithfulness, Answer Relevancy, Factual Correctness (answer_correctness + answer_similarity), Quality (coherence, correctness, conciseness), Safety (harmfulness, maliciousness — higherIsBetter: false). Export `ALL_METRIC_KEYS`, `HIGHER_IS_BETTER: Record<string, boolean>`, and `getMetricValue(result, key)` helper.
 - description: Central metric taxonomy defining Retrieval and Generation evaluation groups with sub-categories. Maps metric keys to display names, direction, and provides extraction helpers. Single source of truth for all visualization pages.
 
-##### ⚪ E7-F2-T2: Create metric filter toggle component
+##### ✅ E7-F2-T2: Create metric filter toggle component
 - blocked_by: [E7-F2-T1]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: Create `frontend/src/components/charts/MetricFilterBar.tsx`. Props: `metricGroups`, `activeMetrics: Set<string>`, `onToggle`, `onToggleAll`. Renders metric names as clickable pill buttons grouped by category. Active = `bg-blue-100 text-blue-700 border-blue-200`, inactive = `bg-gray-50 text-gray-400 border-gray-200 line-through`. Group headers clickable to toggle entire group. Show "N/M metrics selected" count.
 - description: Clickable metric filter bar toggling individual metrics or entire groups. Reused on both BenchViz and SweepViz pages.
@@ -153,9 +153,9 @@ Complete rebuild of bench/sweep visualization using Apache ECharts-for-React, RA
 
 #### E7-F3: Bench Visualization Page
 
-##### 🔴 E7-F3-T1: BenchViz page shell with data loading
+##### 🔵 E7-F3-T1: BenchViz page shell with data loading
 - blocked_by: [E7-F2-T1]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: Create `frontend/src/pages/BenchViz.tsx`. Route: `/bench-viz/:filename` (URL-encoded). Load result via `getResult(decodeURIComponent(filename))`. State: `result`, `loading`, `error`, `activeRetrievalMetrics`, `activeGenerationMetrics` (all on by default). Layout: `PageHeader` with result name + timestamp + config badges. Two vertical sections with `<h2>` headers: "Retrieval Evaluation" and "Generation Evaluation", each with a `MetricFilterBar`. Add route in `App.tsx`.
 - description: Bench visualization page shell. Loads single benchmark result, renders vertically-stacked Retrieval and Generation sections with metric filter bars.
@@ -185,9 +185,9 @@ Complete rebuild of bench/sweep visualization using Apache ECharts-for-React, RA
 
 #### E7-F4: Sweep Visualization Page
 
-##### ⚪ E7-F4-T1: SweepViz page shell with multi-result loading
+##### 🔵 E7-F4-T1: SweepViz page shell with multi-result loading
 - blocked_by: [E7-F2-T1]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: Create `frontend/src/pages/SweepViz.tsx`. Route: `/sweep-viz/:sweepId`. Load sweep meta from `getResultFiles()`, extract child filenames, batch-fetch all children via `Promise.all()`. State: `sweepMeta`, `childResults[]`, `loading`, `error`, `activeView: "parameters" | "comparison"`. Layout: `PageHeader` + segmented toggle for "By Parameter" / "By Run" views. Collapsible filter panel showing parameter values as clickable pills. Add route in `App.tsx`.
 - description: Sweep visualization page loading all child results. Two view modes: parameter-grouped and run comparison. Filter panel for narrowing configs.

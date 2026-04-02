@@ -24,3 +24,5 @@ export type {
   ParallelDimension,
   BuildBoxplotChartParams,
 } from "./chartBuilders";
+
+export { default as MetricFilterBar } from "./MetricFilterBar";
