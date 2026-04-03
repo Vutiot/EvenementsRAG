@@ -624,6 +624,28 @@ export default function ParameterModal({
                 />
               </button>
             </div>
+            {/* RAGAS Repeat Count — visible when RAGAS is enabled */}
+            {(effective("evaluation.compute_ragas") as boolean) !== false && (
+            <div className="flex items-center justify-between mt-3">
+              <div>
+                <span className="text-sm font-medium text-gray-700">RAGAS Repeat Count</span>
+                <p className="text-xs text-gray-400">Run LLM evaluation N times and average (1 = no repeat)</p>
+              </div>
+              <input
+                type="number"
+                min={1}
+                max={10}
+                value={(effective("evaluation.ragas_repeat_count") as number) ?? 1}
+                onChange={(e) =>
+                  handleChange(
+                    "evaluation.ragas_repeat_count",
+                    Math.max(1, Math.min(10, parseInt(e.target.value) || 1)),
+                  )
+                }
+                className="w-16 rounded border border-gray-300 px-2 py-1 text-sm text-center font-mono text-gray-700 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            )}
           </Section>
 
           {/* ── Part 6: Results (hidden when generation disabled) ── */}
