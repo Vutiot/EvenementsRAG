@@ -1,6 +1,6 @@
 export type RelevanceTier = "source" | "exact_answer" | "related" | "not_relevant";
 
-/** Hex colors for Plotly chart bar fills. */
+/** Hex colors for chart bar fills. */
 export const RELEVANCE_HEX: Record<RelevanceTier, string> = {
   source: "#ef4444",       // red
   exact_answer: "#f97316", // orange

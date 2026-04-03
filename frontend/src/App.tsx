@@ -1,11 +1,11 @@
 import { Routes, Route, Navigate } from "react-router-dom";
 import Sidebar from "./components/layout/Sidebar";
 import TestingPage from "./pages/TestingPage";
-import BenchmarkViewer from "./pages/BenchmarkViewer";
 import RunHistory from "./pages/RunHistory";
-import MetricDashboards from "./pages/MetricDashboards";
 import CollectionManager from "./pages/CollectionManager";
 import DatasetManager from "./pages/DatasetManager";
+import BenchViz from "./pages/BenchViz";
+import SweepViz from "./pages/SweepViz";
 
 export default function App() {
   return (
@@ -18,8 +18,10 @@ export default function App() {
           <Route path="/collections" element={<CollectionManager />} />
           <Route path="/evaluations" element={<DatasetManager />} />
           <Route path="/runs" element={<RunHistory />} />
-          <Route path="/benchmarks" element={<BenchmarkViewer />} />
-          <Route path="/metrics" element={<MetricDashboards />} />
+          <Route path="/benchmarks" element={<Navigate to="/runs" replace />} />
+          <Route path="/bench-viz/:filename" element={<BenchViz />} />
+          <Route path="/sweep-viz/:sweepId" element={<SweepViz />} />
+          <Route path="/metrics" element={<Navigate to="/runs" replace />} />
           {/* Backward-compat redirects */}
           <Route path="/query" element={<Navigate to="/testing" replace />} />
           <Route path="/sweeps" element={<Navigate to="/testing" replace />} />

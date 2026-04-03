@@ -1,7 +1,6 @@
 import { useState, useMemo } from "react";
 import type { NormalizedQuestion } from "../../api/types";
 import GeneratedAnswer from "../results/GeneratedAnswer";
-import RagasMetricsGrid from "./RagasMetricsGrid";
 
 interface Props {
   questions: NormalizedQuestion[];
@@ -174,7 +173,26 @@ export default function QuestionExplorer({ questions, isLegacy }: Props) {
 
           {/* RAGAS per-question */}
           {selected.ragas_metrics && Object.keys(selected.ragas_metrics).length > 0 && (
-            <RagasMetricsGrid metrics={selected.ragas_metrics} title="Per-Question RAGAS" />
+            <div>
+              <h4 className="mb-2 text-xs font-semibold uppercase tracking-wider text-slate-400">Per-Question RAGAS</h4>
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
+                {Object.entries(selected.ragas_metrics).map(([key, value]) => (
+                  <div
+                    key={key}
+                    className={`rounded border border-slate-200 border-l-3 px-3 py-2 ${
+                      value >= 0.7 ? "border-l-green-500 text-green-700 bg-green-50/40"
+                      : value >= 0.4 ? "border-l-yellow-500 text-yellow-700 bg-yellow-50/40"
+                      : "border-l-red-500 text-red-700 bg-red-50/40"
+                    }`}
+                  >
+                    <p className="text-[10px] font-medium uppercase tracking-wide opacity-70">
+                      {key.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase())}
+                    </p>
+                    <p className="mt-0.5 font-mono text-sm font-medium">{value.toFixed(3)}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
           )}
         </div>
       ) : (

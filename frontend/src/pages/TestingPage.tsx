@@ -9,7 +9,7 @@ import CollectionPreview from "../components/testing/CollectionPreview";
 import ChunkList from "../components/results/ChunkList";
 import StreamingAnswer from "../components/results/StreamingAnswer";
 import LatencyBreakdown from "../components/results/LatencyBreakdown";
-import ChunkScoresChart from "../components/results/ChunkScoresChart";
+import { EChartWrapper, buildBarChart } from "../components/charts";
 import {
   getPresetConfig,
   ensureCollection,
@@ -123,10 +123,6 @@ export default function TestingPage() {
   const sourceChunkId =
     pickedQuestion && !isQueryEdited ? pickedQuestion.source_chunk_id : null;
 
-  const highlightedChunkIds = useMemo(
-    () => Object.keys(highlightedChunks),
-    [highlightedChunks],
-  );
 
   const hideSections = useMemo(() => {
     if (mode === "benchmark" || mode === "sweep") return new Set(["Results"]);
@@ -675,13 +671,20 @@ export default function TestingPage() {
                     retrievalMs={streamRetrievalMs}
                     generationMs={streamGenerationMs ?? 0}
                   />
-                  <ChunkScoresChart
-                    chunks={streamingChunks}
-                    sourceChunkId={sourceChunkId}
-                    highlightedChunkIds={highlightedChunkIds}
-                    highlightedContent={highlightedChunks}
-                    relevanceMap={relevanceMap}
-                  />
+                  {streamingChunks.length > 0 && (
+                    <EChartWrapper
+                      option={buildBarChart({
+                        categories: streamingChunks.map((_, i) => `#${i + 1}`),
+                        series: [{
+                          name: "Score",
+                          data: streamingChunks.map((c) => c.score),
+                        }],
+                        title: "Chunk Similarity Scores",
+                        horizontal: true,
+                      })}
+                      height={Math.max(200, streamingChunks.length * 28 + 80)}
+                    />
+                  )}
                   <ChunkList
                     chunks={streamingChunks}
                     highlightedContent={highlightedChunks}
