@@ -397,7 +397,7 @@ function NormalRow({
 }) {
   return (
     <tr
-      onClick={() => navigate(`/benchmarks?file=${encodeURIComponent(r.filename)}`)}
+      onClick={() => navigate(`/bench-viz/${encodeURIComponent(r.filename)}`)}
       className="cursor-pointer hover:bg-gray-50 transition-colors"
     >
       <td className="px-3 py-2">
@@ -505,6 +505,7 @@ function SweepParentRow({
   getSweptValues: (r: ResultFileInfo, key: string) => unknown[] | undefined;
 }) {
   const cs = r.config_summary;
+  const navigate = useNavigate();
 
   return (
     <tr
@@ -527,6 +528,19 @@ function SweepParentRow({
         <span className="inline-block rounded-full bg-purple-100 px-2 py-0.5 text-xs font-medium text-purple-700">
           sweep
         </span>
+        {r.sweep_meta && (
+          <button
+            type="button"
+            title="Open sweep visualization"
+            onClick={(e) => {
+              e.stopPropagation();
+              navigate(`/sweep-viz/${encodeURIComponent(r.sweep_meta!.sweep_id)}`);
+            }}
+            className="ml-2 inline-flex items-center rounded bg-blue-50 px-1.5 py-0.5 text-xs text-blue-600 hover:bg-blue-100"
+          >
+            &#x2632;
+          </button>
+        )}
       </td>
       <td className="px-3 py-2 text-gray-500 whitespace-nowrap">
         {formatTimestamp(r.timestamp)}
@@ -618,7 +632,7 @@ function SweepChildRow({
 
   return (
     <tr
-      onClick={() => navigate(`/benchmarks?file=${encodeURIComponent(r.filename)}`)}
+      onClick={() => navigate(`/bench-viz/${encodeURIComponent(r.filename)}`)}
       className={`cursor-pointer hover:bg-gray-100/50 transition-colors ${bestBg} ${isLast ? "border-b-2 border-gray-200" : ""}`}
     >
       <td className="px-3 py-2 text-center">

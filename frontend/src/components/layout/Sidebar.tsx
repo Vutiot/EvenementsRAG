@@ -21,11 +21,7 @@ const NAV_ITEMS: NavSection[] = [
   },
   {
     group: "Results",
-    items: [
-      { to: "/runs", label: "Run History" },
-      { to: "/benchmarks", label: "Result Viewer" },
-      { to: "/metrics", label: "Metric Dashboards" },
-    ],
+    items: [{ to: "/runs", label: "Run History" }],
   },
 ];
 
