@@ -181,8 +181,7 @@ class EvaluationConfig(BaseModel):
     ragas_metrics: list[str] = Field(default_factory=lambda: [
         "faithfulness", "answer_relevancy", "context_precision",
         "context_recall", "context_entity_recall", "answer_similarity",
-        "answer_correctness", "harmfulness", "maliciousness",
-        "coherence", "correctness", "conciseness",
+        "answer_correctness",
     ])
     ragas_evaluator_model: str = "mistralai/mistral-small-4-119b-2603"
     ragas_max_workers: int = Field(1, ge=1, le=8)
