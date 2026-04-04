@@ -184,16 +184,7 @@ class VanillaRetriever(BaseRAG):
             {"role": "user", "content": prompt},
         ]
 
-        # DEBUG: print exact payload sent to LLM
-        print("=" * 60)
-        print(f"[DEBUG LLM CALL] model={llm_model}")
-        print(f"[DEBUG LLM CALL] temperature={temperature}, max_tokens={max_tokens}")
-        for i, msg in enumerate(messages):
-            print(f"[DEBUG LLM CALL] messages[{i}] role={msg['role']} content={msg['content'][:200]}...")
-        print("=" * 60)
-
         try:
-            # Call LLM
             response = self.llm_client.chat.completions.create(
                 model=llm_model,
                 messages=messages,

@@ -44,7 +44,7 @@ class EntityExtractor:
 
     def __init__(
         self,
-        model: str = "nvidia/nemotron-3-nano-30b-a3b",
+        model: str = "mistralai/mistral-small-4-119b-2603",
         base_url: Optional[str] = None,
         api_key: Optional[str] = None,
         rate_limit_seconds: float = 1.5,
@@ -109,6 +109,10 @@ class EntityExtractor:
                 self._wait_rate_limit()
                 self._last_call_time = time.time()
 
+                logger.info(
+                    f"Entity extraction LLM call: model={self._model}, text_len={len(text)}, attempt={attempt + 1}/{self._max_retries}",
+                )
+
                 response = self._client.chat.completions.create(
                     model=self._model,
                     messages=[{"role": "user", "content": prompt}],
@@ -117,6 +121,7 @@ class EntityExtractor:
                 )
                 raw = response.choices[0].message.content or ""
                 entities = self._parse_entities(raw)
+                logger.info(f"Entity extraction returned {len(entities)} entities")
                 self._cache[key] = entities
                 return entities
 
