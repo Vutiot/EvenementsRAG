@@ -4,6 +4,7 @@ export type SweepPhase = "idle" | "running" | "complete";
 export interface ActiveRun {
   status: "running" | "complete" | "error";
   progress: { current: number; total: number };
+  metricsPhase?: string;
   error?: string;
 }
 
@@ -12,4 +13,5 @@ export interface SweepProgress {
   totalConfigs: number;
   questionIndex: number;
   totalQuestions: number;
+  metricsPhase?: string;
 }

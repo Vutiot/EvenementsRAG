@@ -176,14 +176,21 @@ class BenchmarkService:
             progress_queue: queue.Queue[str | None] = queue.Queue()
 
             def _progress_callback(idx: int, total: int, evaluation: dict):
-                event = _sse("progress", {
-                    "question_index": idx + 1,
-                    "total_questions": total,
-                    "question_id": evaluation.get("question_id", ""),
-                    "question_type": evaluation.get("type", ""),
-                    "retrieval_time_ms": round(evaluation.get("retrieval_time_ms", 0), 1),
-                })
-                progress_queue.put(event)
+                if idx == -1:
+                    # Metrics-phase event (RAGAS heartbeat, entity eval, etc.)
+                    event_type = evaluation.get("question_id", "").lstrip("_")
+                    payload = {k: v for k, v in evaluation.items()
+                               if k not in ("question_id", "type")}
+                    progress_queue.put(_sse(event_type, payload))
+                else:
+                    event = _sse("progress", {
+                        "question_index": idx + 1,
+                        "total_questions": total,
+                        "question_id": evaluation.get("question_id", ""),
+                        "question_type": evaluation.get("type", ""),
+                        "retrieval_time_ms": round(evaluation.get("retrieval_time_ms", 0), 1),
+                    })
+                    progress_queue.put(event)
 
             result_holder: list = []
             error_holder: list = []
@@ -209,7 +216,7 @@ class BenchmarkService:
             # Yield progress events as they come
             while True:
                 try:
-                    item = progress_queue.get(timeout=300)
+                    item = progress_queue.get(timeout=600)
                 except queue.Empty:
                     yield _sse("error", {"message": "Benchmark timed out"})
                     return

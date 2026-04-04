@@ -430,6 +430,41 @@ export default function TestingPage() {
             progress: { current: e.question_index, total: e.total_questions },
           });
         },
+        onMetricsProgress: (eventType, data) => {
+          let label: string;
+          if (eventType === "ragas_heartbeat") {
+            const cur = (data.current as number) ?? 0;
+            const tot = (data.total as number) ?? 0;
+            const elapsed = (data.elapsed_s as number) ?? 0;
+            const min = Math.floor(elapsed / 60);
+            const sec = elapsed % 60;
+            const pct = tot > 0 ? Math.round((cur / tot) * 100) : 0;
+            const time = min > 0 ? `${min}m ${sec}s` : `${sec}s`;
+            label = tot > 0
+              ? `RAGAS evaluation\u2026 ${cur}/${tot} (${pct}%) \u2014 ${time}`
+              : `RAGAS evaluation in progress\u2026 (${time})`;
+          } else if (eventType === "ragas_repeat_start") {
+            label = `RAGAS repeat run ${data.run ?? ""}/${data.total_runs ?? ""} starting\u2026`;
+          } else if (eventType === "ragas_repeat_complete") {
+            label = `RAGAS repeat run ${data.run ?? ""}/${data.total_runs ?? ""} complete`;
+          } else if (eventType === "generation_progress") {
+            const cur = (data.current as number) ?? 0;
+            const tot = (data.total as number) ?? 0;
+            label = `Generating answers\u2026 ${cur}/${tot}`;
+          } else {
+            const labels: Record<string, string> = {
+              generation_start: "Generating answers\u2026",
+              ragas_eval_start: "RAGAS evaluation starting\u2026",
+              ragas_eval_complete: "RAGAS evaluation complete",
+              entity_eval_start: "Entity metrics evaluation\u2026",
+              entity_eval_complete: "Entity metrics complete",
+            };
+            label = labels[eventType] ?? eventType;
+          }
+          setActiveRun((prev) =>
+            prev ? { ...prev, metricsPhase: label } : prev,
+          );
+        },
         onComplete: () => {
           setActiveRun(null);
           setBenchPhase("complete");
@@ -503,6 +538,41 @@ export default function TestingPage() {
             questionIndex: e.question_index,
             totalQuestions: e.total_questions,
           });
+        },
+        onMetricsProgress: (eventType, data) => {
+          let label: string;
+          if (eventType === "ragas_heartbeat") {
+            const cur = (data.current as number) ?? 0;
+            const tot = (data.total as number) ?? 0;
+            const elapsed = (data.elapsed_s as number) ?? 0;
+            const min = Math.floor(elapsed / 60);
+            const sec = elapsed % 60;
+            const pct = tot > 0 ? Math.round((cur / tot) * 100) : 0;
+            const time = min > 0 ? `${min}m ${sec}s` : `${sec}s`;
+            label = tot > 0
+              ? `RAGAS evaluation\u2026 ${cur}/${tot} (${pct}%) \u2014 ${time}`
+              : `RAGAS evaluation in progress\u2026 (${time})`;
+          } else if (eventType === "ragas_repeat_start") {
+            label = `RAGAS repeat run ${data.run ?? ""}/${data.total_runs ?? ""} starting\u2026`;
+          } else if (eventType === "ragas_repeat_complete") {
+            label = `RAGAS repeat run ${data.run ?? ""}/${data.total_runs ?? ""} complete`;
+          } else if (eventType === "generation_progress") {
+            const cur = (data.current as number) ?? 0;
+            const tot = (data.total as number) ?? 0;
+            label = `Generating answers\u2026 ${cur}/${tot}`;
+          } else {
+            const labels: Record<string, string> = {
+              generation_start: "Generating answers\u2026",
+              ragas_eval_start: "RAGAS evaluation starting\u2026",
+              ragas_eval_complete: "RAGAS evaluation complete",
+              entity_eval_start: "Entity metrics evaluation\u2026",
+              entity_eval_complete: "Entity metrics complete",
+            };
+            label = labels[eventType] ?? eventType;
+          }
+          setSweepProgress((prev) =>
+            prev ? { ...prev, metricsPhase: label } : prev,
+          );
         },
         onConfigComplete: (e) => {
           setSweepResults((prev) => [...prev, e]);

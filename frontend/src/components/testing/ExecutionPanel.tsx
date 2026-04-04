@@ -133,9 +133,11 @@ export default function ExecutionPanel({
           <p className="text-xs text-gray-400 mt-1">
             {benchPhase === "ensuring"
               ? "Preparing collection..."
-              : `Evaluating questions... (${Math.round(
-                  (activeRun.progress.current / activeRun.progress.total) * 100
-                )}%)`}
+              : activeRun.metricsPhase
+                ? activeRun.metricsPhase
+                : `Evaluating questions... (${Math.round(
+                    (activeRun.progress.current / activeRun.progress.total) * 100
+                  )}%)`}
           </p>
         </div>
       )}
@@ -188,6 +190,9 @@ export default function ExecutionPanel({
               />
             </div>
           </div>
+          {sweepProgress.metricsPhase && (
+            <p className="text-xs text-blue-500 mt-1">{sweepProgress.metricsPhase}</p>
+          )}
         </div>
       )}
 

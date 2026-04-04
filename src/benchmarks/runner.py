@@ -301,7 +301,7 @@ class ParameterizedBenchmarkRunner:
 
         # Optional generation pass
         if self.config.generation.enabled:
-            self._run_generation_pass(questions_path, per_q, max_questions)
+            self._run_generation_pass(questions_path, per_q, max_questions, progress_callback)
 
         # Metric collection (generation quality + latency)
         from src.evaluation.metrics_collector import MetricsCollector
@@ -322,18 +322,27 @@ class ParameterizedBenchmarkRunner:
             q_list = q_data.get("questions", [])
             questions_by_id = {q.get("id"): q for q in q_list}
 
+        # Bridge metrics-phase progress into the existing progress_callback
+        def _metrics_progress(event_type: str, data: dict) -> None:
+            if progress_callback:
+                progress_callback(-1, len(per_q), {
+                    "question_id": f"__{event_type}",
+                    "type": "metrics_phase",
+                    **data,
+                })
+
         if self.config.generation.enabled and self.config.evaluation.compute_ragas:
-            collector.compute_ragas_metrics(per_q, questions_by_id)
+            collector.compute_ragas_metrics(per_q, questions_by_id, _metrics_progress)
 
         if (
             self.config.generation.enabled
             and self.config.evaluation.compute_context_precision
             and not self.config.evaluation.compute_ragas
         ):
-            collector.compute_context_precision_only(per_q, questions_by_id)
+            collector.compute_context_precision_only(per_q, questions_by_id, _metrics_progress)
 
         if self.config.generation.enabled and self.config.evaluation.compute_entity_metrics:
-            collector.compute_entity_metrics(per_q, questions_by_id)
+            collector.compute_entity_metrics(per_q, questions_by_id, _metrics_progress)
 
         collector.compute_latency_metrics(per_q)
 
@@ -448,6 +457,7 @@ class ParameterizedBenchmarkRunner:
         questions_path: Path,
         per_q: list,
         max_questions: Optional[int],
+        progress_callback: Optional[Callable[[int, int, Dict], None]] = None,
     ) -> None:
         """Add generated_answer to each per-question result entry (in-place).
 
@@ -471,7 +481,15 @@ class ParameterizedBenchmarkRunner:
             model=self.config.generation.model,
         )
 
-        for entry in per_q:
+        total = len(per_q)
+        if progress_callback:
+            progress_callback(-1, total, {
+                "question_id": "__generation_start",
+                "type": "metrics_phase",
+                "num_questions": total,
+            })
+
+        for idx, entry in enumerate(per_q):
             q_id = entry.get("question_id")
             q_text = (q_by_id.get(q_id) or {}).get("question") or entry.get("question", "")
 
@@ -495,3 +513,11 @@ class ParameterizedBenchmarkRunner:
                 entry["generated_answer"] = None
                 entry["generation_time_ms"] = 0.0
                 entry["retrieved_contexts"] = []
+
+            if progress_callback:
+                progress_callback(-1, total, {
+                    "question_id": "__generation_progress",
+                    "type": "metrics_phase",
+                    "current": idx + 1,
+                    "total": total,
+                })

@@ -349,15 +349,26 @@ class SweepService:
                 _eval_mode = eval_mode
 
                 def _progress_callback(idx: int, total: int, evaluation: dict, _ci: int = ci) -> None:
-                    progress_queue.put(_sse("config_progress", {
-                        "config_index": _ci + 1,
-                        "total_configs": total_configs,
-                        "question_index": idx + 1,
-                        "total_questions": total,
-                        "question_id": evaluation.get("question_id", ""),
-                        "question_type": evaluation.get("type", ""),
-                        "retrieval_time_ms": round(evaluation.get("retrieval_time_ms", 0), 1),
-                    }))
+                    if idx == -1:
+                        # Metrics-phase event (RAGAS heartbeat, entity eval, etc.)
+                        event_type = evaluation.get("question_id", "").lstrip("_")
+                        payload = {
+                            "config_index": _ci + 1,
+                            "total_configs": total_configs,
+                            **{k: v for k, v in evaluation.items()
+                               if k not in ("question_id", "type")},
+                        }
+                        progress_queue.put(_sse(event_type, payload))
+                    else:
+                        progress_queue.put(_sse("config_progress", {
+                            "config_index": _ci + 1,
+                            "total_configs": total_configs,
+                            "question_index": idx + 1,
+                            "total_questions": total,
+                            "question_id": evaluation.get("question_id", ""),
+                            "question_type": evaluation.get("type", ""),
+                            "retrieval_time_ms": round(evaluation.get("retrieval_time_ms", 0), 1),
+                        }))
 
                 def _worker(
                     _mgt: dict | None = _mapped_gt,
@@ -384,7 +395,7 @@ class SweepService:
 
                 while True:
                     try:
-                        item = progress_queue.get(timeout=300)
+                        item = progress_queue.get(timeout=600)
                     except queue.Empty:
                         yield _sse("error", {"message": f"Config {config_index + 1} timed out"})
                         return

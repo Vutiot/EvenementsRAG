@@ -16,8 +16,9 @@ Usage:
 """
 
 import math
+import threading
 from dataclasses import dataclass, field
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
 from src.benchmarks.config import EvaluationConfig
 from src.utils.logger import get_logger
@@ -194,6 +195,7 @@ class RagasEvaluator:
         self,
         per_question: List[dict],
         questions_by_id: Dict[str, dict],
+        progress_callback: Optional[Callable[[str, dict], None]] = None,
     ) -> List[RagasResult]:
         """Run RAGAS evaluation on eligible per-question entries (in-place mutation).
 
@@ -248,7 +250,9 @@ class RagasEvaluator:
             self._results = []
             return []
 
-        logger.info(f"Running RAGAS evaluation on {len(samples)} questions")
+        logger.info(
+            f"Running RAGAS evaluation on {len(samples)} questions with metrics: {self._config.ragas_metrics}",
+        )
 
         # Build deps lazily
         if self._llm is None:
@@ -275,14 +279,70 @@ class RagasEvaluator:
         # Build dataset and run
         dataset = EvaluationDataset(samples=samples)
 
-        eval_result = ragas_evaluate(
-            dataset=dataset,
-            metrics=metrics,
-            llm=self._llm,
-            embeddings=self._embeddings,
-            run_config=self._run_config,
-            raise_exceptions=False,
+        if progress_callback:
+            progress_callback("ragas_eval_start", {
+                "num_questions": len(samples),
+                "num_metrics": len(metrics),
+            })
+
+        logger.info(
+            f"RAGAS LLM call: model={self._config.ragas_evaluator_model}, "
+            f"{len(metrics)} metrics × {len(samples)} questions, "
+            f"timeout={self._config.ragas_timeout}s, max_workers={self._config.ragas_max_workers}",
         )
+
+        # Track RAGAS progress by intercepting its tqdm updates
+        _ragas_progress = {"current": 0, "total": len(samples)}
+        stop_heartbeat = threading.Event()
+
+        def _heartbeat():
+            tick = 0
+            while not stop_heartbeat.wait(15):
+                tick += 1
+                if progress_callback:
+                    progress_callback("ragas_heartbeat", {
+                        "elapsed_s": tick * 15,
+                        "current": _ragas_progress["current"],
+                        "total": _ragas_progress["total"],
+                    })
+
+        hb_thread = threading.Thread(target=_heartbeat, daemon=True)
+        hb_thread.start()
+
+        # Monkey-patch tqdm to capture RAGAS's internal progress
+        import tqdm as _tqdm_mod
+        _orig_tqdm = _tqdm_mod.tqdm
+
+        class _ProgressTqdm(_orig_tqdm):
+            def update(self, n=1):
+                super().update(n)
+                _ragas_progress["current"] = int(self.n)
+                if self.total:
+                    _ragas_progress["total"] = int(self.total)
+
+        _tqdm_mod.tqdm = _ProgressTqdm
+
+        try:
+            eval_result = ragas_evaluate(
+                dataset=dataset,
+                metrics=metrics,
+                llm=self._llm,
+                embeddings=self._embeddings,
+                run_config=self._run_config,
+                raise_exceptions=False,
+            )
+        finally:
+            _tqdm_mod.tqdm = _orig_tqdm
+            stop_heartbeat.set()
+            hb_thread.join(timeout=2)
+
+        logger.info(f"RAGAS LLM evaluation returned {len(eval_result.to_pandas())} rows")
+
+        if progress_callback:
+            progress_callback("ragas_eval_complete", {
+                "num_questions": len(samples),
+                "num_scored": len(eligible_indices),
+            })
 
         # Map results back to per_question entries
         result_df = eval_result.to_pandas()

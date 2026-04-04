@@ -310,6 +310,7 @@ export function runBenchmark(
     onComplete: (e: BenchmarkCompleteEvent) => void;
     onWarning?: (e: WarningEvent) => void;
     onInfo?: (e: WarningEvent) => void;
+    onMetricsProgress?: (eventType: string, data: Record<string, unknown>) => void;
     onError: (msg: string) => void;
   },
 ): AbortController {
@@ -359,6 +360,8 @@ export function runBenchmark(
             else if (currentEvent === "progress") callbacks.onProgress(data);
             else if (currentEvent === "complete") callbacks.onComplete(data);
             else if (currentEvent === "error") callbacks.onError(data.message);
+            else if (currentEvent.startsWith("ragas_") || currentEvent.startsWith("entity_") || currentEvent.startsWith("generation_"))
+              callbacks.onMetricsProgress?.(currentEvent, data);
           }
         }
       }
@@ -390,6 +393,7 @@ export function runSweep(
     onSweepComplete: (e: SweepCompleteEvent) => void;
     onWarning?: (e: WarningEvent) => void;
     onInfo?: (e: WarningEvent) => void;
+    onMetricsProgress?: (eventType: string, data: Record<string, unknown>) => void;
     onError: (msg: string) => void;
   },
 ): AbortController {
@@ -457,6 +461,10 @@ export function runSweep(
                 break;
               case "error":
                 callbacks.onError(data.message);
+                break;
+              default:
+                if (currentEvent.startsWith("ragas_") || currentEvent.startsWith("entity_") || currentEvent.startsWith("generation_"))
+                  callbacks.onMetricsProgress?.(currentEvent, data);
                 break;
             }
           }

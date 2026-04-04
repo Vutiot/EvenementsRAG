@@ -16,7 +16,7 @@ Usage:
 """
 
 from dataclasses import dataclass
-from typing import Dict, List, Optional
+from typing import Callable, Dict, List, Optional
 
 import numpy as np
 
@@ -110,6 +110,7 @@ class MetricsCollector:
         self,
         per_question: List[dict],
         questions_by_id: Dict[str, dict],
+        progress_callback: Optional[Callable[[str, dict], None]] = None,
     ) -> None:
         """Compute RAGAS metrics if the ``compute_ragas`` flag is enabled.
 
@@ -127,7 +128,7 @@ class MetricsCollector:
         if repeat <= 1:
             # Single run — original behavior
             self._ensure_ragas_evaluator()
-            self._ragas_evaluator.evaluate(per_question, questions_by_id)
+            self._ragas_evaluator.evaluate(per_question, questions_by_id, progress_callback)
             return
 
         # --- Multi-run averaging ---
@@ -137,13 +138,21 @@ class MetricsCollector:
 
         for run_idx in range(repeat):
             logger.info("RAGAS repeat run %d/%d", run_idx + 1, repeat)
+            if progress_callback:
+                progress_callback("ragas_repeat_start", {
+                    "run": run_idx + 1, "total_runs": repeat,
+                })
             # Create a fresh evaluator for each run so internal state is clean
             self._ragas_evaluator = None
             self._ensure_ragas_evaluator()
 
             # Work on a shallow copy so each run writes its own ragas_metrics
             shadow = [{**entry} for entry in per_question]
-            self._ragas_evaluator.evaluate(shadow, questions_by_id)
+            self._ragas_evaluator.evaluate(shadow, questions_by_id, progress_callback)
+            if progress_callback:
+                progress_callback("ragas_repeat_complete", {
+                    "run": run_idx + 1, "total_runs": repeat,
+                })
 
             run_scores = [entry.get("ragas_metrics", {}) for entry in shadow]
             all_run_scores.append(run_scores)
@@ -180,6 +189,7 @@ class MetricsCollector:
         self,
         per_question: List[dict],
         questions_by_id: Dict[str, dict],
+        progress_callback: Optional[Callable[[str, dict], None]] = None,
     ) -> None:
         """Run only ``context_precision`` from RAGAS (lightweight alternative).
 
@@ -187,12 +197,13 @@ class MetricsCollector:
         is False, so the full RAGAS suite is not needed.
         """
         self._ensure_ragas_evaluator_for_context_precision()
-        self._ragas_evaluator.evaluate(per_question, questions_by_id)
+        self._ragas_evaluator.evaluate(per_question, questions_by_id, progress_callback)
 
     def compute_entity_metrics(
         self,
         per_question: List[dict],
         questions_by_id: Dict[str, dict],
+        progress_callback: Optional[Callable[[str, dict], None]] = None,
     ) -> None:
         """Compute entity precision/recall/MRR per question (in-place mutation).
 
@@ -202,6 +213,11 @@ class MetricsCollector:
         if not self._config.compute_entity_metrics:
             logger.info("compute_entity_metrics is False — skipping")
             return
+
+        if progress_callback:
+            progress_callback("entity_eval_start", {
+                "num_questions": len(per_question),
+            })
 
         self._ensure_entity_extractor()
 
@@ -236,6 +252,11 @@ class MetricsCollector:
             precisions.append(ep)
             recalls.append(er)
             mrrs.append(em)
+
+        if progress_callback:
+            progress_callback("entity_eval_complete", {
+                "num_scored": len(precisions),
+            })
 
         if precisions:
             self._entity_scores = {
