@@ -304,3 +304,4 @@ docs/_templates/
 .claude/worktrees/
 .claude/settings.json
 .claude/settings.local.json
+frontend/dist-demo/
