@@ -7,7 +7,7 @@ import {
   SERIES_COLORS,
 } from "../charts";
 import type { HeatmapDataPoint } from "../charts";
-import { ALL_METRIC_KEYS, HIGHER_IS_BETTER } from "../../constants/metricGroups";
+import { QUALITY_METRIC_KEYS, HIGHER_IS_BETTER } from "../../constants/metricGroups";
 import { metricDisplayName } from "../charts/chartBuilders";
 import type { SweepConfig } from "./sweepUtils";
 
@@ -25,7 +25,7 @@ function autoView(count: number): ViewType {
 }
 
 function activeMetricKeys(active: Set<string>): string[] {
-  return ALL_METRIC_KEYS.filter((k) => active.has(k));
+  return QUALITY_METRIC_KEYS.filter((k) => active.has(k));
 }
 
 export default function SweepRunComparison({ configs, activeMetrics }: Props) {

@@ -1,5 +1,6 @@
 """
-MetricsCollector — latency percentiles, RAGAS, and entity metrics.
+MetricsCollector — latency percentiles, answer correctness (two judges),
+cost per question, and the optional RAGAS / entity metrics.
 
 Complements the retrieval metrics computed by the legacy BenchmarkRunner.
 RAGAS and entity scorers are lazy-imported so the module stays light when
@@ -65,6 +66,8 @@ class MetricsCollector:
         self._entity_extractor = None
         self._entity_scores: Optional[dict] = None
         self._latency: Optional[LatencyMetrics] = None
+        self._correctness: Optional[dict] = None
+        self._cost: Optional[dict] = None
 
     # ------------------------------------------------------------------
     # Public API
@@ -254,12 +257,176 @@ class MetricsCollector:
         else:
             logger.info("No entries eligible for entity metrics")
 
+    def compute_answer_correctness(
+        self,
+        per_question: List[dict],
+        questions_by_id: Dict[str, dict],
+        llm_judge=None,
+        jev_judge=None,
+    ) -> None:
+        """Binary answer correctness by the LLM judge and Jev (in-place, E10-F2).
+
+        Adds ``entry["correctness"]`` = ``{"llm": {...}, "jev": {...}, "agree": bool}``
+        and the 0/1 scores ``answer_correctness`` / ``answer_correctness_jev`` to
+        ``entry["metrics"]`` so per-question views can read them like any metric.
+        Questions without a reference answer are skipped. Failed or empty
+        generations score 0 for both judges without an API call.
+        """
+        if not self._config.compute_answer_correctness:
+            logger.info("compute_answer_correctness is False — skipping")
+            return
+
+        from concurrent.futures import ThreadPoolExecutor
+
+        from src.evaluation.correctness_judge import (
+            JevJudge,
+            JudgeVerdict,
+            LLMCorrectnessJudge,
+            gold_answer,
+            is_failed_generation,
+            judge_agreement,
+        )
+
+        cfg = self._config
+        if llm_judge is None:
+            llm_judge = LLMCorrectnessJudge(
+                model=cfg.correctness_judge_model, provider=cfg.correctness_judge_provider
+            )
+        if jev_judge is None and cfg.use_jev_judge:
+            jev_judge = JevJudge(
+                threshold=cfg.jev_threshold,
+                snapshot=cfg.jev_snapshot,
+                price_per_mtok=cfg.jev_input_price_per_mtok,
+            )
+
+        def _score(entry: dict) -> None:
+            q = questions_by_id.get(entry.get("question_id"))
+            if not q or not gold_answer(q):
+                return
+            answer = entry.get("generated_answer")
+            if is_failed_generation(answer):
+                verdicts = {
+                    "llm": JudgeVerdict(judge="llm", correct=0.0, error="no answer generated"),
+                }
+                if jev_judge is not None:
+                    verdicts["jev"] = JudgeVerdict(judge="jev", correct=0.0, error="no answer generated")
+            else:
+                verdicts = {"llm": llm_judge.judge(q, answer)}
+                if jev_judge is not None:
+                    verdicts["jev"] = jev_judge.judge(q, answer)
+
+            block = {name: v.to_dict() for name, v in verdicts.items()}
+            llm_v, jev_v = verdicts["llm"].correct, verdicts.get("jev") and verdicts["jev"].correct
+            if llm_v is not None and jev_v is not None:
+                block["agree"] = llm_v == jev_v
+            entry["correctness"] = block
+            entry["judge_cost_usd"] = sum(v.cost_usd or 0.0 for v in verdicts.values())
+
+            metrics = entry.get("metrics")
+            if not isinstance(metrics, dict):
+                metrics = {}
+                entry["metrics"] = metrics
+            if llm_v is not None:
+                metrics["answer_correctness"] = llm_v
+            if jev_v is not None:
+                metrics["answer_correctness_jev"] = jev_v
+
+        with ThreadPoolExecutor(max_workers=cfg.judge_max_workers) as pool:
+            list(pool.map(_score, per_question))
+
+        scored = [e for e in per_question if "correctness" in e]
+        llm_scores = [e["correctness"].get("llm", {}).get("correct") for e in scored]
+        jev_scores = [e["correctness"].get("jev", {}).get("correct") for e in scored]
+
+        def _mean(vals):
+            vals = [v for v in vals if v is not None]
+            return float(np.mean(vals)) if vals else None
+
+        summary = {
+            "num_questions_scored": len(scored),
+            "judge_model": cfg.correctness_judge_model,
+            "answer_correctness": _mean(llm_scores),
+            "llm_judge_errors": sum(1 for v in llm_scores if v is None),
+        }
+        if jev_judge is not None:
+            agreement = judge_agreement(llm_scores, jev_scores)
+            summary.update({
+                "jev_snapshot": cfg.jev_snapshot,
+                "jev_threshold": getattr(jev_judge, "threshold", cfg.jev_threshold),
+                "answer_correctness_jev": _mean(jev_scores),
+                "jev_errors": sum(1 for v in jev_scores if v is None),
+                "judge_agreement": agreement.get("agreement"),
+                "judge_kappa": agreement.get("kappa"),
+                "agreement_detail": agreement,
+            })
+        self._correctness = summary
+        logger.info(
+            "Answer correctness: llm=%s jev=%s agreement=%s (%d questions)",
+            summary.get("answer_correctness"),
+            summary.get("answer_correctness_jev"),
+            summary.get("judge_agreement"),
+            len(scored),
+        )
+
+    def compute_cost_metrics(self, per_question: List[dict]) -> dict:
+        """Per-question cost (generation + judges, USD) and end-to-end latency.
+
+        Sets ``entry["cost_usd"]`` and ``entry["latency_ms"]`` on each entry and
+        returns the summary stored under ``"cost"``.
+        """
+        costs: List[float] = []
+        gen_costs: List[float] = []
+        judge_costs: List[float] = []
+        latencies: List[float] = []
+        missing_cost = 0
+        for entry in per_question:
+            gen = (entry.get("generation_usage") or {}).get("cost_usd")
+            judge = entry.get("judge_cost_usd")
+            if gen is None and entry.get("generated_answer"):
+                missing_cost += 1
+            total = (gen or 0.0) + (judge or 0.0)
+            entry["cost_usd"] = total
+            costs.append(total)
+            gen_costs.append(gen or 0.0)
+            judge_costs.append(judge or 0.0)
+
+            lat = (entry.get("retrieval_time_ms") or 0.0) + (entry.get("generation_time_ms") or 0.0)
+            entry["latency_ms"] = lat
+            latencies.append(lat)
+
+        n = len(per_question)
+        self._cost = {
+            "cost_per_question_usd": float(np.mean(costs)) if n else 0.0,
+            "generation_cost_per_question_usd": float(np.mean(gen_costs)) if n else 0.0,
+            "judge_cost_per_question_usd": float(np.mean(judge_costs)) if n else 0.0,
+            "total_cost_usd": float(np.sum(costs)) if n else 0.0,
+            "latency_per_question_ms": float(np.mean(latencies)) if n else 0.0,
+            "questions_without_reported_cost": missing_cost,
+        }
+        return self._cost
+
+    @staticmethod
+    def summarize_hits(per_question: List[dict]) -> dict:
+        """Average the hit@K / hit@C values stored in each entry's metrics."""
+        sums: Dict[str, List[float]] = {}
+        for entry in per_question:
+            for key, val in (entry.get("metrics") or {}).items():
+                if key.startswith("hit_at_") and isinstance(val, (int, float)):
+                    sums.setdefault(key, []).append(float(val))
+        return {key: float(np.mean(vals)) for key, vals in sorted(sums.items())}
+
     def get_summary(self) -> dict:
-        """Return ``{"latency": {...}, "ragas": {...}, "entity": {...}}`` for serialization."""
+        """Return ``{"latency", "ragas", "entity", "correctness", "cost"}`` for serialization."""
         summary: dict = {}
 
         if self._latency is not None:
             summary["latency"] = self._latency.to_dict()
+
+        if self._correctness is not None:
+            summary["correctness"] = self._correctness
+
+        if self._cost is not None:
+            summary["cost"] = self._cost
 
         if self._ragas_evaluator is not None:
             ragas_agg = self._ragas_evaluator.get_aggregated()
@@ -311,3 +478,28 @@ class MetricsCollector:
         from src.evaluation.entity_extractor import EntityExtractor
         self._entity_extractor = EntityExtractor()
         logger.debug("EntityExtractor initialised")
+
+
+# ---------------------------------------------------------------------------
+# Core metric set (E10)
+# ---------------------------------------------------------------------------
+
+CORE_CORRECTNESS_KEYS = ("answer_correctness", "answer_correctness_jev", "judge_agreement", "judge_kappa")
+CORE_COST_KEYS = ("cost_per_question_usd", "latency_per_question_ms")
+
+
+def core_metrics_summary(metrics_summary: Optional[dict]) -> dict:
+    """Flatten the core metrics of a run: hit@5/10/C, both judges, cost and latency."""
+    ms = metrics_summary or {}
+    out: dict = {}
+    for key, val in (ms.get("hits") or {}).items():
+        out[key] = round(val, 4)
+    corr = ms.get("correctness") or {}
+    for key in CORE_CORRECTNESS_KEYS:
+        if corr.get(key) is not None:
+            out[key] = round(corr[key], 4)
+    cost = ms.get("cost") or {}
+    for key in CORE_COST_KEYS:
+        if cost.get(key) is not None:
+            out[key] = round(cost[key], 6)
+    return out

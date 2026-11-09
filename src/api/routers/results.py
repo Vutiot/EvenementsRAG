@@ -14,6 +14,7 @@ from src.api.schemas import (
     NormalizedQuestion,
     ResultFileInfo,
 )
+from src.evaluation.metrics_collector import core_metrics_summary
 
 logger = logging.getLogger(__name__)
 
@@ -170,6 +171,7 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         run_name=run_name,
         eval_dataset_name=eval_dataset_name,
         evaluation_mode=evaluation_mode,
+        core_metrics=core_metrics_summary(data.get("metrics_summary")) or None,
     )
     _file_info_cache[cache_key] = (mtime, info)
     return info
@@ -206,6 +208,10 @@ def _normalize_question_new(q: dict) -> NormalizedQuestion:
         generation_time_ms=q.get("generation_time_ms"),
         retrieved_contexts=q.get("retrieved_contexts"),
         ragas_metrics=q.get("ragas_metrics"),
+        correctness=q.get("correctness"),
+        cost_usd=q.get("cost_usd"),
+        latency_ms=q.get("latency_ms"),
+        retrieved_chunk_tokens=q.get("retrieved_chunk_tokens"),
     )
 
 

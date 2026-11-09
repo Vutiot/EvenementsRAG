@@ -400,7 +400,8 @@ class TestLoadWithUserOverrides:
         base_path = Path("config/benchmarks/default.yaml")
         cfg = BenchmarkConfig.load_with_user_overrides(base_path)
         assert cfg.name == "default"
-        assert cfg.generation.model == "mistralai/mistral-small-4-119b-2603"
+        assert cfg.generation.model == "z-ai/glm-5.3-flash"
+        assert cfg.generation.llm_provider == "openrouter"
 
     def test_load_with_empty_user_config_file(self, tmp_path):
         """Loading with empty user config file (no content) returns base config."""
@@ -410,7 +411,8 @@ class TestLoadWithUserOverrides:
 
         cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
         assert cfg.name == "default"
-        assert cfg.generation.model == "mistralai/mistral-small-4-119b-2603"
+        assert cfg.generation.model == "z-ai/glm-5.3-flash"
+        assert cfg.generation.llm_provider == "openrouter"
 
     def test_load_with_single_field_override(self, tmp_path):
         """User config overrides a single field in base config."""
@@ -465,14 +467,16 @@ class TestLoadWithUserOverrides:
 
         cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
         assert cfg.name == "default"
-        assert cfg.generation.model == "mistralai/mistral-small-4-119b-2603"
+        assert cfg.generation.model == "z-ai/glm-5.3-flash"
+        assert cfg.generation.llm_provider == "openrouter"
 
     def test_load_with_none_user_path(self):
         """If user_config_path is None, returns base config."""
         base_path = Path("config/benchmarks/default.yaml")
         cfg = BenchmarkConfig.load_with_user_overrides(base_path, None)
         assert cfg.name == "default"
-        assert cfg.generation.model == "mistralai/mistral-small-4-119b-2603"
+        assert cfg.generation.model == "z-ai/glm-5.3-flash"
+        assert cfg.generation.llm_provider == "openrouter"
 
     def test_load_preserves_config_hash_on_no_override(self, tmp_path):
         """Config hash should be the same if user config doesn't override anything."""

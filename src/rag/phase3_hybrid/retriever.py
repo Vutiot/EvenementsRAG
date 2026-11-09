@@ -218,6 +218,9 @@ class HybridRetriever(BaseRAG):
                 max_tokens=max_tokens,
                 **kwargs,
             )
+            from src.llm import extract_usage
+
+            self.last_usage = extract_usage(response)
             raw = response.choices[0].message.content
             answer = raw.strip() if raw else "[Model returned empty response]"
             logger.debug(f"Generated answer: {len(answer)} chars")
