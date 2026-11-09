@@ -4,7 +4,7 @@
 
 EvenementsRAG is a progressive RAG benchmarking system for historical events (WW2), designed to systematically evaluate and compare different RAG techniques, retrieval parameters, and generation configurations. The project has successfully implemented a hybrid RAG baseline with 10k Wikipedia articles and is expanding into comprehensive benchmarking infrastructure with parameterized evaluation and visualization.
 
-**Current State**: All E1–E3 tasks complete except E3-F2-T3 (sweep visualization). Full benchmarking pipeline operational: parameterized runner, metric collection (ROUGE/BERTScore/RAGAS), dataset management with SSE generation, collection management across backends, query tester with prompt pieces and chunk highlighting, benchmark result viewer with metric dashboards, and benchmark run execution with live SSE progress. Next: sweep visualization (E3-F2-T3), results DB (E4-F1-T1), or advanced RAG (E5-F1-T1).
+**Current State**: All E1–E3 tasks complete except E3-F2-T3 (sweep visualization). Full benchmarking pipeline operational: parameterized runner, metric collection (ROUGE/BERTScore/RAGAS), dataset management with SSE generation, collection management across backends, query tester with prompt pieces and chunk highlighting, benchmark result viewer with metric dashboards, and benchmark run execution with live SSE progress. Next: sweep visualization (E3-F2-T3), results DB (E4-F1-T1), or advanced RAG (E5-F1-T1). Planned next: two conversational assistants sharing one dataset-exploration harness, E8 (eval dataset setup in the Evaluations tab) and E9 (budget-aware Bayesian AutoML).
 
 ---
 
@@ -103,6 +103,45 @@ graph TD
   E2F3T3 --> E5F1T1
   E5F1T1 --> E5F1T2
 
+  E8F1T1["🔵 E8-F1-T1: Dataset profiling harness"]
+  E8F1T2["⚪ E8-F1-T2: LLM exploration pass"]
+  E8F2T1["⚪ E8-F2-T1: Assistant chat backend"]
+  E8F2T2["⚪ E8-F2-T2: Chat panel in Evaluations"]
+  E8F3T1["⚪ E8-F3-T1: EvalDatasetPlan structured output"]
+  E8F3T2["⚪ E8-F3-T2: Apply plan to form"]
+  E8F3T3["⚪ E8-F3-T3: Persist plans & conversations"]
+
+  E9F1T1["🔵 E9-F1-T1: Model pricing catalog"]
+  E9F1T2["⚪ E9-F1-T2: Token & cost tracking"]
+  E9F1T3["⚪ E9-F1-T3: Cost pilot & estimator"]
+  E9F2T1["⚪ E9-F2-T1: Optuna search under budget"]
+  E9F2T2["⚪ E9-F2-T2: Pruning & quality/cost trade-off"]
+  E9F2T3["⚪ E9-F2-T3: AutoML run endpoint"]
+  E9F3T1["⚪ E9-F3-T1: AutoML interview"]
+  E9F3T2["⚪ E9-F3-T2: AutoMLPlan → form"]
+  E9F3T3["⚪ E9-F3-T3: AutoML mode UI"]
+
+  E8F1T1 --> E8F1T2
+  E8F1T1 --> E8F2T1
+  E8F2T1 --> E8F2T2
+  E8F2T1 --> E8F3T1
+  E8F3T1 --> E8F3T2
+  E8F2T2 --> E8F3T2
+  E8F3T2 --> E8F3T3
+
+  E9F1T1 --> E9F1T2
+  E9F1T2 --> E9F1T3
+  E8F1T1 --> E9F1T3
+  E9F1T2 --> E9F2T1
+  E9F2T1 --> E9F2T2
+  E9F2T1 --> E9F2T3
+  E8F2T1 --> E9F3T1
+  E9F1T3 --> E9F3T1
+  E9F3T1 --> E9F3T2
+  E9F2T3 --> E9F3T2
+  E9F3T2 --> E9F3T3
+  E4F1T2 -.->|recommended| E9F2T3
+
   style E1F1T1 fill:#22c55e
   style E1F1T2 fill:#22c55e
   style E1F1T3 fill:#22c55e
@@ -138,6 +177,22 @@ graph TD
   style E4F1T3 fill:#6b7280
   style E5F1T1 fill:#f59e0b
   style E5F1T2 fill:#6b7280
+  style E8F1T1 fill:#f59e0b
+  style E8F1T2 fill:#6b7280
+  style E8F2T1 fill:#6b7280
+  style E8F2T2 fill:#6b7280
+  style E8F3T1 fill:#6b7280
+  style E8F3T2 fill:#6b7280
+  style E8F3T3 fill:#6b7280
+  style E9F1T1 fill:#f59e0b
+  style E9F1T2 fill:#6b7280
+  style E9F1T3 fill:#6b7280
+  style E9F2T1 fill:#6b7280
+  style E9F2T2 fill:#6b7280
+  style E9F2T3 fill:#6b7280
+  style E9F3T1 fill:#6b7280
+  style E9F3T2 fill:#6b7280
+  style E9F3T3 fill:#6b7280
 ```
 
 ---
@@ -456,6 +511,146 @@ Merge Query, Benchmark, and Sweep interfaces into a single Testing page. Full ro
 
 ---
 
+### 🤖 E8: Eval Dataset Assistant (conversational setup in Evaluations)
+
+A chat panel in the Evaluations tab that sets up an eval dataset through a conversation instead of hand-written prompts. Flow: **(1)** an exploration harness profiles the source collection, **(2)** the assistant interviews the user (question types, persona of the people who will ask, themes, difficulty, language, volume), **(3)** the LLM returns a structured plan that fills the existing DatasetManager form directly: system prompt, one prompt per question category, counts. The user reviews and edits before generating; generation itself is unchanged (`/api/datasets/generate`).
+
+Design notes: the harness is shared with E9 (AutoML assistant). Structured output goes through the existing provider layer (NVIDIA / OpenAI-compatible): JSON-schema constrained output when the model supports it, otherwise prompt + Pydantic validation + bounded retry. The conversation never triggers generation by itself.
+
+#### E8-F1: Dataset Exploration Harness
+
+##### 🔵 E8-F1-T1: Deterministic dataset profiling harness
+- blocked_by: []
+- status: ready
+- effort: M
+- agent_hint: New `src/assistant/dataset_profiler.py`. Input: collection name. Reuse `DatasetService._load_chunks()`. Compute without LLM: doc/chunk counts, length distribution, language, date range (reuse `temporal_filter` date extraction), top entities (spaCy), thematic clusters (k-means on stored embeddings, k≈8, 3 representative chunks + top terms per cluster). Output a compact `DatasetProfile` Pydantic model (< 4k tokens when serialized). Cache the profile per collection on disk. Endpoint `GET /api/assistant/profile/{collection}`. Unit tests on a small fixture collection.
+- description: Build a reusable harness that explores a collection and produces a compact, LLM-ready profile of its content (size, themes, entities, period, document types). Shared by E8 and E9.
+
+##### ⚪ E8-F1-T2: LLM exploration pass with retrieval tools
+- blocked_by: [E8-F1-T1]
+- status: pending
+- effort: M
+- agent_hint: Bounded tool-use loop (max ~8 tool calls, token budget) with tools `search_chunks(query, k)`, `sample_cluster(cluster_id, n)`, `get_article(title)`. The LLM reads the `DatasetProfile`, probes the collection and writes a short narrative summary + candidate question angles (e.g. "causal chains between battles", "biographies of commanders"). Store as `profile.llm_summary`. Log tokens (feeds E9-F1-T2).
+- description: Let the LLM actively explore the collection on top of the static profile, so the interview starts from a grounded understanding of the dataset.
+
+#### E8-F2: Conversational Interview
+
+##### ⚪ E8-F2-T1: Assistant chat backend (SSE, session state)
+- blocked_by: [E8-F1-T1]
+- status: pending
+- effort: M
+- agent_hint: `POST /api/assistant/eval/chat` streaming SSE (`token`, `plan_update`, `done`, `error`), reusing the SSE helpers of `query_service`. Session stored server-side (id, collection, profile, messages, current draft plan). System prompt drives a guided interview: intended question types, persona(s) of the askers (e.g. student, historian, analyst), themes / periods to cover or exclude, difficulty mix, answer language, total volume. Ask one thing at a time, propose defaults from the profile, stop once the plan is complete. No dataset generation from this endpoint.
+- description: Backend for the guided conversation that collects the user's intent for the eval dataset, grounded on the dataset profile.
+
+##### ⚪ E8-F2-T2: Chat panel in the Evaluations tab
+- blocked_by: [E8-F2-T1]
+- status: pending
+- effort: M
+- agent_hint: Collapsible right-side panel (or "Assistant" toggle above "Create Evaluation Set") in `DatasetManager.tsx`; extract it as `components/assistant/AssistantChat.tsx` so E9 can reuse it. Shows the profile card (themes, period, entity chips), streamed messages, quick-reply chips proposed by the assistant, and a live preview of the draft plan. Extract chat state into a hook to avoid growing DatasetManager (already 1.4k lines).
+- description: User-facing chat in the Evaluations tab, with the dataset profile visible and quick replies to speed up the interview.
+
+#### E8-F3: Structured Output → Form
+
+##### ⚪ E8-F3-T1: `EvalDatasetPlan` structured output
+- blocked_by: [E8-F2-T1]
+- status: pending
+- effort: S
+- agent_hint: Pydantic model: `persona`, `themes[]`, `language`, `system_prompt`, `categories[{type, prompt, count, difficulty_mix}]`, `model` (one of `LLM_MODELS`), `rationale`. Category `type` reuses the existing types when they fit (factual, temporal, comparative, entity_centric, relationship, analytical, and the query-style ones such as keywords, telegraphic, grammar_typos) and may add new ones. Constrained JSON output when supported, else validate + retry (max 2). Emit as `plan_update` SSE event. Unit tests on validation and retry.
+- description: Define and enforce the structured plan the LLM returns at the end of the interview, matching exactly what the dataset form needs.
+
+##### ⚪ E8-F3-T2: Apply the plan to the DatasetManager form
+- blocked_by: [E8-F3-T1, E8-F2-T2]
+- status: pending
+- effort: S
+- agent_hint: "Apply to form" button: sets `systemPrompt`, replaces category cards (`CardState[]`) with the plan's categories and prompts, sets counts and model. Show a diff of what changes before applying; everything stays editable; the user still clicks Generate.
+- description: One click fills the system prompt and the per-category prompts of the existing form from the assistant's plan.
+
+##### ⚪ E8-F3-T3: Persist plans and conversations
+- blocked_by: [E8-F3-T2]
+- status: pending
+- effort: S
+- agent_hint: Save the plan as a category preset (same shape as `CategoryPreset`, server-side instead of localStorage) and store `assistant_session_id` + plan in the generated dataset metadata for traceability. Show "created with assistant" in the dataset table.
+- description: Keep the plan and the conversation that produced a dataset, and let the user reuse a plan as a preset.
+
+---
+
+### 🎯 E9: AutoML Assistant (budget-aware Bayesian optimization)
+
+Same conversational pattern as E8, applied to pipeline tuning. Flow: **(1)** the shared harness explores the dataset (E8-F1) and a short pilot run measures real token usage, **(2)** the assistant asks the user for the budget, the API prices of the models they want to allow, the metrics that matter and latency constraints, **(3)** the LLM returns a structured AutoML plan (search space, trial budget, objective weights, pruning) with a cost estimate, which pre-fills the AutoML form, **(4)** a Bayesian optimizer (Optuna TPE) runs trials until the budget is spent and recommends the best configuration for this dataset.
+
+Design notes: replaces the exhaustive cartesian sweep for large spaces. Every trial is a regular benchmark run (same result JSON, grouped like a sweep) so RunHistory, BenchViz and SweepViz keep working. Cost is tracked from real token counts, not guessed. The result cache (E4-F1-T2) is strongly recommended before E9-F2-T3 so repeated configs cost nothing, but it does not block.
+
+#### E9-F1: Cost Model
+
+##### 🔵 E9-F1-T1: Model pricing catalog
+- blocked_by: []
+- status: ready
+- effort: S
+- agent_hint: `config/pricing.yaml`: per model, price per 1M input / output tokens and currency, for generation, RAGAS judge and entity-extraction models; embedding and reranker models carry a local compute-time estimate instead. `GET/PUT /api/pricing`. Prices are user-supplied (asked in the E9 interview, editable in a small settings table); ship no default prices that pretend to be current.
+- description: A user-editable catalog of API prices per model, used for every cost estimate and budget check.
+
+##### ⚪ E9-F1-T2: Token and cost tracking per run
+- blocked_by: [E9-F1-T1]
+- status: pending
+- effort: M
+- agent_hint: Wrap every LLM call (generation, RAGAS evaluator incl. `ragas_repeat_count`, entity extractor, dataset generation, assistant) to record input/output tokens per model. Store `cost_summary` in the result JSON (tokens and cost by stage), surface `total_cost` in `ResultFileInfo` and as a Run History column.
+- description: Measure real token usage and cost for every run, broken down by pipeline stage.
+
+##### ⚪ E9-F1-T3: Cost pilot harness and estimator
+- blocked_by: [E9-F1-T2, E8-F1-T1]
+- status: pending
+- effort: M
+- agent_hint: Run 1–2 reference configs on a small question subset (e.g. 10 questions) to measure tokens/question per stage and wall time. Build `estimate_trial_cost(config, n_questions)` from these measurements + pricing: generation and judge tokens scale with `top_k_chunks`, `max_tokens`, metrics enabled and repeat count; new collections add embedding time. Report estimate ± spread. Endpoint `POST /api/automl/estimate`.
+- description: Turn a short pilot run into a per-trial cost model, so the assistant can say how many trials a given budget buys.
+
+#### E9-F2: Bayesian Optimization Engine
+
+##### ⚪ E9-F2-T1: Optuna search under a budget
+- blocked_by: [E9-F1-T2]
+- status: pending
+- effort: L
+- agent_hint: `src/automl/optimizer.py`. Search space built from the same registries as `paramOptions.ts` (chunk size/overlap, embedding model, technique, sparse type/weight, fusion, reranker + model, top_k, rerank_k, LLM model) with conditional params (sparse_* only if hybrid, reranker model only if reranker ≠ none). TPE sampler, objective = weighted sum of chosen metrics (via `metrics_collector`). Stop when cumulative measured cost ≥ budget or n_trials reached. Prefer configs whose collection already exists (collection creation cost in the estimate). Deterministic seed.
+- description: Core optimizer that explores the parameter space with Bayesian search and stops at the user's budget.
+
+##### ⚪ E9-F2-T2: Early pruning and quality/cost trade-off
+- blocked_by: [E9-F2-T1]
+- status: pending
+- effort: M
+- agent_hint: Evaluate each trial on growing question subsets (successive halving / Optuna `MedianPruner` with intermediate reports) so weak configs stop early and cost little. Optional multi-objective mode (quality vs cost vs latency, NSGA-II) returning a Pareto front; the plan picks one mode.
+- description: Spend the budget on promising configurations by pruning bad ones early, and expose the quality/cost trade-off.
+
+##### ⚪ E9-F2-T3: AutoML run endpoint and persistence
+- blocked_by: [E9-F2-T1]
+- status: pending
+- effort: M
+- agent_hint: `POST /api/automl/run` SSE: `automl_started`, `trial_started`, `trial_progress`, `trial_complete` (params, metrics, cost, pruned), `budget_update`, `automl_complete` (best config, ranking). Persist the study (Optuna SQLite storage) and each trial as a standard result JSON + an `automl_meta` file shaped like `sweep_meta` so RunHistory groups trials and SweepViz can open them.
+- description: Run an AutoML study with live progress and store every trial in the existing results format.
+
+#### E9-F3: Conversational AutoML Setup
+
+##### ⚪ E9-F3-T1: AutoML interview
+- blocked_by: [E8-F2-T1, E9-F1-T3]
+- status: pending
+- effort: M
+- agent_hint: Reuse the E8 chat backend with an AutoML system prompt and tools `get_profile`, `estimate_cost(config)`, `list_collections`. Ask: total budget and currency, models allowed and their API prices (write them to the pricing catalog), priority metrics (retrieval vs generation, which ones), latency ceiling, backends and eval dataset to use. Run the cost pilot when needed and tell the user what the budget buys ("≈ 40 trials on 60 questions").
+- description: Guided conversation that collects budget, model prices and goals, grounded on the dataset profile and real cost measurements.
+
+##### ⚪ E9-F3-T2: `AutoMLPlan` structured output → AutoML form
+- blocked_by: [E9-F3-T1, E9-F2-T3]
+- status: pending
+- effort: M
+- agent_hint: Pydantic `AutoMLPlan`: `search_space` (per param: values or range, conditional rules), `objective` (metric weights or Pareto mode), `budget`, `max_trials`, `questions_per_trial` + pruning schedule, `eval_dataset_id`, `estimated_cost` breakdown, `rationale` per choice. Same validate/retry path as E8-F3-T1. Pre-fills the AutoML form; the user reviews and launches.
+- description: The assistant's final answer is a complete, editable AutoML configuration sized to the user's budget and dataset.
+
+##### ⚪ E9-F3-T3: AutoML mode in the UI
+- blocked_by: [E9-F3-T2]
+- status: pending
+- effort: L
+- agent_hint: Fourth mode "AutoML" in `ModeSwitcher` (or its own tab). Plan review with search space chips and cost estimate, launch, live charts (best score so far vs budget spent, trials scatter, pruned trials greyed), final card "Best configuration" with "Open in Testing" (sets overrides) and "Open study" (SweepViz). Reuse `AssistantChat` from E8-F2-T2 and ECharts helpers.
+- description: Launch and follow an AutoML study, then apply the best configuration in one click.
+
+---
+
 ## Critical Path
 
 🔴 **E1-F1-T1 → E1-F1-T2 → E1-F1-T3 → E1-F2-T1 → E1-F2-T2 → E2-F1-T1 → E2-F1-T2 → E2-F1-T3 → E3-F1-T1 → E3-F1-T2 → E3-F1-T3 → E3-F2-T1 → E3-F2-T2 → E3-F2-T3**
@@ -642,11 +837,11 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 
 | Metric | Value |
 |--------|-------|
-| **Total Tasks** | 42 |
+| **Total Tasks** | 58 |
 | **Done** | 29 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3, E3-F5-T1, E3-F5-T2, E3-F5-T3) |
-| **Ready (no blockers)** | 3 (E3-F2-T3, E4-F1-T1, E5-F1-T1) |
+| **Ready (no blockers)** | 5 (E3-F2-T3, E4-F1-T1, E5-F1-T1, E8-F1-T1, E9-F1-T1) |
 | **In Progress** | 0 |
-| **Pending** | 10 |
+| **Pending** | 24 |
 | **Critical Path Length** | 14 sequential tasks (1 remaining: E3-F2-T3) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
@@ -654,6 +849,8 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 1. E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)
 2. E4-F1-T1: Design results database schema
 3. E5-F1-T1: Implement LazyGraphRAG variant
+4. E8-F1-T1: Dataset profiling harness (unblocks both assistants, E8 and E9)
+5. E9-F1-T1: Model pricing catalog (start of the AutoML cost model)
 
 **Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) complete — E3-F1, E3-F3, E3-F4, E3-F5 all done; only E3-F2-T3 (sweep visualization) remains.
 
