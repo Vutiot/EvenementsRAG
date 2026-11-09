@@ -48,6 +48,9 @@ export interface ResultFileInfo {
   run_name: string | null;
   eval_dataset_name: string | null;
   evaluation_mode: "direct" | "mapped" | null;
+  /** E10 core metrics: hit_at_5, hit_at_10, hit_at_c4k, hit_at_c8k, answer_correctness,
+   *  answer_correctness_jev, judge_agreement, judge_kappa, cost_per_question_usd, latency_per_question_ms */
+  core_metrics?: Record<string, number> | null;
 }
 
 /** Sweep metadata for grouped sweep runs */
@@ -73,6 +76,28 @@ export interface NormalizedQuestion {
   retrieved_contexts: string[] | null;
   ragas_metrics: Record<string, number> | null;
   ragas_metrics_std: Record<string, number> | null;
+  /** E10: binary correctness by the two judges */
+  correctness?: CorrectnessVerdicts | null;
+  cost_usd?: number | null;
+  latency_ms?: number | null;
+  retrieved_chunk_tokens?: number[] | null;
+}
+
+export interface JudgeVerdict {
+  judge: "llm" | "jev";
+  correct?: number | null;
+  criteria?: Record<string, boolean>;
+  details?: { criterion: string; verdict: string; rationale?: string; evidence_quote?: string }[];
+  prob_yes?: number;
+  cost_usd?: number;
+  latency_ms?: number;
+  error?: string;
+}
+
+export interface CorrectnessVerdicts {
+  llm?: JudgeVerdict;
+  jev?: JudgeVerdict;
+  agree?: boolean;
 }
 
 /** Full normalized benchmark result from GET /api/results/{filename} */
@@ -396,6 +421,16 @@ export interface SweepConfigCompleteEvent {
   avg_context_precision?: number;
   avg_entity_recall_at_5?: number;
   total_wall_time_s?: number;
+  /** E10 core metrics, flattened (see ResultFileInfo.core_metrics) */
+  hit_at_5?: number;
+  hit_at_10?: number;
+  hit_at_c4k?: number;
+  hit_at_c8k?: number;
+  answer_correctness?: number;
+  answer_correctness_jev?: number;
+  judge_agreement?: number;
+  cost_per_question_usd?: number;
+  latency_per_question_ms?: number;
 }
 
 export interface SweepCompleteEvent {

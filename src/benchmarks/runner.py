@@ -244,7 +244,8 @@ class ParameterizedBenchmarkRunner:
 
         # Auto-disable generation when no metric needs it
         needs_generation = (
-            self.config.evaluation.compute_ragas
+            self.config.evaluation.compute_answer_correctness
+            or self.config.evaluation.compute_ragas
             or self.config.evaluation.compute_context_precision
             or self.config.evaluation.compute_entity_metrics
         )
@@ -281,6 +282,8 @@ class ParameterizedBenchmarkRunner:
             qdrant_manager=self._vector_store,
             embedding_generator=self._embedding_gen,
             k_values=self.config.evaluation.k_values,
+            hit_token_budgets=self.config.evaluation.hit_token_budgets,
+            budget_retrieval_depth=self.config.evaluation.budget_retrieval_depth,
         )
         eval_results = legacy_runner.run_benchmark(
             collection_name=self.config.dataset.collection_name,
@@ -311,7 +314,8 @@ class ParameterizedBenchmarkRunner:
         questions_by_id = {}
         needs_questions = (
             self.config.generation.enabled and (
-                self.config.evaluation.compute_ragas
+                self.config.evaluation.compute_answer_correctness
+                or self.config.evaluation.compute_ragas
                 or self.config.evaluation.compute_context_precision
                 or self.config.evaluation.compute_entity_metrics
             )
@@ -335,7 +339,11 @@ class ParameterizedBenchmarkRunner:
         if self.config.generation.enabled and self.config.evaluation.compute_entity_metrics:
             collector.compute_entity_metrics(per_q, questions_by_id)
 
+        if self.config.generation.enabled and self.config.evaluation.compute_answer_correctness:
+            collector.compute_answer_correctness(per_q, questions_by_id)
+
         collector.compute_latency_metrics(per_q)
+        collector.compute_cost_metrics(per_q)
 
         result = BenchmarkResult(
             config=self.config,
@@ -345,7 +353,7 @@ class ParameterizedBenchmarkRunner:
             evaluation=eval_results,
             per_question_full=per_q,
             total_wall_time_s=time.time() - wall_start,
-            metrics_summary=collector.get_summary(),
+            metrics_summary={**collector.get_summary(), "hits": collector.summarize_hits(per_q)},
             eval_dataset_name=eval_dataset_name,
             evaluation_mode=evaluation_mode or "direct",
         )
@@ -434,6 +442,10 @@ class ParameterizedBenchmarkRunner:
         cls = getattr(module, class_name)
 
         extra = {"config": self.config} if technique == "hybrid" else {}
+        if self.config.generation.llm_provider in ("openrouter", "nvidia", "openai"):
+            from src.llm import get_llm_client
+
+            extra["llm_client"] = get_llm_client(self.config.generation.llm_provider)
         self._rag_pipeline = cls(
             collection_name=self.config.dataset.collection_name,
             qdrant_manager=self._vector_store,
@@ -470,6 +482,9 @@ class ParameterizedBenchmarkRunner:
             max_tokens=self.config.generation.max_tokens,
             model=self.config.generation.model,
         )
+        from src.llm import usage_request_kwargs
+
+        gen_kwargs.update(usage_request_kwargs(self.config.generation.llm_provider))
 
         for entry in per_q:
             q_id = entry.get("question_id")
@@ -487,9 +502,11 @@ class ParameterizedBenchmarkRunner:
                     chunks = _filter_top_k_articles(chunks, top_k_articles)
                 entry["retrieved_contexts"] = [c.content for c in chunks]
                 gen_start = time.time()
-                answer = self._rag_pipeline.generate(q_text, chunks, **gen_kwargs)
+                self._rag_pipeline.last_usage = None
+                answer = self._rag_pipeline.generate(q_text, chunks, **dict(gen_kwargs))
                 entry["generated_answer"] = answer
                 entry["generation_time_ms"] = (time.time() - gen_start) * 1000
+                entry["generation_usage"] = getattr(self._rag_pipeline, "last_usage", None)
             except Exception as exc:
                 logger.warning(f"Generation failed for question_id={q_id}: {exc}")
                 entry["generated_answer"] = None

@@ -143,9 +143,24 @@ NVIDIA_MODELS: list[str] = [
 ]
 
 
+# Default answer-generation model (E10-F3): GLM 5.3 Flash via OpenRouter.
+DEFAULT_GENERATION_MODEL = "z-ai/glm-5.3-flash"
+DEFAULT_GENERATION_PROVIDER = "openrouter"
+
+# Known model → provider routing. When a config names one of these models,
+# the provider is forced to match so the request goes to the right endpoint.
+MODEL_PROVIDERS: dict[str, str] = {
+    DEFAULT_GENERATION_MODEL: "openrouter",
+    "nvidia/nemotron-3-nano-30b-a3b": "nvidia",
+    **{m: "nvidia" for m in NVIDIA_MODELS},
+}
+
+LLMProvider = Literal["anthropic", "openai", "nvidia", "openrouter"]
+
+
 class GenerationConfig(BaseModel):
-    llm_provider: Literal["anthropic", "openai", "nvidia"] = "nvidia"
-    model: Optional[str] = "mistralai/mistral-small-4-119b-2603"
+    llm_provider: LLMProvider = DEFAULT_GENERATION_PROVIDER
+    model: Optional[str] = DEFAULT_GENERATION_MODEL
     temperature: float = Field(0.0, ge=0.0, le=2.0)
     max_tokens: int = Field(2000, ge=1, le=8000)
     top_k_chunks: int = Field(20, ge=1, le=20)
@@ -154,6 +169,13 @@ class GenerationConfig(BaseModel):
     system_prompt: Optional[str] = None
     highlight_chunks: bool = True
     enabled: bool = True
+
+    @model_validator(mode="after")
+    def route_known_model_to_provider(self) -> "GenerationConfig":
+        known = MODEL_PROVIDERS.get(self.model or "")
+        if known and known != self.llm_provider:
+            self.llm_provider = known
+        return self
 
 
 _KNOWN_RAGAS_METRICS: set[str] = {
@@ -177,6 +199,29 @@ class EvaluationConfig(BaseModel):
     compute_ragas: bool = False
     compute_context_precision: bool = False
     compute_entity_metrics: bool = False
+
+    # --- Core metric set (E10) -------------------------------------------
+    # Retrieval: hit@5, hit@10 (from k_values) and hit@C for each token budget.
+    hit_token_budgets: list[int] = Field(default_factory=lambda: [4000, 8000])
+    # Ranked list depth used for hit@C (the top-k metrics still use max(k_values)).
+    budget_retrieval_depth: int = Field(50, ge=1, le=500)
+
+    # Answer correctness: binary LLM judge + Jev as second judge.
+    compute_answer_correctness: bool = True
+    correctness_judge_provider: LLMProvider = "openrouter"
+    correctness_judge_model: str = "openai/gpt-5.4-mini"
+    use_jev_judge: bool = True
+    jev_snapshot: str = "typesafe/jev-1.13-20260917"
+    jev_threshold: float = Field(
+        0.5, ge=0.0, le=1.0,
+        description=(
+            "P(yes) threshold above which Jev counts an answer as correct. "
+            "Jev is under-confident at 0.5: calibrate with "
+            "scripts/calibrate_jev_threshold.py on labelled verdicts."
+        ),
+    )
+    jev_input_price_per_mtok: float = 0.042
+    judge_max_workers: int = Field(4, ge=1, le=16)
 
     ragas_metrics: list[str] = Field(default_factory=lambda: [
         "faithfulness", "answer_relevancy", "context_precision",

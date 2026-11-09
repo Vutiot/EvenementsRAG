@@ -3,6 +3,7 @@ import { EChartWrapper, buildBarChart } from "../charts";
 import {
   RETRIEVAL_METRICS,
   GENERATION_METRICS,
+  EFFICIENCY_METRICS,
 } from "../../constants/metricGroups";
 import type { MetricDef } from "../../constants/metricGroups";
 import { paramShortName, uniqueParamValues } from "./sweepUtils";
@@ -129,6 +130,11 @@ export default function SweepParameterCharts({
     [activeMetrics],
   );
 
+  const effMetrics = useMemo(
+    () => activeDefsFrom([EFFICIENCY_METRICS], activeMetrics),
+    [activeMetrics],
+  );
+
   const paramKeys = Object.keys(sweptParams).filter(
     (k) => (sweptParams[k]?.length ?? 0) > 1,
   );
@@ -158,7 +164,7 @@ export default function SweepParameterCharts({
 
       {genMetrics.length > 0 && (
         <section className="space-y-6">
-          <h2 className="text-lg font-semibold text-slate-800">Generation Evaluation</h2>
+          <h2 className="text-lg font-semibold text-slate-800">Answer Correctness</h2>
           {paramKeys.map((pk) => (
             <ParameterSection
               key={pk}
@@ -166,6 +172,21 @@ export default function SweepParameterCharts({
               configs={configs}
               sweptParams={sweptParams}
               metrics={genMetrics}
+            />
+          ))}
+        </section>
+      )}
+
+      {effMetrics.length > 0 && (
+        <section className="space-y-6">
+          <h2 className="text-lg font-semibold text-slate-800">Cost &amp; Latency per Question</h2>
+          {paramKeys.map((pk) => (
+            <ParameterSection
+              key={pk}
+              paramKey={pk}
+              configs={configs}
+              sweptParams={sweptParams}
+              metrics={effMetrics}
             />
           ))}
         </section>

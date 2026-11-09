@@ -46,6 +46,34 @@ function fmtTime(s: number | null | undefined): string {
   return `${Math.floor(s / 60)}m ${(s % 60).toFixed(0)}s`;
 }
 
+const CORE_COLUMNS = [
+  "hit_at_5",
+  "hit_at_10",
+  "hit_at_c4k",
+  "hit_at_c8k",
+  "answer_correctness",
+  "answer_correctness_jev",
+] as const;
+
+function fmtUsd(v: number | null | undefined): string {
+  if (v == null) return "\u2014";
+  return v < 0.01 ? `$${v.toFixed(5)}` : `$${v.toFixed(3)}`;
+}
+
+/** E10 core metric cells: hit@5, hit@10, hit@C 4k/8k, correctness (LLM, Jev), cost per question. */
+function CoreMetricCells({ r, highlight = false }: { r: ResultFileInfo; highlight?: boolean }) {
+  const cls = `px-3 py-2 text-right font-mono ${highlight ? "text-green-600 font-semibold" : "text-gray-700"}`;
+  const m = r.core_metrics ?? {};
+  return (
+    <>
+      {CORE_COLUMNS.map((k) => (
+        <td key={k} className={cls}>{fmt(m[k])}</td>
+      ))}
+      <td className={cls}>{fmtUsd(m.cost_per_question_usd)}</td>
+    </>
+  );
+}
+
 function truncate(s: string | null | undefined, maxLen = 20): string {
   if (!s) return "\u2014";
   return s.length > maxLen ? s.slice(0, maxLen) + "..." : s;
@@ -109,10 +137,11 @@ function buildDisplayRows(results: ResultFileInfo[]): DisplayRow[] {
       const children = r.sweep_meta.child_filenames
         .map((fn) => resultsByFilename.get(fn))
         .filter((c): c is ResultFileInfo => c != null);
-      // Find best Doc MRR among children (chunk-level MRR not meaningful across sweep configs)
-      const docMrrs = children.map((c) => c.avg_doc_mrr ?? 0);
-      const maxDocMrr = Math.max(...docMrrs);
-      const hasBest = maxDocMrr > 0;
+      // Best child: answer correctness (LLM judge), falling back to hit@10
+      const score = (c: ResultFileInfo) =>
+        c.core_metrics?.answer_correctness ?? c.core_metrics?.hit_at_10 ?? 0;
+      const maxScore = Math.max(...children.map(score));
+      const hasBest = maxScore > 0;
       for (let i = 0; i < children.length; i++) {
         const child = children[i];
         if (!child) continue;
@@ -122,7 +151,7 @@ function buildDisplayRows(results: ResultFileInfo[]): DisplayRow[] {
           parentSweepId: r.sweep_meta.sweep_id,
           childIndex: i,
           isLast: i === children.length - 1,
-          isBest: hasBest && (child.avg_doc_mrr ?? 0) === maxDocMrr,
+          isBest: hasBest && score(child) === maxScore,
         });
       }
     } else {
@@ -267,13 +296,13 @@ export default function RunHistoryTable({ results, activeRun }: Props) {
             <th className="px-3 py-2">Sparse Type</th>
             <th className="px-3 py-2">Fusion</th>
             <th className="px-3 py-2 text-right">Qs</th>
-            <th className="px-3 py-2 text-right">MRR</th>
-            <th className="px-3 py-2 text-right">R@5</th>
-            <th className="px-3 py-2 text-right">R@10</th>
-            <th className="px-3 py-2 text-right">Doc P@5</th>
-            <th className="px-3 py-2 text-right">Doc MRR</th>
-            <th className="px-3 py-2 text-right">Ctx Prec</th>
-            <th className="px-3 py-2 text-right">Ent R@5</th>
+            <th className="px-3 py-2 text-right">Hit@5</th>
+            <th className="px-3 py-2 text-right">Hit@10</th>
+            <th className="px-3 py-2 text-right" title="Gold chunk within the first 4k tokens of results">Hit@C 4k</th>
+            <th className="px-3 py-2 text-right" title="Gold chunk within the first 8k tokens of results">Hit@C 8k</th>
+            <th className="px-3 py-2 text-right" title="Binary answer correctness, LLM judge">Correct</th>
+            <th className="px-3 py-2 text-right" title="Binary answer correctness, Jev (second judge)">Jev</th>
+            <th className="px-3 py-2 text-right" title="Cost per question: generation + judges">$/q</th>
             <th className="px-3 py-2 text-right">Time</th>
           </tr>
         </thead>
@@ -461,25 +490,7 @@ function NormalRow({
       <ParamCell value={r.config_summary?.sparse_type} />
       <ParamCell value={r.config_summary?.fusion_method} />
       <td className="px-3 py-2 text-right text-gray-600">{r.total_questions}</td>
-      <td className="px-3 py-2 text-right font-mono text-gray-700">{fmt(r.avg_mrr)}</td>
-      <td className="px-3 py-2 text-right font-mono text-gray-700">
-        {fmt(r.avg_recall_at_5)}
-      </td>
-      <td className="px-3 py-2 text-right font-mono text-gray-700">
-        {fmt(r.avg_recall_at_10)}
-      </td>
-      <td className="px-3 py-2 text-right font-mono text-gray-700">
-        {fmt(r.avg_doc_precision_at_5)}
-      </td>
-      <td className="px-3 py-2 text-right font-mono text-gray-700">
-        {fmt(r.avg_doc_mrr)}
-      </td>
-      <td className="px-3 py-2 text-right font-mono text-gray-700">
-        {fmt(r.avg_context_precision)}
-      </td>
-      <td className="px-3 py-2 text-right font-mono text-gray-700">
-        {fmt(r.avg_entity_recall_at_5)}
-      </td>
+      <CoreMetricCells r={r} />
       <td className="px-3 py-2 text-right text-gray-500">
         {fmtTime(r.total_wall_time_s)}
       </td>
@@ -695,22 +706,7 @@ function SweepChildRow({
       <ParamCell value={r.config_summary?.sparse_type} />
       <ParamCell value={r.config_summary?.fusion_method} />
       <td className="px-3 py-2 text-right text-gray-600">{r.total_questions}</td>
-      {/* Chunk-ID metrics hidden for sweep children */}
-      <td className="px-3 py-2 text-right font-mono text-gray-300">{"\u2014"}</td>
-      <td className="px-3 py-2 text-right font-mono text-gray-300">{"\u2014"}</td>
-      <td className="px-3 py-2 text-right font-mono text-gray-300">{"\u2014"}</td>
-      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
-        {fmt(r.avg_doc_precision_at_5)}
-      </td>
-      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
-        {fmt(r.avg_doc_mrr)}
-      </td>
-      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
-        {fmt(r.avg_context_precision)}
-      </td>
-      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
-        {fmt(r.avg_entity_recall_at_5)}
-      </td>
+      <CoreMetricCells r={r} highlight={isBest} />
       <td className={`px-3 py-2 text-right ${isBest ? "text-green-600 font-semibold" : "text-gray-500"}`}>
         {fmtTime(r.total_wall_time_s)}
       </td>

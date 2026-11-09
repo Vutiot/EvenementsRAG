@@ -434,6 +434,53 @@ Later-phase implementations for advanced retrieval methods.
 - agent_hint: Experiment with temporal embeddings: (1) Concatenate temporal metadata to embeddings, (2) Learn temporal offset adjustments, (3) Time-weighted similarity. Benchmark on temporal questions.
 - description: Implement date-aware embeddings that incorporate temporal metadata. Measure improvement on temporal question types.
 
+### 🎯 E10: Core Metric Set & Second Correctness Judge
+
+Reduce evaluation to a small set of metrics that answer the two questions that matter (did retrieval surface the gold, is the answer correct), cross-check answer correctness with a second, independent judge, and switch answer generation to GLM 5.3 Flash. Two views stay: the sweep view compares every run of a sweep, the run view groups every metric of one run. Cost and latency per question are kept as axes.
+
+#### E10-F1: Core retrieval metrics
+
+##### ✅ E10-F1-T1: hit@5, hit@10 and token-budget hit@C
+- blocked_by: []
+- status: done
+- effort: M
+- agent_hint: `src/evaluation/metrics.py` (`hit_at_k`, `hit_at_budget`, `compute_hit_metrics`, `chunk_token_count`), wired in `BenchmarkRunner.evaluate_question()`. hit@C takes the longest ranked prefix whose cumulative token size fits in budget C and is 1 if a gold chunk is in it. Budgets in `evaluation.hit_token_budgets` (default 4000, 8000); the ranked list is retrieved to `evaluation.budget_retrieval_depth` (default 50) so the 8k budget is not capped by top-10. Per-question `retrieved_chunk_tokens` is stored.
+- description: Binary hit at rank cut-offs 5 and 10, and at token budgets 4k and 8k, computed against the gold chunk set (direct or mapped).
+
+#### E10-F2: Answer correctness with two judges
+
+##### ✅ E10-F2-T1: Binary LLM judge (criteria AND)
+- blocked_by: []
+- status: done
+- effort: M
+- agent_hint: `src/evaluation/correctness_judge.py::LLMCorrectnessJudge`. Default `openai/gpt-5.4-mini` via OpenRouter, temperature 0, max_tokens 700, `emit_verdicts` tool call. Criteria: `facts_vs_gold` (equivalent/superset/style_only pass), `numbers_units_correct`, `addresses_question`, `combines_all_hops` (multi-hop types only). No `no_unsupported_claims`. Abstention on an answerable question scores 0. English prompt adapted from RAG-Eval `judge_answer_relevance@v1`.
+- description: Reference-guided, pointwise, binary answer correctness.
+
+##### ✅ E10-F2-T2: Jev as second judge, calibrable threshold, judge agreement
+- blocked_by: [E10-F2-T1]
+- status: done
+- effort: M
+- agent_hint: `JevJudge`: `POST https://openrouter.ai/api/alpha/decisions`, body `{model, state, questions: {same: {type: "noul", instructions, criteria}}}`, P(yes) in `answers.same.noul`, snapshot checked against `typesafe/jev-1.13(-YYYYMMDD)?`, HTTP-200 `{"error":…}` treated as failure, 4 attempts with 2 s ×2 backoff honouring Retry-After (≤ 60 s), cost from `usage.cost` or input tokens × $0.042/M. Threshold `evaluation.jev_threshold` (default 0.5), fitted with `scripts/calibrate_jev_threshold.py` on human labels or LLM-judge verdicts. `MetricsCollector.compute_answer_correctness()` stores both verdicts per question and `judge_agreement` / Cohen's kappa in `metrics_summary.correctness`.
+- description: Independent second judge on the same answers, and how often the two agree.
+
+#### E10-F3: Generation model and cost
+
+##### ✅ E10-F3-T1: GLM 5.3 Flash via OpenRouter as default generator, cost per question
+- blocked_by: []
+- status: done
+- effort: S
+- agent_hint: `openrouter` provider (`src/llm/clients.py`, `OPENROUTER_API_KEY` from env only). `GenerationConfig` defaults to `z-ai/glm-5.3-flash` / `openrouter`; known models are routed to their provider. Generation usage (tokens, OpenRouter `usage.cost`) recorded per question; `compute_cost_metrics()` gives cost (generation + judges) and latency (retrieval + generation) per question.
+- description: New default answer model, with real per-question cost and latency.
+
+#### E10-F4: Views
+
+##### ✅ E10-F4-T1: Sweep view and run view on the core metric set
+- blocked_by: [E10-F1-T1, E10-F2-T2, E10-F3-T1]
+- status: done
+- effort: M
+- agent_hint: `frontend/src/constants/metricGroups.ts` now holds only the core metrics (retrieval, answer, cost & latency). SweepViz (all runs of a sweep): metric filter, new Quality vs Cost scatter, per-parameter charts incl. cost/latency, run comparison on 0–1 metrics. BenchViz (one run): retrieval cards and charts, new `CorrectnessPanel` (both judges, agreement matrix, Jev P(yes) histogram vs LLM verdict, per-question verdicts with disagreement filter). RunHistory and live sweep table show the core columns. ParameterModal: correctness, Jev and threshold controls.
+- description: Keep the two views, restricted to the core metrics.
+
 ### 🧹 E6: UI Unification -- Testing Menu
 
 Merge Query, Benchmark, and Sweep interfaces into a single Testing page. Full roadmap in `roadmap_unification.md`.
@@ -1007,6 +1054,16 @@ Rationale: superseded by `executeQueryStreaming()` used by `TestingPage`. Keepin
 **Mapping is cached per collection in sweep execution.** `sweep_service.py` maintains `_mapping_cache: dict[col_name, dict[q_id, chunk_ids]]` to avoid re-loading and re-mapping the same collection across multiple sweep configs.
 
 **`evaluation_mode: "direct" | "mapped"` stored in result JSON.** Parsed and displayed in RunHistoryTable as pill badges (blue "Mapped" / green "Direct"). Legacy results without the field show neither badge.
+
+### E10 — Core metric set, two correctness judges, GLM 5.3 Flash
+
+**Older metrics are hidden, not deleted.** The UI and the run summaries only show hit@5, hit@10, hit@C, answer correctness (two judges), judge agreement, cost and latency per question. The legacy retrieval metrics are still computed (cheap, keeps old result files and their tests valid) and RAGAS / entity metrics stay opt-in in the backend, off by default. Rationale: smaller diff against the RAGAS work in progress, and old runs remain readable.
+
+**hit@C uses the gold chunk set and a deeper ranked list.** Gold = `ground_truth_chunks` (direct or cross-collection mapped), the same set recall uses. The run retrieves `budget_retrieval_depth` (50) results; legacy metrics are computed on the top `max(k_values)` slice only, so their values do not move. Chunk size comes from a stored `token_count` payload field when present, else tiktoken `cl100k_base`, else ~4 characters per token.
+
+**Two judges, one shared input.** Both judges see the question, the reference answer (`expected_answer_hint`) and the generated answer; neither sees the retrieved context (correctness, not faithfulness). Failed or empty generations and questions without a reference are not sent to the judges (score 0 / skipped). Jev's threshold is a config value because Jev is under-confident at 0.5 (0.57 separated the classes on RAG-Eval); calibrate on this corpus before reading `answer_correctness_jev`.
+
+**Provider routing by model.** `MODEL_PROVIDERS` forces the provider of known models (GLM → OpenRouter, NVIDIA catalog → NVIDIA) so a model picked in the UI always goes to the right endpoint. The OpenRouter key is read from `OPENROUTER_API_KEY` only.
 
 ## Notes
 

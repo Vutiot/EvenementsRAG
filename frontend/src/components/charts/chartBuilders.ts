@@ -131,6 +131,9 @@ export function colorScale(
 }
 
 export function formatMetricValue(key: string, value: number): string {
+  if (key.endsWith("_usd")) {
+    return "$" + (value < 0.01 ? value.toFixed(5) : value.toFixed(3));
+  }
   if (key.endsWith("_ms") || /_p\d+_ms$/.test(key)) {
     return `${value.toFixed(1)} ms`;
   }
@@ -156,7 +159,13 @@ const SPECIAL_NAMES: Record<string, string> = {
   ndcg: "NDCG",
   faithfulness: "Faithfulness",
   answer_relevancy: "Answer Relevancy",
-  answer_correctness: "Answer Correctness",
+  answer_correctness: "Correct (LLM judge)",
+  answer_correctness_jev: "Correct (Jev)",
+  judge_agreement: "Judge Agreement",
+  hit_at_c4k: "Hit@C 4k",
+  hit_at_c8k: "Hit@C 8k",
+  cost_per_question_usd: "Cost / question ($)",
+  latency_per_question_ms: "Latency / question (ms)",
   answer_similarity: "Answer Similarity",
   context_precision: "Context Precision",
   context_recall: "Context Recall",

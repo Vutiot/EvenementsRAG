@@ -16,6 +16,7 @@
 # You can override any field from default.yaml here. Only include the fields you want to change.
 # Example - uncomment to override the model:
 generation:
-  model: mistralai/mistral-small-4-119b-2603
+  llm_provider: openrouter
+  model: z-ai/glm-5.3-flash
   temperature: 0.5
   max_tokens: 3000

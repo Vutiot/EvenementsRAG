@@ -4,6 +4,7 @@ import { EChartWrapper, buildBarChart, formatMetricValue } from "../charts";
 import {
   RETRIEVAL_METRICS,
   getMetricValue,
+  getQuestionMetricValue,
 } from "../../constants/metricGroups";
 import type { MetricDef } from "../../constants/metricGroups";
 
@@ -29,10 +30,8 @@ interface TierDef {
 }
 
 const TIERS: TierDef[] = [
-  { label: "Document", keys: ["doc_precision_at_5", "doc_mrr", "doc_recall_at_5"], accent: "border-l-purple-500" },
-  { label: "Chunk", keys: ["mrr", "recall_at_5", "recall_at_10", "chunk_precision_at_5"], accent: "border-l-blue-500" },
-  { label: "Context", keys: ["context_precision", "context_recall", "context_relevance"], accent: "border-l-teal-500" },
-  { label: "Entity", keys: ["entity_precision_at_5", "entity_recall_at_5", "entity_mrr"], accent: "border-l-amber-500" },
+  { label: "Rank cut-off", keys: ["hit_at_5", "hit_at_10"], accent: "border-l-blue-500" },
+  { label: "Token budget", keys: ["hit_at_c4k", "hit_at_c8k"], accent: "border-l-teal-500" },
 ];
 
 function PrecisionTierCards({ result, activeMetrics }: Props) {
@@ -43,7 +42,7 @@ function PrecisionTierCards({ result, activeMetrics }: Props) {
   if (visibleTiers.length === 0) return null;
 
   return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+    <div className="grid grid-cols-2 gap-3">
       {visibleTiers.map((tier) => {
         const entries = tier.keys
           .filter((k) => activeMetrics.has(k))
@@ -114,12 +113,18 @@ export default function RetrievalBarCharts({ result, activeMetrics }: Props) {
 
   /* By question-type grouped bar chart */
   const byTypeOption = useMemo(() => {
-    const types = Object.keys(result.metrics_by_type).sort();
+    const types = Array.from(new Set(result.per_question.map((q) => q.type))).sort();
     if (types.length === 0) return null;
 
     const series = metrics
       .map((m) => {
-        const data = types.map((t) => result.metrics_by_type[t]?.[m.key] ?? 0);
+        const data = types.map((t) => {
+          const vals = result.per_question
+            .filter((q) => q.type === t)
+            .map((q) => getQuestionMetricValue(q, m.key))
+            .filter((v): v is number => v !== null);
+          return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+        });
         const hasData = data.some((v) => v > 0);
         return hasData ? { name: m.label, data } : null;
       })

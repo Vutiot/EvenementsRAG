@@ -70,6 +70,9 @@ class RetrievalMetrics:
     entity_recall_at_5: float = 0.0
     entity_mrr: float = 0.0
 
+    # Core hit metrics (E10-F1): {"hit_at_5": 1.0, "hit_at_10": 1.0, "hit_at_c4k": 0.0, ...}
+    hits: Dict[str, float] = field(default_factory=dict)
+
     # -- Derived binary hit properties (backward-compatible) ----------------
 
     @property
@@ -115,6 +118,8 @@ class RetrievalMetrics:
         d["chunk_hit_at_3"] = self.chunk_hit_at_3
         d["chunk_hit_at_5"] = self.chunk_hit_at_5
         d["chunk_hit_at_10"] = self.chunk_hit_at_10
+        # Flatten hit metrics so per-question consumers can read q.metrics["hit_at_5"]
+        d.update(d.pop("hits", {}) or {})
         return d
 
     def __repr__(self) -> str:
@@ -539,6 +544,115 @@ def entity_mrr_score(
         if gt_entities & chunk_entities:
             return 1.0 / i
     return 0.0
+
+
+# ---------------------------------------------------------------------------
+# Core hit metrics (E10-F1): hit@K and token-budget hit@C
+# ---------------------------------------------------------------------------
+
+
+def estimate_tokens(text: Optional[str]) -> int:
+    """Approximate the token count of *text*.
+
+    Uses tiktoken (cl100k_base) when installed, otherwise ~4 characters per
+    token, which is close enough for budget accounting.
+    """
+    if not text:
+        return 0
+    encoder = _get_token_encoder()
+    if encoder is not None:
+        return len(encoder.encode(text, disallowed_special=()))
+    return max(1, math.ceil(len(text) / 4))
+
+
+_TOKEN_ENCODER = None
+_TOKEN_ENCODER_LOADED = False
+
+
+def _get_token_encoder():
+    global _TOKEN_ENCODER, _TOKEN_ENCODER_LOADED
+    if not _TOKEN_ENCODER_LOADED:
+        _TOKEN_ENCODER_LOADED = True
+        try:
+            import tiktoken
+
+            _TOKEN_ENCODER = tiktoken.get_encoding("cl100k_base")
+        except Exception:  # not installed or offline: fall back to the heuristic
+            _TOKEN_ENCODER = None
+    return _TOKEN_ENCODER
+
+
+def chunk_token_count(payload: Optional[Dict]) -> int:
+    """Token size of a retrieved chunk, from its payload.
+
+    Prefers a stored count (``token_count`` / ``num_tokens``) and otherwise
+    estimates it from the chunk text (``content`` / ``text``).
+    """
+    if not payload:
+        return 0
+    for key in ("token_count", "num_tokens", "n_tokens"):
+        val = payload.get(key)
+        if isinstance(val, (int, float)) and val > 0:
+            return int(val)
+    return estimate_tokens(payload.get("content") or payload.get("text") or "")
+
+
+def hit_at_k(retrieved_chunks: List[str], gold_chunks: List[str], k: int) -> float:
+    """1.0 if any gold chunk is among the first *k* retrieved chunks, else 0.0."""
+    if not gold_chunks:
+        return 0.0
+    gold = {str(g) for g in gold_chunks}
+    return 1.0 if any(str(c) in gold for c in retrieved_chunks[:k]) else 0.0
+
+
+def budget_prefix_length(chunk_tokens: List[int], budget: int) -> int:
+    """Length of the longest ranked prefix whose cumulative size fits in *budget*."""
+    total = 0
+    for i, n in enumerate(chunk_tokens):
+        total += n
+        if total > budget:
+            return i
+    return len(chunk_tokens)
+
+
+def hit_at_budget(
+    retrieved_chunks: List[str],
+    gold_chunks: List[str],
+    chunk_tokens: List[int],
+    budget: int,
+) -> float:
+    """hit@C: 1.0 if a gold chunk is in the ranked prefix that fits in *budget* tokens.
+
+    The prefix is the first n results whose cumulative token size is <= budget
+    (a chunk that would overflow the budget, and everything after it, is out).
+    """
+    n = budget_prefix_length(chunk_tokens, budget)
+    return hit_at_k(retrieved_chunks, gold_chunks, n)
+
+
+def budget_key(budget: int) -> str:
+    """Metric key for a token budget: 4000 -> 'hit_at_c4k', 1500 -> 'hit_at_c1500'."""
+    if budget % 1000 == 0:
+        return f"hit_at_c{budget // 1000}k"
+    return f"hit_at_c{budget}"
+
+
+def compute_hit_metrics(
+    retrieved_chunks: List[str],
+    gold_chunks: List[str],
+    chunk_tokens: List[int],
+    k_values: List[int] = (5, 10),
+    budgets: List[int] = (4000, 8000),
+) -> Dict[str, float]:
+    """Compute the core retrieval metrics: hit@K for each K and hit@C per budget."""
+    hits: Dict[str, float] = {}
+    for k in k_values:
+        hits[f"hit_at_{k}"] = hit_at_k(retrieved_chunks, gold_chunks, k)
+    for budget in budgets:
+        hits[budget_key(budget)] = hit_at_budget(
+            retrieved_chunks, gold_chunks, chunk_tokens, budget
+        )
+    return hits
 
 
 def compute_retrieval_metrics(

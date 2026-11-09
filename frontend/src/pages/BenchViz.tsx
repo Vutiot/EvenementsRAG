@@ -7,7 +7,7 @@ import PageHeader from "../components/layout/PageHeader";
 import ConfigBadges from "../components/config/ConfigBadges";
 import { MetricFilterBar } from "../components/charts";
 import RetrievalBarCharts from "../components/viz/RetrievalBarCharts";
-import GenerationBarCharts from "../components/viz/GenerationBarCharts";
+import CorrectnessPanel from "../components/viz/CorrectnessPanel";
 import BenchHeatmap from "../components/viz/BenchHeatmap";
 import {
   RETRIEVAL_METRICS,
@@ -129,10 +129,10 @@ export default function BenchViz() {
         <RetrievalBarCharts result={result} activeMetrics={activeRetrieval} />
       </section>
 
-      {/* Generation Evaluation */}
+      {/* Answer correctness: LLM judge + Jev, agreement, cost and latency */}
       <section className="space-y-4">
         <h2 className="text-lg font-semibold text-slate-800">
-          Generation Evaluation
+          Answer Correctness
         </h2>
         <MetricFilterBar
           metricGroups={[GENERATION_METRICS]}
@@ -140,7 +140,7 @@ export default function BenchViz() {
           onToggle={makeToggle(setActiveGeneration)}
           onToggleAll={makeToggleAll(setActiveGeneration)}
         />
-        <GenerationBarCharts result={result} activeMetrics={activeGeneration} />
+        <CorrectnessPanel result={result} />
       </section>
 
       {/* Cross-section: Heatmap + Latency */}

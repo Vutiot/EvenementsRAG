@@ -9,6 +9,7 @@ from src.api.collection_service import CollectionService
 from src.api.dependencies import DATASETS_DIR, PRESETS_DIR, RESULTS_DIR
 from src.api.schemas import BenchmarkRunRequest
 from src.benchmarks.config import BenchmarkConfig, _deep_merge
+from src.evaluation.metrics_collector import core_metrics_summary
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -247,6 +248,7 @@ class BenchmarkService:
                 "avg_recall_at_5": round(result.evaluation.avg_recall_at_k.get(5, 0.0), 4),
                 "avg_recall_at_10": round(result.evaluation.avg_recall_at_k.get(10, 0.0), 4),
                 "total_wall_time_s": round(wall_time, 2),
+                **core_metrics_summary(result.metrics_summary),
             })
 
         except Exception as exc:

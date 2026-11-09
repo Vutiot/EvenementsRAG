@@ -285,6 +285,10 @@ class QueryService:
         cls = getattr(module, class_name)
 
         extra = {"config": config} if technique == "hybrid" else {}
+        if config.generation.llm_provider in ("openrouter", "nvidia", "openai"):
+            from src.llm import get_llm_client
+
+            extra["llm_client"] = get_llm_client(config.generation.llm_provider)
         pipeline = cls(
             collection_name=config.dataset.collection_name,
             qdrant_manager=vector_store,

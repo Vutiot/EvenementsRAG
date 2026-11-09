@@ -15,6 +15,7 @@ from src.api.collection_service import CollectionService
 from src.api.dependencies import DATASETS_DIR, PRESETS_DIR, RESULTS_DIR
 from src.api.schemas import SweepRunRequest
 from src.benchmarks.config import BenchmarkConfig, _deep_merge
+from src.evaluation.metrics_collector import core_metrics_summary
 from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
@@ -438,6 +439,7 @@ class SweepService:
                     "avg_context_precision": round(ctx_prec, 4) if ctx_prec is not None else None,
                     "avg_entity_recall_at_5": round(ent_r5, 4) if ent_r5 is not None else None,
                     "total_wall_time_s": round(result.total_wall_time_s, 2),
+                    **core_metrics_summary(result.metrics_summary),
                 })
 
             # 6. Save sweep metadata

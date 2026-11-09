@@ -28,13 +28,19 @@ reranker:
 
 generation:
   enabled: true
-  llm_provider: nvidia
+  llm_provider: openrouter
   max_tokens: 512
-  model: nvidia/nemotron-3-nano-30b-a3b
+  model: z-ai/glm-5.3-flash
   temperature: 0.0
   top_k_chunks: 20
 
 evaluation:
+  compute_answer_correctness: true
+  use_jev_judge: true
+  jev_threshold: 0.5
+  hit_token_budgets:
+  - 4000
+  - 8000
   compute_context_precision: false
   compute_entity_metrics: false
   compute_ragas: false
