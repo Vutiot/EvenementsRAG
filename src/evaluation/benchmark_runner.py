@@ -37,6 +37,8 @@ from src.embeddings.embedding_generator import EmbeddingGenerator
 from src.evaluation.metrics import (
     EvaluationResults,
     RetrievalMetrics,
+    chunk_token_count,
+    compute_hit_metrics,
     compute_metrics_by_type,
     compute_retrieval_metrics,
 )
@@ -55,6 +57,8 @@ class BenchmarkRunner:
         qdrant_manager: Optional[QdrantManager] = None,
         embedding_generator: Optional[EmbeddingGenerator] = None,
         k_values: Optional[List[int]] = None,
+        hit_token_budgets: Optional[List[int]] = None,
+        budget_retrieval_depth: int = 50,
     ):
         """
         Initialize benchmark runner.
@@ -64,6 +68,8 @@ class BenchmarkRunner:
             qdrant_manager: Qdrant manager instance
             embedding_generator: Embedding generator instance
             k_values: K values for Recall@K metrics
+            hit_token_budgets: Token budgets C for hit@C (e.g. [4000, 8000])
+            budget_retrieval_depth: Ranked-list depth retrieved for hit@C
         """
         self.questions_file = questions_file or (
             settings.DATA_DIR / "evaluation" / "generated_questions.json"
@@ -71,6 +77,8 @@ class BenchmarkRunner:
         self.qdrant = qdrant_manager or QdrantManager()
         self.embedding_gen = embedding_generator or EmbeddingGenerator()
         self.k_values = k_values or settings.EVALUATION_K_VALUES
+        self.hit_token_budgets = list(hit_token_budgets) if hit_token_budgets is not None else [4000, 8000]
+        self.budget_retrieval_depth = budget_retrieval_depth
 
         logger.info(
             "BenchmarkRunner initialized",
@@ -269,14 +277,26 @@ class BenchmarkRunner:
                     if chunk_id and chunk_id not in ground_truth_chunks:
                         ground_truth_chunks.append(chunk_id)
 
-        # Compute retrieval metrics
+        # Legacy retrieval metrics only look at the top max(k) results, even when
+        # a deeper list was retrieved for the token-budget metric.
+        top_n = max(self.k_values)
         metrics = compute_retrieval_metrics(
-            retrieved_chunks=query_result["retrieved_chunks"],
+            retrieved_chunks=query_result["retrieved_chunks"][:top_n],
             ground_truth_chunks=ground_truth_chunks,
             k_values=self.k_values,
-            retrieved_payloads=query_result["retrieved_payloads"],
+            retrieved_payloads=query_result["retrieved_payloads"][:top_n],
             source_article_id=question.get("source_article_id"),
             source_chunk_id=question.get("source_chunk_id"),
+        )
+
+        # Core metrics (E10-F1): hit@5, hit@10 and hit@C over the full ranked list
+        chunk_tokens = [chunk_token_count(p) for p in query_result["retrieved_payloads"]]
+        metrics.hits = compute_hit_metrics(
+            retrieved_chunks=query_result["retrieved_chunks"],
+            gold_chunks=ground_truth_chunks,
+            chunk_tokens=chunk_tokens,
+            k_values=[5, 10],
+            budgets=self.hit_token_budgets,
         )
 
         return {
@@ -288,8 +308,16 @@ class BenchmarkRunner:
             "ground_truth_count": len(ground_truth_chunks),
             "retrieved_count": query_result["num_retrieved"],
             "retrieval_time_ms": query_result["retrieval_time_ms"],
+            "retrieved_chunk_tokens": chunk_tokens,
             "metrics": metrics,
         }
+
+    def _retrieval_depth(self) -> int:
+        """Results to retrieve: max(k), or deeper when hit@C budgets are set."""
+        depth = max(self.k_values)
+        if self.hit_token_budgets:
+            depth = max(depth, self.budget_retrieval_depth)
+        return depth
 
     def run_benchmark(
         self,
@@ -345,7 +373,7 @@ class BenchmarkRunner:
             query_result = self.query_for_question(
                 question,
                 collection_name,
-                top_k=max(self.k_values),
+                top_k=self._retrieval_depth(),
             )
 
             # Evaluate — use mapped ground truth if available

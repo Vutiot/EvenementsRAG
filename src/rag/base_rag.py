@@ -100,6 +100,8 @@ class BaseRAG(ABC):
             name: Name of the RAG implementation
         """
         self.name = name
+        # Token usage / cost of the last generate() call ({"prompt_tokens", "completion_tokens", "cost_usd"})
+        self.last_usage: Optional[Dict] = None
         logger.info(f"Initialized {self.name}")
 
     @abstractmethod

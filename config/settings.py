@@ -75,7 +75,7 @@ class Settings(BaseSettings):
 
     OPENROUTER_API_KEY: str = Field(
         default="",
-        description="OpenRouter API key for routing to third-party providers",
+        description="OpenRouter API key (generation with GLM, correctness judges incl. Jev). Read from env, never commit it.",
     )
 
     GEMMA_API_KEY: str = Field(
@@ -141,7 +141,7 @@ class Settings(BaseSettings):
     # ========================================================================
     # LLM Configuration
     # ========================================================================
-    LLM_PROVIDER: Literal["anthropic", "openai", "nvidia"] = Field(
+    LLM_PROVIDER: Literal["anthropic", "openai", "nvidia", "openrouter"] = Field(
         default="nvidia",
         description="LLM provider to use",
     )
@@ -166,6 +166,16 @@ class Settings(BaseSettings):
         description="NVIDIA API base URL",
     )
 
+    OPENROUTER_BASE_URL: str = Field(
+        default="https://openrouter.ai/api/v1",
+        description="OpenRouter OpenAI-compatible base URL",
+    )
+
+    OPENROUTER_MODEL: str = Field(
+        default="z-ai/glm-5.3-flash",
+        description="Default OpenRouter model for answer generation",
+    )
+
     LLM_TEMPERATURE: float = Field(
         default=0.0,
         ge=0.0,
@@ -187,6 +197,8 @@ class Settings(BaseSettings):
             return self.ANTHROPIC_MODEL
         elif self.LLM_PROVIDER == "openai":
             return self.OPENAI_MODEL
+        elif self.LLM_PROVIDER == "openrouter":
+            return self.OPENROUTER_MODEL
         else:  # nvidia
             return self.NVIDIA_MODEL
 
@@ -452,6 +464,10 @@ class Settings(BaseSettings):
         if self.LLM_PROVIDER == "nvidia" and not self.NVIDIA_API_KEY:
             raise ValueError(
                 "NVIDIA_API_KEY must be set when using LLM_PROVIDER='nvidia'"
+            )
+        if self.LLM_PROVIDER == "openrouter" and not self.OPENROUTER_API_KEY:
+            raise ValueError(
+                "OPENROUTER_API_KEY must be set when using LLM_PROVIDER='openrouter'"
             )
 
     def get_qdrant_config(self) -> dict:

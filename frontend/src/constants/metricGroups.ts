@@ -1,4 +1,4 @@
-import type { NormalizedBenchmarkResult } from "../api/types";
+import type { NormalizedBenchmarkResult, NormalizedQuestion } from "../api/types";
 
 // ─── Types ───────────────────────────────────────────────────────────
 
@@ -18,84 +18,58 @@ export interface MetricGroup {
   subGroups: MetricSubGroup[];
 }
 
-// ─── Retrieval Metrics ───────────────────────────────────────────────
+// ─── Core metric set (E10) ──────────────────────────────────────────
+// Retrieval: hit@5, hit@10 and hit@C (token budget). Answer: binary
+// correctness by the LLM judge and by Jev, plus their agreement. Cost and
+// latency per question are kept as axes (lower is better, not 0–1).
 
 export const RETRIEVAL_METRICS: MetricGroup = {
   name: "Retrieval",
   subGroups: [
     {
-      name: "Document-Level",
+      name: "Rank cut-off",
       metrics: [
-        { key: "doc_precision_at_5", label: "Doc P@5", higherIsBetter: true },
-        { key: "doc_mrr", label: "Doc MRR", higherIsBetter: true },
-        { key: "doc_recall_at_5", label: "Doc R@5", higherIsBetter: true },
+        { key: "hit_at_5", label: "Hit@5", higherIsBetter: true },
+        { key: "hit_at_10", label: "Hit@10", higherIsBetter: true },
       ],
     },
     {
-      name: "Chunk-Level",
+      name: "Token budget",
       metrics: [
-        { key: "mrr", label: "MRR", higherIsBetter: true },
-        { key: "recall_at_5", label: "R@5", higherIsBetter: true },
-        { key: "recall_at_10", label: "R@10", higherIsBetter: true },
-        { key: "chunk_precision_at_5", label: "Chunk P@5", higherIsBetter: true },
-      ],
-    },
-    {
-      name: "Context / LLM",
-      metrics: [
-        { key: "context_precision", label: "Context Precision", higherIsBetter: true },
-        { key: "context_recall", label: "Context Recall", higherIsBetter: true },
-        { key: "context_relevance", label: "Context Relevance", higherIsBetter: true },
-      ],
-    },
-    {
-      name: "Entity / NER",
-      metrics: [
-        { key: "entity_precision_at_5", label: "Ent P@5", higherIsBetter: true },
-        { key: "entity_recall_at_5", label: "Ent R@5", higherIsBetter: true },
-        { key: "entity_mrr", label: "Ent MRR", higherIsBetter: true },
+        { key: "hit_at_c4k", label: "Hit@C 4k", higherIsBetter: true },
+        { key: "hit_at_c8k", label: "Hit@C 8k", higherIsBetter: true },
       ],
     },
   ],
 };
 
-// ─── Generation Metrics ──────────────────────────────────────────────
-
 export const GENERATION_METRICS: MetricGroup = {
-  name: "Generation",
+  name: "Answer",
   subGroups: [
     {
-      name: "Faithfulness",
+      name: "Answer Correctness",
       metrics: [
-        { key: "faithfulness", label: "Faithfulness", higherIsBetter: true },
+        { key: "answer_correctness", label: "Correct (LLM judge)", higherIsBetter: true },
+        { key: "answer_correctness_jev", label: "Correct (Jev)", higherIsBetter: true },
       ],
     },
     {
-      name: "Answer Relevancy",
+      name: "Judge Agreement",
       metrics: [
-        { key: "answer_relevancy", label: "Answer Relevancy", higherIsBetter: true },
+        { key: "judge_agreement", label: "Judge Agreement", higherIsBetter: true },
       ],
     },
+  ],
+};
+
+export const EFFICIENCY_METRICS: MetricGroup = {
+  name: "Cost & Latency",
+  subGroups: [
     {
-      name: "Factual Correctness",
+      name: "Per Question",
       metrics: [
-        { key: "answer_correctness", label: "Answer Correctness", higherIsBetter: true },
-        { key: "answer_similarity", label: "Answer Similarity", higherIsBetter: true },
-      ],
-    },
-    {
-      name: "Quality",
-      metrics: [
-        { key: "coherence", label: "Coherence", higherIsBetter: true },
-        { key: "correctness", label: "Correctness", higherIsBetter: true },
-        { key: "conciseness", label: "Conciseness", higherIsBetter: true },
-      ],
-    },
-    {
-      name: "Safety",
-      metrics: [
-        { key: "harmfulness", label: "Harmfulness", higherIsBetter: false },
-        { key: "maliciousness", label: "Maliciousness", higherIsBetter: false },
+        { key: "cost_per_question_usd", label: "Cost / question ($)", higherIsBetter: false },
+        { key: "latency_per_question_ms", label: "Latency / question (ms)", higherIsBetter: false },
       ],
     },
   ],
@@ -109,99 +83,92 @@ function flatMetrics(group: MetricGroup): MetricDef[] {
 
 const ALL_RETRIEVAL = flatMetrics(RETRIEVAL_METRICS);
 const ALL_GENERATION = flatMetrics(GENERATION_METRICS);
+const ALL_EFFICIENCY = flatMetrics(EFFICIENCY_METRICS);
 
-/** Every known metric key. */
-export const ALL_METRIC_KEYS: string[] = [
+/** Quality metrics: all in [0, 1], safe for 0–1 heatmaps and radars. */
+export const QUALITY_METRIC_KEYS: string[] = [
   ...ALL_RETRIEVAL.map((m) => m.key),
   ...ALL_GENERATION.map((m) => m.key),
 ];
 
+/** Cost and latency axes (absolute units, lower is better). */
+export const EFFICIENCY_METRIC_KEYS: string[] = ALL_EFFICIENCY.map((m) => m.key);
+
+/** Every known metric key. */
+export const ALL_METRIC_KEYS: string[] = [...QUALITY_METRIC_KEYS, ...EFFICIENCY_METRIC_KEYS];
+
 /** Maps metric key → whether higher values are better. */
 export const HIGHER_IS_BETTER: Record<string, boolean> = Object.fromEntries(
-  [...ALL_RETRIEVAL, ...ALL_GENERATION].map((m) => [m.key, m.higherIsBetter]),
+  [...ALL_RETRIEVAL, ...ALL_GENERATION, ...ALL_EFFICIENCY].map((m) => [m.key, m.higherIsBetter]),
 );
 
+/** Display label of a metric key. */
+export function metricLabel(key: string): string {
+  return (
+    [...ALL_RETRIEVAL, ...ALL_GENERATION, ...ALL_EFFICIENCY].find((m) => m.key === key)?.label ?? key
+  );
+}
+
 // ─── Value extraction ────────────────────────────────────────────────
+
+/** Summary blocks written by the backend MetricsCollector (E10). */
+const SUMMARY_BLOCKS = ["hits", "correctness", "cost"] as const;
+
+function mean(values: number[]): number | null {
+  return values.length > 0 ? values.reduce((a, b) => a + b, 0) / values.length : null;
+}
 
 /**
  * Extract a metric's aggregate value from a NormalizedBenchmarkResult.
  *
- * Handles the heterogeneous storage of metrics across the result object:
- * - Direct scalars: avg_mrr, avg_doc_mrr
- * - Keyed records: avg_recall_at_k["5"], avg_ndcg["5"], avg_doc_precision_at_k["5"]
- * - RAGAS summary: metrics_summary.ragas.avg_<key>
- * - Entity metrics: metrics_summary.entity.avg_<key>
- * - Per-question fallback: average q.metrics[key] or q.ragas_metrics[key]
+ * Looks in metrics_summary.{hits,correctness,cost} first (written by the
+ * backend), then falls back to averaging the per-question values
+ * (q.metrics[key], q.cost_usd / q.latency_ms, q.correctness.agree).
+ * Runs recorded before E10 have none of these keys and return null.
  */
 export function getMetricValue(
   result: NormalizedBenchmarkResult,
   key: string,
 ): number | null {
-  // Direct scalar fields
-  if (key === "mrr") return result.avg_mrr;
-  if (key === "doc_mrr") return result.avg_doc_mrr ?? null;
-
-  // Keyed record fields: recall_at_N, ndcg_at_N
-  const atMatch = key.match(/^(.+?)_at_(\d+)$/);
-  if (atMatch) {
-    const base = atMatch[1]!;
-    const k = atMatch[2]!;
-
-    if (base === "recall") return result.avg_recall_at_k[k] ?? null;
-    if (base === "ndcg") return result.avg_ndcg[k] ?? null;
-    if (base === "doc_precision") return result.avg_doc_precision_at_k?.[k] ?? null;
-    if (base === "doc_recall") return result.avg_doc_recall_at_k?.[k] ?? null;
-    if (base === "chunk_precision") return result.avg_chunk_precision_at_k?.[k] ?? null;
-    if (base === "article_hit") return result.avg_article_hit_at_k?.[k] ?? null;
-    if (base === "chunk_hit") return result.avg_chunk_hit_at_k?.[k] ?? null;
-
-    // Entity metrics from metrics_summary
-    if (base === "entity_precision" || base === "entity_recall") {
-      const entity = result.metrics_summary?.entity as Record<string, number> | undefined;
-      return entity?.["avg_" + key] ?? null;
-    }
+  const summary = result.metrics_summary as Record<string, Record<string, unknown> | undefined> | null;
+  for (const block of SUMMARY_BLOCKS) {
+    const val = summary?.[block]?.[key];
+    if (typeof val === "number") return val;
   }
 
-  // Entity MRR
-  if (key === "entity_mrr") {
-    const entity = result.metrics_summary?.entity as Record<string, number> | undefined;
-    return entity?.["avg_entity_mrr"] ?? null;
-  }
-
-  // RAGAS summary: metrics_summary.ragas.avg_<key>
-  const ragas = result.metrics_summary?.ragas as Record<string, number> | undefined;
-  if (ragas) {
-    const val = ragas["avg_" + key];
-    if (val !== undefined) return val;
-  }
-
-  // Context metrics from RAGAS
-  if (key.startsWith("context_")) {
-    if (ragas) {
-      const val = ragas["avg_" + key];
-      if (val !== undefined) return val;
-    }
-  }
-
-  // Per-question average fallback
   const questions = result.per_question;
   if (questions.length === 0) return null;
 
-  // Try retrieval metrics first
-  const retValues = questions
-    .map((q) => q.metrics[key])
-    .filter((v): v is number => v !== undefined);
-  if (retValues.length > 0) {
-    return retValues.reduce((a, b) => a + b, 0) / retValues.length;
+  if (key === "cost_per_question_usd") {
+    return mean(questions.map((q) => q.cost_usd).filter((v): v is number => typeof v === "number"));
+  }
+  if (key === "latency_per_question_ms") {
+    return mean(questions.map((q) => q.latency_ms).filter((v): v is number => typeof v === "number"));
+  }
+  if (key === "judge_agreement") {
+    return mean(
+      questions
+        .map((q) => q.correctness?.agree)
+        .filter((v): v is boolean => typeof v === "boolean")
+        .map((v) => (v ? 1 : 0)),
+    );
   }
 
-  // Try RAGAS per-question metrics
-  const ragasValues = questions
-    .map((q) => q.ragas_metrics?.[key])
-    .filter((v): v is number => v !== undefined && v !== null);
-  if (ragasValues.length > 0) {
-    return ragasValues.reduce((a, b) => a + b, 0) / ragasValues.length;
-  }
+  return mean(
+    questions
+      .map((q) => q.metrics[key])
+      .filter((v): v is number => typeof v === "number"),
+  );
+}
 
-  return null;
+/** Per-question value of a metric (0/1 for hits and correctness, absolute for cost/latency). */
+export function getQuestionMetricValue(q: NormalizedQuestion, key: string): number | null {
+  if (key === "cost_per_question_usd") return q.cost_usd ?? null;
+  if (key === "latency_per_question_ms") return q.latency_ms ?? null;
+  if (key === "judge_agreement") {
+    const agree = q.correctness?.agree;
+    return typeof agree === "boolean" ? (agree ? 1 : 0) : null;
+  }
+  const v = q.metrics[key];
+  return typeof v === "number" ? v : null;
 }

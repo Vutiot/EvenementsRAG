@@ -80,6 +80,10 @@ class ResultFileInfo(BaseModel):
     run_name: str | None = None
     eval_dataset_name: str | None = None
     evaluation_mode: str | None = None  # "direct" | "mapped"
+    # Core metric set (E10): hit_at_5, hit_at_10, hit_at_c4k, hit_at_c8k,
+    # answer_correctness, answer_correctness_jev, judge_agreement, judge_kappa,
+    # cost_per_question_usd, latency_per_question_ms
+    core_metrics: dict[str, float] | None = None
 
 
 class NormalizedQuestion(BaseModel):
@@ -97,6 +101,10 @@ class NormalizedQuestion(BaseModel):
     retrieved_contexts: list[str] | None = None
     ragas_metrics: dict[str, float] | None = None
     ragas_metrics_std: dict[str, float] | None = None
+    correctness: dict | None = None  # {"llm": {...}, "jev": {...}, "agree": bool}
+    cost_usd: float | None = None
+    latency_ms: float | None = None
+    retrieved_chunk_tokens: list[int] | None = None
 
 
 # ---------------------------------------------------------------------------

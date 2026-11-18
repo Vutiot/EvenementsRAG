@@ -7,6 +7,7 @@ import { MetricFilterBar } from "../components/charts";
 import {
   RETRIEVAL_METRICS,
   GENERATION_METRICS,
+  EFFICIENCY_METRICS,
   ALL_METRIC_KEYS,
 } from "../constants/metricGroups";
 import {
@@ -20,6 +21,7 @@ import SweepParameterCharts from "../components/viz/SweepParameterCharts";
 import SweepRunComparison from "../components/viz/SweepRunComparison";
 import SweepHeatmapScatter from "../components/viz/SweepHeatmapScatter";
 import SweepDataTable from "../components/viz/SweepDataTable";
+import QualityCostScatter from "../components/viz/QualityCostScatter";
 
 type ViewMode = "parameters" | "comparison";
 
@@ -230,7 +232,7 @@ export default function SweepViz() {
 
       {/* Metric Filter */}
       <MetricFilterBar
-        metricGroups={[RETRIEVAL_METRICS, GENERATION_METRICS]}
+        metricGroups={[RETRIEVAL_METRICS, GENERATION_METRICS, EFFICIENCY_METRICS]}
         activeMetrics={activeMetrics}
         onToggle={toggleMetric}
         onToggleAll={toggleAllMetrics}
@@ -239,6 +241,7 @@ export default function SweepViz() {
       {/* Views */}
       {activeView === "parameters" ? (
         <div className="space-y-8">
+          <QualityCostScatter configs={filtered} />
           <SweepParameterCharts
             configs={filtered}
             sweptParams={sweptParams}
@@ -252,6 +255,7 @@ export default function SweepViz() {
         </div>
       ) : (
         <div className="space-y-8">
+          <QualityCostScatter configs={filtered} />
           <SweepRunComparison
             configs={filtered}
             activeMetrics={activeMetrics}

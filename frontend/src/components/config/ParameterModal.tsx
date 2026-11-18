@@ -133,8 +133,13 @@ export default function ParameterModal({
 
   /** True when at least one eval metric toggle requires LLM generation. */
   const needsGeneration =
+    (effective("evaluation.compute_answer_correctness") as boolean | undefined) !== false ||
     !!(effective("evaluation.compute_context_precision") as boolean) ||
     !!(effective("evaluation.compute_entity_metrics") as boolean);
+
+  const correctnessOn =
+    (effective("evaluation.compute_answer_correctness") as boolean | undefined) !== false;
+  const jevOn = (effective("evaluation.use_jev_judge") as boolean | undefined) !== false;
 
   /** Dynamic Retriever Top K options based on reranker selection. */
   const hasReranker = (effective("reranker.type") as string) !== "none";
@@ -572,58 +577,64 @@ export default function ParameterModal({
           <Section title="Evaluation">
             <div className="flex items-center justify-between">
               <div>
-                <span className="text-sm font-medium text-gray-700">LLM Context Precision</span>
-                <p className="text-xs text-gray-400">RAGAS context_precision (requires LLM calls)</p>
+                <span className="text-sm font-medium text-gray-700">Answer Correctness</span>
+                <p className="text-xs text-gray-400">Binary LLM judge (gpt-5.4-mini): facts, numbers & units, answers the question, all hops</p>
               </div>
               <button
-                onClick={() =>
-                  handleChange(
-                    "evaluation.compute_context_precision",
-                    !(effective("evaluation.compute_context_precision") as boolean),
-                  )
-                }
+                onClick={() => handleChange("evaluation.compute_answer_correctness", !correctnessOn)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  (effective("evaluation.compute_context_precision") as boolean)
-                    ? "bg-blue-600"
-                    : "bg-gray-200"
+                  correctnessOn ? "bg-blue-600" : "bg-gray-200"
                 }`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    (effective("evaluation.compute_context_precision") as boolean)
-                      ? "translate-x-6"
-                      : "translate-x-1"
+                    correctnessOn ? "translate-x-6" : "translate-x-1"
                   }`}
                 />
               </button>
             </div>
+            {correctnessOn && (
+            <>
             <div className="flex items-center justify-between mt-3">
               <div>
-                <span className="text-sm font-medium text-gray-700">Entity Metrics (LLM NER)</span>
-                <p className="text-xs text-gray-400">Entity precision/recall via LLM entity extraction</p>
+                <span className="text-sm font-medium text-gray-700">Jev as second judge</span>
+                <p className="text-xs text-gray-400">TypeSafe Jev P(yes) via OpenRouter; agreement with the LLM judge is reported</p>
               </div>
               <button
-                onClick={() =>
-                  handleChange(
-                    "evaluation.compute_entity_metrics",
-                    !(effective("evaluation.compute_entity_metrics") as boolean),
-                  )
-                }
+                onClick={() => handleChange("evaluation.use_jev_judge", !jevOn)}
                 className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors ${
-                  (effective("evaluation.compute_entity_metrics") as boolean)
-                    ? "bg-blue-600"
-                    : "bg-gray-200"
+                  jevOn ? "bg-blue-600" : "bg-gray-200"
                 }`}
               >
                 <span
                   className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform ${
-                    (effective("evaluation.compute_entity_metrics") as boolean)
-                      ? "translate-x-6"
-                      : "translate-x-1"
+                    jevOn ? "translate-x-6" : "translate-x-1"
                   }`}
                 />
               </button>
             </div>
+            {jevOn && (
+            <div className="flex items-center justify-between mt-3">
+              <div>
+                <span className="text-sm font-medium text-gray-700">Jev threshold</span>
+                <p className="text-xs text-gray-400">P(yes) above which Jev says correct; calibrate with scripts/calibrate_jev_threshold.py</p>
+              </div>
+              <input
+                type="number"
+                min={0}
+                max={1}
+                step={0.01}
+                value={(effective("evaluation.jev_threshold") as number) ?? 0.5}
+                onChange={(e) => {
+                  const v = Number(e.target.value);
+                  if (!Number.isNaN(v)) handleChange("evaluation.jev_threshold", Math.min(1, Math.max(0, v)));
+                }}
+                className="w-20 rounded border border-gray-200 px-2 py-1 text-right text-sm"
+              />
+            </div>
+            )}
+            </>
+            )}
             {/* RAGAS Repeat Count — visible when RAGAS is enabled */}
             {(effective("evaluation.compute_ragas") as boolean) !== false && (
             <div className="flex items-center justify-between mt-3">

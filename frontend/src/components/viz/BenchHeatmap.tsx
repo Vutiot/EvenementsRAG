@@ -9,6 +9,7 @@ import type { HeatmapDataPoint } from "../charts";
 import {
   RETRIEVAL_METRICS,
   GENERATION_METRICS,
+  getQuestionMetricValue,
 } from "../../constants/metricGroups";
 import type { MetricDef } from "../../constants/metricGroups";
 import { exportAsLatex, exportAsMarkdown } from "../../utils/tableExport";
@@ -75,9 +76,8 @@ export default function BenchHeatmap({
 
       for (let mi = 0; mi < allMetrics.length; mi++) {
         const m = allMetrics[mi]!;
-        // Try retrieval metrics, then RAGAS metrics
-        const v = q.metrics[m.key] ?? q.ragas_metrics?.[m.key] ?? undefined;
-        if (v !== undefined) {
+        const v = getQuestionMetricValue(q, m.key);
+        if (v !== null) {
           hmData.push([mi, qi, v]);
           row.push(v);
         } else {

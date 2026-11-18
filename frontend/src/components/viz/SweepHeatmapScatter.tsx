@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import type { EChartsOption } from "echarts";
 import { EChartWrapper, buildHeatmapChart, SERIES_COLORS } from "../charts";
 import type { HeatmapDataPoint } from "../charts";
-import { ALL_METRIC_KEYS } from "../../constants/metricGroups";
+import { QUALITY_METRIC_KEYS } from "../../constants/metricGroups";
 import { metricDisplayName } from "../charts/chartBuilders";
 import { paramShortName, uniqueParamValues } from "./sweepUtils";
 import type { SweepConfig } from "./sweepUtils";
@@ -14,7 +14,7 @@ interface Props {
 }
 
 function activeKeys(active: Set<string>): string[] {
-  return ALL_METRIC_KEYS.filter((k) => active.has(k));
+  return QUALITY_METRIC_KEYS.filter((k) => active.has(k));
 }
 
 /* ── Parameter Heatmap ─────────────────────────────────────────────── */

@@ -7,7 +7,7 @@ run_sweep() batching, _filter_top_k_articles helper — all external I/O is mock
 
 import json
 from pathlib import Path
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, call, patch
 
 import pytest
 
@@ -136,6 +136,7 @@ class TestBuildRagPipeline:
             qdrant_manager=runner._vector_store,
             embedding_generator=runner._embedding_gen,
             prompt_template=vanilla_config.generation.prompt_template,
+            llm_client=ANY,
         )
         assert runner._rag_pipeline is mock_cls.return_value
 
@@ -163,6 +164,7 @@ class TestBuildRagPipeline:
             embedding_generator=runner._embedding_gen,
             prompt_template=hybrid_config.generation.prompt_template,
             config=runner.config,
+            llm_client=ANY,
         )
         assert runner._rag_pipeline is mock_cls.return_value
 
@@ -253,6 +255,8 @@ class TestRun:
             qdrant_manager=runner._vector_store,
             embedding_generator=runner._embedding_gen,
             k_values=vanilla_config_no_gen.evaluation.k_values,
+            hit_token_budgets=vanilla_config_no_gen.evaluation.hit_token_budgets,
+            budget_retrieval_depth=vanilla_config_no_gen.evaluation.budget_retrieval_depth,
         )
 
 
@@ -353,6 +357,7 @@ class TestGenerationPass:
             temperature=vanilla_config.generation.temperature,
             max_tokens=vanilla_config.generation.max_tokens,
             model=vanilla_config.generation.model,
+            extra_body={"usage": {"include": True}},  # OpenRouter usage + cost accounting
         )
 
     def test_generation_pass_applies_top_k_articles_filter(

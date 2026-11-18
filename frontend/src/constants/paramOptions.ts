@@ -133,6 +133,7 @@ export const RERANKER_MODEL_OPTIONS: Record<string, { value: string; label: stri
 
 export const LLM_MODELS: { value: string; label: string }[] = [
   { value: "__none__", label: "None" },
+  { value: "z-ai/glm-5.3-flash", label: "GLM 5.3 Flash (default)" },
   { value: "mistralai/mistral-small-4-119b-2603", label: "Mistral Small 4 119B" },
   { value: "google/gemma-3-27b-it", label: "Gemma 3 27B" },
   { value: "nvidia/nemotron-3-nano-30b-a3b", label: "Nemotron 30B" },
