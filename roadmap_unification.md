@@ -608,23 +608,26 @@ Add entity-level precision, recall, and MRR metrics using LLM-based named entity
 - agent_hint: When user modifies the default config, show changed params highlighted in amber in the config badge row. Helps users see what they changed without reopening the modal. Compare current overrides against baseConfig to determine which params differ.
 - description: Visual diff showing which parameters were modified from the preset/default. Changed params highlighted in the inline config badge summary.
 
-##### E6-F7-T2: Sweep progress estimation
+##### ⏸ E6-F7-T2: Sweep progress estimation
 - blocked_by: [E6-F3-T4]
-- status: pending
+- status: deferred
+- note: Deferred (2026-11-18 review): comfort feature, not needed for solo local use.
 - effort: S
 - agent_hint: Show estimated time remaining for sweep runs based on average completion time of finished configs. Display "~12 min remaining (4/12 configs done)" below the progress bars. Use rolling average of per-config wall time.
 - description: Time estimation for sweep runs. Shows remaining time based on average per-config completion time.
 
-##### E6-F7-T3: Run History filtering & search
+##### ⏸ E6-F7-T3: Run History filtering & search
 - blocked_by: [E6-F5-T1]
-- status: pending
+- status: deferred
+- note: Deferred (2026-11-18 review): revisit when AutoML studies (E9-F2-T3) make Run History crowded.
 - effort: M
 - agent_hint: Add filter dropdowns above RunHistoryTable: by type (bench/sweep/all), by dataset, by technique. Add text search on run name. Table will get busy with sweep rows, so filtering is essential. Use Tailwind `flex gap-2` row of small dropdowns + search input above the table.
 - description: Filter and search for the run history table. Filter by type, dataset, technique. Text search on run name.
 
-##### E6-F7-T4: Keyboard shortcuts
+##### ⏸ E6-F7-T4: Keyboard shortcuts
 - blocked_by: [E6-F1-T3]
-- status: pending
+- status: deferred
+- note: Deferred (2026-11-18 review): power-user polish.
 - effort: S
 - agent_hint: `Ctrl+Enter` to execute (already exists for query), `Ctrl+1/2/3` to switch modes, `Escape` to cancel running benchmark/sweep. Use `useEffect` with `keydown` listener. Guard against input focus to avoid conflicts.
 - description: Keyboard shortcuts for mode switching and execution. Improves power-user workflow.
@@ -710,6 +713,10 @@ Suggested features (E6-F7): 4 additional tasks (3S + 1M).
 ---
 
 ## Architecture Decisions
+
+### E6-F7: Scope review (2026-11-18)
+
+Solo local development: E6-F7-T2 (sweep time estimate), E6-F7-T3 (Run History filters) and E6-F7-T4 (keyboard shortcuts) are deferred. E6-F7-T1 (config diff view) stays pending. See the review note in `ROADMAP.md`.
 
 ### E6-F1: Layout & Navigation (completed 2026-03-21)
 - **Shared config state**: TestingPage owns `preset`, `baseConfig`, `overrides`, `datasets` state once — shared across all three modes. No prop drilling; mode panels render inline.
