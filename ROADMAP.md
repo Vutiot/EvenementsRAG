@@ -4,7 +4,9 @@
 
 EvenementsRAG is a progressive RAG benchmarking system for historical events (WW2), designed to systematically evaluate and compare different RAG techniques, retrieval parameters, and generation configurations. The project has successfully implemented a hybrid RAG baseline with 10k Wikipedia articles and is expanding into comprehensive benchmarking infrastructure with parameterized evaluation and visualization.
 
-**Current State**: All E1–E3 tasks complete except E3-F2-T3 (sweep visualization). Full benchmarking pipeline operational: parameterized runner, metric collection (ROUGE/BERTScore/RAGAS), dataset management with SSE generation, collection management across backends, query tester with prompt pieces and chunk highlighting, benchmark result viewer with metric dashboards, and benchmark run execution with live SSE progress. Next: sweep visualization (E3-F2-T3), results DB (E4-F1-T1), or advanced RAG (E5-F1-T1). Planned next: two conversational assistants sharing one dataset-exploration harness, E8 (eval dataset setup in the Evaluations tab) and E9 (budget-aware Bayesian AutoML).
+**Current State**: All E1–E3 tasks complete (E3-F2-T3 was delivered by E7-F4, SweepViz). Full benchmarking pipeline operational: parameterized runner, metric collection (ROUGE/BERTScore/RAGAS), dataset management with SSE generation, collection management across backends, query tester with prompt pieces and chunk highlighting, benchmark result viewer with metric dashboards, and benchmark run execution with live SSE progress. Next: local pre-commit hook (E11-F1-T1), file-based result cache (E4-F1-T2), or advanced RAG (E5-F1-T1). Planned next: two conversational assistants sharing one dataset-exploration harness, E8 (eval dataset setup in the Evaluations tab) and E9 (budget-aware Bayesian AutoML).
+
+**Scope (2026-11-18 review)**: the project is developed by one person, locally. The roadmap is sized for that: no CI, no database, no multi-user features. Tasks that only pay off later are marked ⏸ deferred rather than deleted; see "Deferred until needed" below.
 
 ---
 
@@ -38,7 +40,7 @@ graph TD
 
   E3F2T1["✅ E3-F2-T1: Design benchmark result viewer"]
   E3F2T2["✅ E3-F2-T2: Implement metric dashboards (retrieval, generation, latency)"]
-  E3F2T3["🔵 E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)"]
+  E3F2T3["✅ E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)"]
 
   E3F3T1["✅ E3-F3-T1: Collection CRUD API & service"]
   E3F3T2["✅ E3-F3-T2: Collection Manager UI page"]
@@ -52,12 +54,12 @@ graph TD
   E3F5T2["✅ E3-F5-T2: Benchmark Runs UI page"]
   E3F5T3["✅ E3-F5-T3: Collection Section redesign"]
 
-  E4F1T1["🔵 E4-F1-T1: Design results database schema"]
-  E4F1T2["⚪ E4-F1-T2: Implement benchmark result caching"]
-  E4F1T3["⚪ E4-F1-T3: Add cache invalidation & versioning"]
+  E4F1T1["✂️ E4-F1-T1: Results DB schema (dropped)"]
+  E4F1T2["🔵 E4-F1-T2: File-based result cache"]
+  E4F1T3["⚪ E4-F1-T3: Cache invalidation (dataset hash + --no-cache)"]
 
   E5F1T1["⚪ E5-F1-T1: Implement LazyGraphRAG variant"]
-  E5F1T2["⚪ E5-F1-T2: Add date-aware embedding support"]
+  E5F1T2["⏸ E5-F1-T2: Add date-aware embedding support"]
 
   E1F1T1 --> E1F1T2
   E1F1T2 --> E1F1T3
@@ -97,19 +99,18 @@ graph TD
 
   E3F1T2 --> E4F1T1
   E3F2T1 --> E4F1T1
-  E4F1T1 --> E4F1T2
   E4F1T2 --> E4F1T3
 
   E2F3T3 --> E5F1T1
   E5F1T1 --> E5F1T2
 
   E8F1T1["🔵 E8-F1-T1: Dataset profiling harness"]
-  E8F1T2["⚪ E8-F1-T2: LLM exploration pass"]
+  E8F1T2["⏸ E8-F1-T2: LLM exploration pass"]
   E8F2T1["⚪ E8-F2-T1: Assistant chat backend"]
   E8F2T2["⚪ E8-F2-T2: Chat panel in Evaluations"]
   E8F3T1["⚪ E8-F3-T1: EvalDatasetPlan structured output"]
   E8F3T2["⚪ E8-F3-T2: Apply plan to form"]
-  E8F3T3["⚪ E8-F3-T3: Persist plans & conversations"]
+  E8F3T3["⏸ E8-F3-T3: Persist plans & conversations"]
 
   E9F1T1["🔵 E9-F1-T1: Model pricing catalog"]
   E9F1T2["⚪ E9-F1-T2: Token & cost tracking"]
@@ -142,6 +143,8 @@ graph TD
   E9F3T2 --> E9F3T3
   E4F1T2 -.->|recommended| E9F2T3
 
+  E11F1T1["🔵 E11-F1-T1: Local pre-commit hook"]
+
   style E1F1T1 fill:#22c55e
   style E1F1T2 fill:#22c55e
   style E1F1T3 fill:#22c55e
@@ -162,7 +165,7 @@ graph TD
   style E3F1T3 fill:#22c55e
   style E3F2T1 fill:#22c55e
   style E3F2T2 fill:#22c55e
-  style E3F2T3 fill:#6b7280
+  style E3F2T3 fill:#22c55e
   style E3F3T1 fill:#22c55e
   style E3F3T2 fill:#22c55e
   style E3F3T3 fill:#22c55e
@@ -172,18 +175,18 @@ graph TD
   style E3F5T1 fill:#22c55e
   style E3F5T2 fill:#22c55e
   style E3F5T3 fill:#22c55e
-  style E4F1T1 fill:#6b7280
-  style E4F1T2 fill:#6b7280
+  style E4F1T1 fill:#d1d5db
+  style E4F1T2 fill:#f59e0b
   style E4F1T3 fill:#6b7280
   style E5F1T1 fill:#f59e0b
-  style E5F1T2 fill:#6b7280
+  style E5F1T2 fill:#d1d5db
   style E8F1T1 fill:#f59e0b
-  style E8F1T2 fill:#6b7280
+  style E8F1T2 fill:#d1d5db
   style E8F2T1 fill:#6b7280
   style E8F2T2 fill:#6b7280
   style E8F3T1 fill:#6b7280
   style E8F3T2 fill:#6b7280
-  style E8F3T3 fill:#6b7280
+  style E8F3T3 fill:#d1d5db
   style E9F1T1 fill:#f59e0b
   style E9F1T2 fill:#6b7280
   style E9F1T3 fill:#6b7280
@@ -193,6 +196,7 @@ graph TD
   style E9F3T1 fill:#6b7280
   style E9F3T2 fill:#6b7280
   style E9F3T3 fill:#6b7280
+  style E11F1T1 fill:#f59e0b
 ```
 
 ---
@@ -371,11 +375,11 @@ Web interface for testing individual queries and visualizing benchmark results.
 - agent_hint: Create tab-based view: (1) Retrieval metrics table, (2) Generation metrics table, (3) Latency distribution (box plot p95/p99). Support export to CSV.
 - description: Implement detailed metric views by category (retrieval, generation, latency) with tabular display and basic visualizations.
 
-##### 🔵 E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)
+##### ✅ E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)
 - blocked_by: [E3-F2-T2]
-- status: ready
+- status: done
 - effort: L
-- agent_hint: Create multi-result analyzer. User fixes all params except one (e.g., chunk_size), view quality change as line chart. Support 2D heatmaps for two varying params. Use Plotly for interactivity.
+- note: Delivered by E7-F4 (`SweepViz.tsx`: parameter-grouped charts, run comparison, 2D heatmap and scatter), with ECharts instead of Plotly. See `roadmap-evaluation.md`.
 - description: Visualization for parameter sensitivity analysis. Line charts for single-param sweeps, heatmaps for two-param comparisons. Show how metrics vary with parameter changes.
 
 #### E3-F3: Collection Management
@@ -442,30 +446,31 @@ Web interface for testing individual queries and visualizing benchmark results.
 
 ### 💾 E4: Results Caching & Database
 
-Persistent storage for benchmark results with intelligent caching.
+File-based result cache so an already-evaluated config costs nothing. The result JSON files stay the source of truth; no database.
 
 #### E4-F1: Result Storage & Caching
 
-##### 🔵 E4-F1-T1: Design results database schema
+##### ✂️ E4-F1-T1: Design results database schema
 - blocked_by: [E3-F1-T2, E3-F2-T1]
-- status: ready
+- status: dropped
 - effort: S
+- note: Dropped in the 2026-11-18 review. A normalized DB, migrations and versioning are oversized for one local user; the existing result JSON files already hold runs, metrics and per-query results. Revisit only if querying across hundreds of runs becomes slow.
 - agent_hint: Design normalized schema: (1) Benchmark runs table (config hash, timestamp, status), (2) Metric results (run_id, metric_name, value), (3) Query results (run_id, query, chunks_retrieved, generation_result). Support versioning.
 - description: Design database schema for storing benchmark runs, metrics, and query results with versioning and traceability.
 
-##### ⚪ E4-F1-T2: Implement benchmark result caching
-- blocked_by: [E4-F1-T1]
-- status: pending
-- effort: M
-- agent_hint: Implement ResultCache: (1) Config hashing (deterministic hash of all params), (2) Check if config already evaluated, (3) Return cached results if available, (4) Compute new results otherwise. Support both file and DB backends.
-- description: Implement caching layer. When benchmarking a config, check if already computed and return cached results. Support both file and database backends.
+##### 🔵 E4-F1-T2: File-based benchmark result cache
+- blocked_by: []
+- status: ready
+- effort: S
+- agent_hint: `ResultCache` over the existing results directory: (1) deterministic hash of all params + eval dataset id (reuse the sweep `config_hash` if it already covers this), (2) small index file `results/cache_index.json` mapping hash → result filename, (3) on run, return the cached result JSON if the hash exists, otherwise run and register it. File backend only.
+- description: When benchmarking a config that was already evaluated, reuse the existing result file instead of recomputing. Strongly recommended before AutoML studies (E9-F2-T3).
 
 ##### ⚪ E4-F1-T3: Add cache invalidation & versioning
 - blocked_by: [E4-F1-T2]
 - status: pending
 - effort: S
-- agent_hint: Implement version tracking for codebase and dataset. Cache entries tagged with code version + dataset version. Clear cache on data/code changes. Support manual cache busting.
-- description: Track cache validity via code and dataset versions. Implement cache invalidation on significant changes (code updates, dataset refreshes).
+- agent_hint: Include a hash of the eval dataset file (and collection name) in the cache key so a regenerated dataset misses the cache automatically. Add a `no_cache` flag (API + UI checkbox) to force a rerun. No code-version tracking: after a change in metric code, rerun with `no_cache`.
+- description: Keep the cache honest with a dataset hash in the key and a manual "no cache" switch.
 
 ---
 
@@ -482,9 +487,10 @@ Later-phase implementations for advanced retrieval methods.
 - agent_hint: Implement lightweight graph-based retrieval without full Neo4j. Extract entities/relationships from chunks, build lightweight graph, support path-based retrieval. Benchmark vs hybrid.
 - description: Implement a simplified graph RAG approach using entity/relationship extraction without full knowledge graph infrastructure. Benchmark against hybrid retrieval.
 
-##### ⚪ E5-F1-T2: Add date-aware embedding support
+##### ⏸ E5-F1-T2: Add date-aware embedding support
 - blocked_by: [E5-F1-T1]
-- status: pending
+- status: deferred
+- note: Deferred (research-heavy, learned temporal offsets). Revisit after LazyGraphRAG and once the `temporal` technique is wired.
 - effort: M
 - agent_hint: Experiment with temporal embeddings: (1) Concatenate temporal metadata to embeddings, (2) Learn temporal offset adjustments, (3) Time-weighted similarity. Benchmark on temporal questions.
 - description: Implement date-aware embeddings that incorporate temporal metadata. Measure improvement on temporal question types.
@@ -573,9 +579,10 @@ Design notes: the harness is shared with E9 (AutoML assistant). Structured outpu
 - agent_hint: New `src/assistant/dataset_profiler.py`. Input: collection name. Reuse `DatasetService._load_chunks()`. Compute without LLM: doc/chunk counts, length distribution, language, date range (reuse `temporal_filter` date extraction), top entities (spaCy), thematic clusters (k-means on stored embeddings, k≈8, 3 representative chunks + top terms per cluster). Output a compact `DatasetProfile` Pydantic model (< 4k tokens when serialized). Cache the profile per collection on disk. Endpoint `GET /api/assistant/profile/{collection}`. Unit tests on a small fixture collection.
 - description: Build a reusable harness that explores a collection and produces a compact, LLM-ready profile of its content (size, themes, entities, period, document types). Shared by E8 and E9.
 
-##### ⚪ E8-F1-T2: LLM exploration pass with retrieval tools
+##### ⏸ E8-F1-T2: LLM exploration pass with retrieval tools
 - blocked_by: [E8-F1-T1]
-- status: pending
+- status: deferred
+- note: Deferred. The deterministic profile (E8-F1-T1) is enough to ground the interview; add this only if the assistant's suggestions feel generic.
 - effort: M
 - agent_hint: Bounded tool-use loop (max ~8 tool calls, token budget) with tools `search_chunks(query, k)`, `sample_cluster(cluster_id, n)`, `get_article(title)`. The LLM reads the `DatasetProfile`, probes the collection and writes a short narrative summary + candidate question angles (e.g. "causal chains between battles", "biographies of commanders"). Store as `profile.llm_summary`. Log tokens (feeds E9-F1-T2).
 - description: Let the LLM actively explore the collection on top of the static profile, so the interview starts from a grounded understanding of the dataset.
@@ -586,7 +593,7 @@ Design notes: the harness is shared with E9 (AutoML assistant). Structured outpu
 - blocked_by: [E8-F1-T1]
 - status: pending
 - effort: M
-- agent_hint: `POST /api/assistant/eval/chat` streaming SSE (`token`, `plan_update`, `done`, `error`), reusing the SSE helpers of `query_service`. Session stored server-side (id, collection, profile, messages, current draft plan). System prompt drives a guided interview: intended question types, persona(s) of the askers (e.g. student, historian, analyst), themes / periods to cover or exclude, difficulty mix, answer language, total volume. Ask one thing at a time, propose defaults from the profile, stop once the plan is complete. No dataset generation from this endpoint.
+- agent_hint: `POST /api/assistant/eval/chat` streaming SSE (`token`, `plan_update`, `done`, `error`), reusing the SSE helpers of `query_service`. Session kept in an in-memory dict keyed by session id (collection, profile, messages, current draft plan); lost on restart, which is fine for local single-user use. System prompt drives a guided interview: intended question types, persona(s) of the askers (e.g. student, historian, analyst), themes / periods to cover or exclude, difficulty mix, answer language, total volume. Ask one thing at a time, propose defaults from the profile, stop once the plan is complete. No dataset generation from this endpoint.
 - description: Backend for the guided conversation that collects the user's intent for the eval dataset, grounded on the dataset profile.
 
 ##### ⚪ E8-F2-T2: Chat panel in the Evaluations tab
@@ -612,9 +619,10 @@ Design notes: the harness is shared with E9 (AutoML assistant). Structured outpu
 - agent_hint: "Apply to form" button: sets `systemPrompt`, replaces category cards (`CardState[]`) with the plan's categories and prompts, sets counts and model. Show a diff of what changes before applying; everything stays editable; the user still clicks Generate.
 - description: One click fills the system prompt and the per-category prompts of the existing form from the assistant's plan.
 
-##### ⚪ E8-F3-T3: Persist plans and conversations
+##### ⏸ E8-F3-T3: Persist plans and conversations
 - blocked_by: [E8-F3-T2]
-- status: pending
+- status: deferred
+- note: Deferred. Once applied, the plan lives in the generated dataset's prompts; server-side presets and traceability can wait.
 - effort: S
 - agent_hint: Save the plan as a category preset (same shape as `CategoryPreset`, server-side instead of localStorage) and store `assistant_session_id` + plan in the generated dataset metadata for traceability. Show "created with assistant" in the dataset table.
 - description: Keep the plan and the conversation that produced a dataset, and let the user reuse a plan as a preset.
@@ -633,13 +641,14 @@ Design notes: replaces the exhaustive cartesian sweep for large spaces. Every tr
 - blocked_by: []
 - status: ready
 - effort: S
-- agent_hint: `config/pricing.yaml`: per model, price per 1M input / output tokens and currency, for generation, RAGAS judge and entity-extraction models; embedding and reranker models carry a local compute-time estimate instead. `GET/PUT /api/pricing`. Prices are user-supplied (asked in the E9 interview, editable in a small settings table); ship no default prices that pretend to be current.
+- agent_hint: `config/pricing.yaml`: per model, price per 1M input / output tokens and currency, for generation, RAGAS judge and entity-extraction models; embedding and reranker models carry a local compute-time estimate instead. Edited by hand; a small loader with Pydantic validation, no API and no settings UI. The E9 interview may append missing prices to the file from the backend. Ship no default prices that pretend to be current.
 - description: A user-editable catalog of API prices per model, used for every cost estimate and budget check.
 
 ##### ⚪ E9-F1-T2: Token and cost tracking per run
 - blocked_by: [E9-F1-T1]
 - status: pending
 - effort: M
+- note: Builds on E10-F3-T1, which already records generation and judge cost per question; what remains is the other LLM stages (RAGAS, entity extraction, dataset generation, assistant) and the per-run summary.
 - agent_hint: Wrap every LLM call (generation, RAGAS evaluator incl. `ragas_repeat_count`, entity extractor, dataset generation, assistant) to record input/output tokens per model. Store `cost_summary` in the result JSON (tokens and cost by stage), surface `total_cost` in `ResultFileInfo` and as a Run History column.
 - description: Measure real token usage and cost for every run, broken down by pipeline stage.
 
@@ -663,8 +672,8 @@ Design notes: replaces the exhaustive cartesian sweep for large spaces. Every tr
 - blocked_by: [E9-F2-T1]
 - status: pending
 - effort: M
-- agent_hint: Evaluate each trial on growing question subsets (successive halving / Optuna `MedianPruner` with intermediate reports) so weak configs stop early and cost little. Optional multi-objective mode (quality vs cost vs latency, NSGA-II) returning a Pareto front; the plan picks one mode.
-- description: Spend the budget on promising configurations by pruning bad ones early, and expose the quality/cost trade-off.
+- agent_hint: Evaluate each trial on growing question subsets with Optuna `MedianPruner` and intermediate reports, so weak configs stop early and cost little. Single objective only (weighted metrics); the multi-objective NSGA-II / Pareto front mode is deferred.
+- description: Spend the budget on promising configurations by pruning bad ones early.
 
 ##### ⚪ E9-F2-T3: AutoML run endpoint and persistence
 - blocked_by: [E9-F2-T1]
@@ -679,14 +688,14 @@ Design notes: replaces the exhaustive cartesian sweep for large spaces. Every tr
 - blocked_by: [E8-F2-T1, E9-F1-T3]
 - status: pending
 - effort: M
-- agent_hint: Reuse the E8 chat backend with an AutoML system prompt and tools `get_profile`, `estimate_cost(config)`, `list_collections`. Ask: total budget and currency, models allowed and their API prices (write them to the pricing catalog), priority metrics (retrieval vs generation, which ones), latency ceiling, backends and eval dataset to use. Run the cost pilot when needed and tell the user what the budget buys ("≈ 40 trials on 60 questions").
+- agent_hint: Reuse the E8 chat backend with an AutoML system prompt and tools `get_profile`, `estimate_cost(config)`, `list_collections`. Ask: total budget and currency, models allowed and their API prices (appended to `config/pricing.yaml`), priority metrics (retrieval vs generation, which ones), latency ceiling, backends and eval dataset to use. Run the cost pilot when needed and tell the user what the budget buys ("≈ 40 trials on 60 questions").
 - description: Guided conversation that collects budget, model prices and goals, grounded on the dataset profile and real cost measurements.
 
 ##### ⚪ E9-F3-T2: `AutoMLPlan` structured output → AutoML form
 - blocked_by: [E9-F3-T1, E9-F2-T3]
 - status: pending
 - effort: M
-- agent_hint: Pydantic `AutoMLPlan`: `search_space` (per param: values or range, conditional rules), `objective` (metric weights or Pareto mode), `budget`, `max_trials`, `questions_per_trial` + pruning schedule, `eval_dataset_id`, `estimated_cost` breakdown, `rationale` per choice. Same validate/retry path as E8-F3-T1. Pre-fills the AutoML form; the user reviews and launches.
+- agent_hint: Pydantic `AutoMLPlan`: `search_space` (per param: values or range, conditional rules), `objective` (metric weights), `budget`, `max_trials`, `questions_per_trial` + pruning schedule, `eval_dataset_id`, `estimated_cost` breakdown, `rationale` per choice. Same validate/retry path as E8-F3-T1. Pre-fills the AutoML form; the user reviews and launches.
 - description: The assistant's final answer is a complete, editable AutoML configuration sized to the user's budget and dataset.
 
 ##### ⚪ E9-F3-T3: AutoML mode in the UI
@@ -698,9 +707,38 @@ Design notes: replaces the exhaustive cartesian sweep for large spaces. Every tr
 
 ---
 
+### 🧰 E11: Local Dev Workflow
+
+Lightweight safety net for a solo, local project, in place of CI.
+
+#### E11-F1: Checks before commit
+
+##### 🔵 E11-F1-T1: Local pre-commit hook
+- blocked_by: []
+- status: ready
+- effort: S
+- agent_hint: Add `.pre-commit-config.yaml` with ruff (lint + format) and a local hook running `pytest tests/unit -m "not qdrant" -q -x`. Remove `--cov` from `addopts` in `pyproject.toml` so the hook stays fast (coverage on demand with `pytest --cov=src`). Optionally a frontend hook running `npx tsc --noEmit` on staged `.ts/.tsx` files. Document `pip install pre-commit && pre-commit install` in the README.
+- description: Run lint and fast unit tests automatically on each commit, without any CI service.
+
+---
+
+## Deferred until needed
+
+Not planned now; each item lists what would make it worth doing.
+
+- **CI (GitHub Actions)**: pytest + frontend build on each push. Worth it once there are other contributors, frequent PR merges, or a need to check a clean install on a fresh machine. Until then the E11-F1-T1 hook covers it.
+- **End-to-end UI tests (Playwright)**: a browser clicking through key flows on the demo build. Worth it once the UI stops changing every week, or if the same flows keep breaking unnoticed. Start with 2–3 flows (Testing → benchmark → Run History → SweepViz).
+- **Results database (E4-F1-T1)**: only if JSON results become slow to query.
+- **Multi-objective AutoML (Pareto front, part of E9-F2-T2)**: after single-objective AutoML is in use.
+- **E5-F1-T2, E8-F1-T2, E8-F3-T3, E6-F7-T2/T3/T4**: see their notes.
+
+---
+
 ## Critical Path
 
-🔴 **E1-F1-T1 → E1-F1-T2 → E1-F1-T3 → E1-F2-T1 → E1-F2-T2 → E2-F1-T1 → E2-F1-T2 → E2-F1-T3 → E3-F1-T1 → E3-F1-T2 → E3-F1-T3 → E3-F2-T1 → E3-F2-T2 → E3-F2-T3**
+🔴 **E1-F1-T1 → E1-F1-T2 → E1-F1-T3 → E1-F2-T1 → E1-F2-T2 → E2-F1-T1 → E2-F1-T2 → E2-F1-T3 → E3-F1-T1 → E3-F1-T2 → E3-F1-T3 → E3-F2-T1 → E3-F2-T2 → E3-F2-T3** (complete)
+
+🔴 **Next critical path (AutoML)**: E9-F1-T1 → E9-F1-T2 → E9-F2-T1 → E9-F2-T3 → E9-F3-T2 → E9-F3-T3, joined by E8-F1-T1 → E8-F2-T1 → E9-F3-T1
 
 **Length**: 14 tasks (critical blocking path)
 
@@ -719,8 +757,8 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 - **Benefit**: Query tester and results viewer are independent components
 
 ⚡ **Parallel Group C** (after E2-F3-T3):
-- E4-F1-T1, E5-F1-T1 can start (storage design and advanced RAG don't block each other)
-- **Benefit**: Database schema and advanced methods developed in parallel
+- E4-F1-T2, E5-F1-T1 can start (result cache and advanced RAG don't block each other)
+- **Benefit**: Cache and advanced methods developed in parallel
 
 ---
 
@@ -884,22 +922,24 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 
 | Metric | Value |
 |--------|-------|
-| **Total Tasks** | 58 |
-| **Done** | 29 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3, E3-F5-T1, E3-F5-T2, E3-F5-T3) |
-| **Ready (no blockers)** | 5 (E3-F2-T3, E4-F1-T1, E5-F1-T1, E8-F1-T1, E9-F1-T1) |
+| **Total Tasks** | 59 in this file (E6 and E7 detailed in `roadmap_unification.md` and `roadmap-evaluation.md`, all done except E6-F7) |
+| **Done** | 37 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F2-T3, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3, E3-F5-T1, E3-F5-T2, E3-F5-T3, E6-F6-T1, E6-F6-T2, E10-F1-T1, E10-F2-T1, E10-F2-T2, E10-F3-T1, E10-F4-T1) |
+| **Ready (no blockers)** | 5 (E11-F1-T1, E4-F1-T2, E5-F1-T1, E8-F1-T1, E9-F1-T1) |
 | **In Progress** | 0 |
-| **Pending** | 24 |
-| **Critical Path Length** | 14 sequential tasks (1 remaining: E3-F2-T3) |
+| **Pending** | 13 (E4-F1-T3, E8-F2-T1, E8-F2-T2, E8-F3-T1, E8-F3-T2, E9-F1-T2, E9-F1-T3, E9-F2-T1, E9-F2-T2, E9-F2-T3, E9-F3-T1, E9-F3-T2, E9-F3-T3) |
+| **Deferred** | 3 (E5-F1-T2, E8-F1-T2, E8-F3-T3) |
+| **Dropped** | 1 (E4-F1-T1) |
+| **Critical Path Length** | Original 14-task path complete; next path is AutoML (E9) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
-1. E3-F2-T3: Add parameter sweep visualization (heatmaps, line charts)
-2. E4-F1-T1: Design results database schema
-3. E5-F1-T1: Implement LazyGraphRAG variant
-4. E8-F1-T1: Dataset profiling harness (unblocks both assistants, E8 and E9)
-5. E9-F1-T1: Model pricing catalog (start of the AutoML cost model)
+1. E11-F1-T1: Local pre-commit hook (S, replaces CI)
+2. E8-F1-T1: Dataset profiling harness (unblocks both assistants, E8 and E9)
+3. E9-F1-T1: Model pricing catalog as a hand-edited YAML (start of the AutoML cost model)
+4. E4-F1-T2: File-based result cache (recommended before AutoML studies)
+5. E5-F1-T1: Implement LazyGraphRAG variant
 
-**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) complete — E3-F1, E3-F3, E3-F4, E3-F5 all done; only E3-F2-T3 (sweep visualization) remains.
+**Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) complete — E3-F1, E3-F3, E3-F4, E3-F5 all done; E3-F2-T3 was covered by E7-F4.
 
 ---
 
@@ -1262,13 +1302,23 @@ Rationale: superseded by `executeQueryStreaming()` used by `TestingPage`. Keepin
 
 **Provider routing by model.** `MODEL_PROVIDERS` forces the provider of known models (GLM → OpenRouter, NVIDIA catalog → NVIDIA) so a model picked in the UI always goes to the right endpoint. The OpenRouter key is read from `OPENROUTER_API_KEY` only.
 
+### Roadmap review — solo local scope (2026-11-18)
+
+The project is developed by one person on a local machine. Decisions:
+- **No CI for now.** A local pre-commit hook (E11-F1-T1: ruff + fast unit tests, Qdrant tests excluded) replaces it. CI and Playwright e2e tests are listed under "Deferred until needed" with the conditions that would justify them.
+- **No results database.** E4-F1-T1 dropped; the cache (E4-F1-T2) is a hash → result-file index next to the existing JSON results. Invalidation is a dataset hash in the key plus a manual `no_cache` flag, no code versioning.
+- **Assistants trimmed to the core loop.** In-memory chat sessions (E8-F2-T1), hand-edited `config/pricing.yaml` without API or UI (E9-F1-T1), single-objective pruning only (E9-F2-T2). E8-F1-T2, E8-F3-T3 and E5-F1-T2 deferred.
+- **E3-F2-T3 closed** as delivered by E7-F4 (SweepViz, ECharts).
+- Low-value UI polish deferred: E6-F7-T2, E6-F7-T3, E6-F7-T4 (see `roadmap_unification.md`).
+
 ## Notes
 
 - Tasks marked ✅ are **done**
 - Tasks marked 🔵 are **ready** (no dependencies blocking them)
 - Tasks marked 🟡 are **in_progress** (partial completion, mergeable)
 - Tasks marked ⚪ are **pending** (waiting on dependencies)
+- Tasks marked ⏸ are **deferred** (not planned now; see "Deferred until needed")
+- Tasks marked ✂️ are **dropped**
 - All tasks have explicit `blocked_by` lists for dependency tracking
-- Database schema (E4-F1-T1) waits until UI components exist to avoid designing for unknown needs
 - Dataset abstraction (E2-F1-T1) can start once metrics collection is solid
 - LazyGraphRAG (E5-F1-T1) deferred until hybrid retrieval is fully benchmarked
