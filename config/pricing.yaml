@@ -1,0 +1,99 @@
+# Model pricing catalog (E9-F1-T1).
+#
+# Edited by hand. Used for every cost estimate and budget check (AutoML).
+# Prices are per 1 million tokens, in `currency`. A price left at `null` means
+# "unknown": estimates that need it report the model as unpriced instead of
+# guessing. No default price is shipped on purpose: copy current prices from
+# the provider's pricing page and set `checked` to the date you checked them.
+#
+# API models (kind: llm)
+#   input_per_1m / output_per_1m: price per 1M input / output tokens
+#   roles: where the model is used (generation, judge, ragas, entity_extraction,
+#          dataset_generation, assistant)
+# Local models (kind: embedding | reranker)
+#   No API price. `seconds_per_1k_items` is an optional local compute-time
+#   estimate (1k chunks embedded, or 1k query/chunk pairs reranked), measured
+#   on your machine.
+#
+# Free models: set both prices to 0.
+
+currency: USD
+
+models:
+  # --- Answer generation ----------------------------------------------------
+  z-ai/glm-5.3-flash:
+    kind: llm
+    provider: openrouter
+    roles: [generation]
+    input_per_1m: null
+    output_per_1m: null
+    checked: null
+  nvidia/nemotron-3-nano-30b-a3b:
+    kind: llm
+    provider: nvidia
+    roles: [generation]
+    input_per_1m: null
+    output_per_1m: null
+    checked: null
+  mistralai/mistral-small-4-119b-2603:
+    kind: llm
+    provider: nvidia
+    roles: [generation]
+    input_per_1m: null
+    output_per_1m: null
+    checked: null
+  google/gemma-3-27b-it:
+    kind: llm
+    provider: nvidia
+    roles: [generation]
+    input_per_1m: null
+    output_per_1m: null
+    checked: null
+  meta/llama-3.3-70b-instruct:
+    kind: llm
+    provider: nvidia
+    roles: [generation]
+    input_per_1m: null
+    output_per_1m: null
+    checked: null
+
+  # --- Judges and evaluators ------------------------------------------------
+  openai/gpt-5.4-mini:
+    kind: llm
+    provider: openrouter
+    roles: [judge]
+    input_per_1m: null
+    output_per_1m: null
+    checked: null
+  gpt-5-nano:
+    kind: llm
+    provider: openai
+    roles: [ragas]
+    input_per_1m: null
+    output_per_1m: null
+    checked: null
+
+  # --- Local embedding models -----------------------------------------------
+  sentence-transformers/all-MiniLM-L6-v2:
+    kind: embedding
+    seconds_per_1k_items: null
+  sentence-transformers/all-MiniLM-L12-v2:
+    kind: embedding
+    seconds_per_1k_items: null
+  BAAI/bge-small-en-v1.5:
+    kind: embedding
+    seconds_per_1k_items: null
+  BAAI/bge-base-en-v1.5:
+    kind: embedding
+    seconds_per_1k_items: null
+
+  # --- Local rerankers ------------------------------------------------------
+  cross-encoder/ms-marco-MiniLM-L-12-v2:
+    kind: reranker
+    seconds_per_1k_items: null
+  BAAI/bge-reranker-v2-m3:
+    kind: reranker
+    seconds_per_1k_items: null
+  mixedbread-ai/mxbai-rerank-large-v2:
+    kind: reranker
+    seconds_per_1k_items: null
