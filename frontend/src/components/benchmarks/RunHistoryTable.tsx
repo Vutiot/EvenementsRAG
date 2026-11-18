@@ -136,7 +136,7 @@ function buildDisplayRows(results: ResultFileInfo[]): DisplayRow[] {
 /* Constants                                                           */
 /* ------------------------------------------------------------------ */
 
-const TOTAL_COLS = 28;
+const TOTAL_COLS = 34;
 
 const stickyCls = "sticky left-0 z-10 bg-white";
 const stickyStyle: React.CSSProperties = {
@@ -273,6 +273,12 @@ export default function RunHistoryTable({ results, activeRun }: Props) {
             <th className="px-3 py-2 text-right">Doc P@5</th>
             <th className="px-3 py-2 text-right">Doc MRR</th>
             <th className="px-3 py-2 text-right">Ctx Prec</th>
+            <th className="px-3 py-2 text-right">Faith</th>
+            <th className="px-3 py-2 text-right">Rel</th>
+            <th className="px-3 py-2 text-right">Ctx R</th>
+            <th className="px-3 py-2 text-right">Ctx ER</th>
+            <th className="px-3 py-2 text-right">Sim</th>
+            <th className="px-3 py-2 text-right">Corr</th>
             <th className="px-3 py-2 text-right">Ent R@5</th>
             <th className="px-3 py-2 text-right">Time</th>
           </tr>
@@ -478,6 +484,24 @@ function NormalRow({
         {fmt(r.avg_context_precision)}
       </td>
       <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_faithfulness)}
+      </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_answer_relevancy)}
+      </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_context_recall)}
+      </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_context_entity_recall)}
+      </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_answer_similarity)}
+      </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
+        {fmt(r.avg_answer_correctness)}
+      </td>
+      <td className="px-3 py-2 text-right font-mono text-gray-700">
         {fmt(r.avg_entity_recall_at_5)}
       </td>
       <td className="px-3 py-2 text-right text-gray-500">
@@ -597,6 +621,11 @@ function SweepParentRow({
       <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
+      <td className="px-3 py-2 text-right font-mono text-gray-400">{"\u2014"}</td>
       <td className="px-3 py-2 text-right text-gray-400">---</td>
     </tr>
   );
@@ -707,6 +736,24 @@ function SweepChildRow({
       </td>
       <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
         {fmt(r.avg_context_precision)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_faithfulness)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_answer_relevancy)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_context_recall)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_context_entity_recall)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_answer_similarity)}
+      </td>
+      <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
+        {fmt(r.avg_answer_correctness)}
       </td>
       <td className={`px-3 py-2 text-right font-mono ${isBest ? "text-green-600 font-semibold" : "text-gray-700"}`}>
         {fmt(r.avg_entity_recall_at_5)}

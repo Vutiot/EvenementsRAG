@@ -105,29 +105,33 @@ export default function BenchHeatmap({
     };
   }, [xData, yData, data, allMetrics.length, result.per_question.length]);
 
-  /* Latency box plot */
-  const boxplotOption = useMemo(() => {
+  /* Latency box plots — separate retrieval and generation so each
+     auto-scales to its own y-axis (their magnitudes differ ~10x). */
+  const retrievalBoxOption = useMemo(() => {
     const retTimes = result.per_question
       .map((q) => q.retrieval_time_ms)
       .filter((v): v is number => v !== null);
+    if (retTimes.length === 0) return null;
+    return buildBoxplotChart({
+      categories: ["Retrieval"],
+      data: [retTimes],
+      title: "Retrieval Latency (ms)",
+    });
+  }, [result]);
+
+  const generationBoxOption = useMemo(() => {
     const genTimes = result.per_question
       .map((q) => q.generation_time_ms)
       .filter((v): v is number => v !== null);
-
-    if (retTimes.length === 0 && genTimes.length === 0) return null;
-
-    const categories: string[] = [];
-    const boxData: number[][] = [];
-    if (retTimes.length > 0) {
-      categories.push("Retrieval");
-      boxData.push(retTimes);
-    }
-    if (genTimes.length > 0) {
-      categories.push("Generation");
-      boxData.push(genTimes);
-    }
-    return buildBoxplotChart({ categories, data: boxData, title: "Latency Distribution" });
+    if (genTimes.length === 0) return null;
+    return buildBoxplotChart({
+      categories: ["Generation"],
+      data: [genTimes],
+      title: "Generation Latency (ms)",
+    });
   }, [result]);
+
+  const hasAnyLatency = retrievalBoxOption !== null || generationBoxOption !== null;
 
   /* Export handlers */
   const handleExport = (format: "latex" | "md") => {
@@ -176,10 +180,15 @@ export default function BenchHeatmap({
         </section>
       )}
 
-      {/* Latency box plot */}
-      {boxplotOption && (
-        <section className="space-y-2">
-          <EChartWrapper option={boxplotOption} height={350} />
+      {/* Latency box plots — split so each y-axis auto-scales independently */}
+      {hasAnyLatency && (
+        <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
+          {retrievalBoxOption && (
+            <EChartWrapper option={retrievalBoxOption} height={320} />
+          )}
+          {generationBoxOption && (
+            <EChartWrapper option={generationBoxOption} height={320} />
+          )}
         </section>
       )}
     </div>

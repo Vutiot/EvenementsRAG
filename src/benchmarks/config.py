@@ -174,7 +174,7 @@ _KNOWN_RAGAS_METRICS: set[str] = {
 
 class EvaluationConfig(BaseModel):
     k_values: list[int] = [1, 3, 5, 10]
-    compute_ragas: bool = False
+    compute_ragas: bool = True
     compute_context_precision: bool = False
     compute_entity_metrics: bool = False
 
@@ -183,7 +183,8 @@ class EvaluationConfig(BaseModel):
         "context_recall", "context_entity_recall", "answer_similarity",
         "answer_correctness",
     ])
-    ragas_evaluator_model: str = "mistralai/mistral-small-4-119b-2603"
+    ragas_evaluator_model: str = "gpt-5-nano"
+    ragas_evaluator_reasoning_effort: Literal["minimal", "low", "medium", "high"] = "minimal"
     ragas_max_workers: int = Field(1, ge=1, le=8)
     ragas_timeout: int = Field(180, ge=30, le=600)
     ragas_repeat_count: int = Field(

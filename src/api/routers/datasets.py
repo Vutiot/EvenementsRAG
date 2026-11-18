@@ -16,6 +16,7 @@ from src.api.schemas import (
     DatasetInfo,
     DatasetListResponse,
     EnsureCollectionsRequest,
+    RetrievedChunk,
 )
 
 router = APIRouter()
@@ -62,6 +63,58 @@ async def get_dataset(dataset_id: str):
     if data is None:
         raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
     return DatasetDetail(**data)
+
+
+@router.get(
+    "/datasets/{dataset_id}/source-chunk/{chunk_id}",
+    response_model=RetrievedChunk,
+)
+async def get_dataset_source_chunk(dataset_id: str, chunk_id: str):
+    """Fetch a chunk by ID from the dataset's source collection.
+
+    Used by the UI to display the ground-truth chunk associated with an
+    eval question, regardless of whether retrieval surfaced it.
+    """
+    data = await asyncio.to_thread(_service.get_dataset, dataset_id)
+    if data is None:
+        raise HTTPException(status_code=404, detail=f"Dataset '{dataset_id}' not found")
+    collection_name = data.get("collection_name")
+    if not collection_name:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Dataset '{dataset_id}' has no associated collection",
+        )
+
+    def _fetch():
+        from src.vector_store.qdrant_manager import QdrantManager
+
+        mgr = QdrantManager()
+        points = mgr.client.retrieve(
+            collection_name=collection_name,
+            ids=[chunk_id],
+            with_payload=True,
+            with_vectors=False,
+        )
+        if not points:
+            return None
+        pt = points[0]
+        payload = pt.payload or {}
+        return RetrievedChunk(
+            chunk_id=str(pt.id),
+            content=payload.get("content", ""),
+            score=0.0,
+            article_title=payload.get("article_title", ""),
+            source_url=payload.get("source_url", ""),
+            chunk_index=payload.get("chunk_index", 0),
+        )
+
+    chunk = await asyncio.to_thread(_fetch)
+    if chunk is None:
+        raise HTTPException(
+            status_code=404,
+            detail=f"Chunk '{chunk_id}' not found in collection '{collection_name}'",
+        )
+    return chunk
 
 
 @router.delete("/datasets/{dataset_id}")

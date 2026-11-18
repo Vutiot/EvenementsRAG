@@ -110,30 +110,67 @@ def _load_ragas_metrics() -> Dict[str, Any]:
 # ---------------------------------------------------------------------------
 
 
-def _build_evaluator_llm(eval_config: EvaluationConfig):
-    """Create LLM for RAGAS evaluation via LangChain + NVIDIA API."""
-    try:
-        from langchain_openai import ChatOpenAI
-    except ImportError as exc:
-        raise ImportError(
-            "langchain-openai is required for RAGAS LLM evaluation. "
-            "Install with: uv pip install langchain-openai --python .venv/bin/python"
-        ) from exc
+def _resolve_evaluator_provider(model: str) -> tuple[str, str, str]:
+    """Return (api_key, api_base, provider_label) for an evaluator model name.
 
+    Routing rules (allowlist-first so past NVIDIA-hosted runs stay reproducible):
+      - ``gpt-*``         → OpenAI
+      - model in ``NVIDIA_MODELS`` allowlist → NVIDIA
+      - looks like ``vendor/name``   → OpenRouter
+      - otherwise: ValueError with supported prefixes
+    """
     from config.settings import settings
+    from src.benchmarks.config import NVIDIA_MODELS
 
-    llm = ChatOpenAI(
-        model=eval_config.ragas_evaluator_model,
-        openai_api_key=settings.NVIDIA_API_KEY,
-        openai_api_base=settings.NVIDIA_BASE_URL,
-        temperature=0,
+    if model.startswith("gpt-"):
+        return settings.OPENAI_API_KEY, "https://api.openai.com/v1", "openai"
+    if model in NVIDIA_MODELS:
+        return settings.NVIDIA_API_KEY, settings.NVIDIA_BASE_URL, "nvidia"
+    if "/" in model:
+        key = settings.OPENROUTER_API_KEY or settings.GEMMA_API_KEY
+        return key, "https://openrouter.ai/api/v1", "openrouter"
+    raise ValueError(
+        f"Cannot resolve provider for RAGAS evaluator model '{model}'. "
+        "Use 'gpt-*' (OpenAI), a model in NVIDIA_MODELS (NVIDIA), "
+        "or a 'vendor/name' identifier (OpenRouter)."
     )
 
+
+def _build_evaluator_llm(eval_config: EvaluationConfig):
+    """Create a RAGAS v0.4 InstructorLLM for evaluation, routing by model prefix.
+
+    Uses ``ragas.llms.llm_factory`` which wraps an openai-compatible client
+    with the Instructor adapter. Instructor auto-handles GPT-5/o-series
+    constraints (temperature bypass, n bypass) and returns validated
+    Pydantic-shaped outputs — no manual ChatOpenAI subclassing required.
+    """
     try:
-        from ragas.llms import LangchainLLMWrapper
-        return LangchainLLMWrapper(llm)
-    except (ImportError, AttributeError):
-        return llm
+        from openai import OpenAI
+        from ragas.llms import llm_factory
+    except ImportError as exc:
+        raise ImportError(
+            "ragas>=0.4 and openai are required for RAGAS LLM evaluation. "
+            "Install with: uv pip install 'ragas>=0.4' openai --python .venv/bin/python"
+        ) from exc
+
+    model = eval_config.ragas_evaluator_model
+    api_key, api_base, provider = _resolve_evaluator_provider(model)
+    if not api_key:
+        raise ValueError(
+            f"RAGAS evaluator model '{model}' resolves to provider '{provider}' "
+            f"but the matching API key is empty. Set it in .env."
+        )
+
+    logger.info(f"RAGAS evaluator LLM: provider={provider}, model={model}")
+
+    client = OpenAI(api_key=api_key, base_url=api_base)
+    # RAGAS v0.4 guidance: reasoning models with structured output need ≥4096
+    # to avoid truncated JSON. 4096 is safe for non-reasoning too.
+    factory_kwargs: dict = {"max_tokens": 4096}
+    if model.startswith("gpt-5") or model.startswith("o"):
+        factory_kwargs["reasoning_effort"] = eval_config.ragas_evaluator_reasoning_effort
+
+    return llm_factory(model, client=client, **factory_kwargs)
 
 
 def _build_evaluator_embeddings():
@@ -309,18 +346,31 @@ class RagasEvaluator:
         hb_thread = threading.Thread(target=_heartbeat, daemon=True)
         hb_thread.start()
 
-        # Monkey-patch tqdm to capture RAGAS's internal progress
-        import tqdm as _tqdm_mod
-        _orig_tqdm = _tqdm_mod.tqdm
+        # Monkey-patch tqdm to capture RAGAS's internal progress.
+        # ragas 0.4 imports `from tqdm.auto import tqdm` at module load in
+        # several places — most importantly ragas.utils.ProgressBarManager,
+        # which is what actually constructs the bars (ragas.evaluation and
+        # ragas.executor only hold tqdm as a type alias). Patching top-level
+        # tqdm.tqdm does NOT affect those already-bound references; we must
+        # rebind the `tqdm` name inside each ragas module that uses it.
+        import ragas.evaluation as _ragas_eval
+        import ragas.executor as _ragas_exec
+        import ragas.utils as _ragas_utils
+        from tqdm.auto import tqdm as _auto_tqdm
 
-        class _ProgressTqdm(_orig_tqdm):
+        class _ProgressTqdm(_auto_tqdm):
             def update(self, n=1):
                 super().update(n)
                 _ragas_progress["current"] = int(self.n)
                 if self.total:
                     _ragas_progress["total"] = int(self.total)
 
-        _tqdm_mod.tqdm = _ProgressTqdm
+        _orig_eval_tqdm = _ragas_eval.tqdm
+        _orig_exec_tqdm = _ragas_exec.tqdm
+        _orig_utils_tqdm = _ragas_utils.tqdm
+        _ragas_eval.tqdm = _ProgressTqdm
+        _ragas_exec.tqdm = _ProgressTqdm
+        _ragas_utils.tqdm = _ProgressTqdm
 
         try:
             eval_result = ragas_evaluate(
@@ -332,7 +382,9 @@ class RagasEvaluator:
                 raise_exceptions=False,
             )
         finally:
-            _tqdm_mod.tqdm = _orig_tqdm
+            _ragas_eval.tqdm = _orig_eval_tqdm
+            _ragas_exec.tqdm = _orig_exec_tqdm
+            _ragas_utils.tqdm = _orig_utils_tqdm
             stop_heartbeat.set()
             hb_thread.join(timeout=2)
 

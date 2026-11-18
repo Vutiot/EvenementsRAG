@@ -36,11 +36,20 @@ async def run_benchmark(request: BenchmarkRunRequest):
     thread.start()
 
     async def _stream():
+        # Poll the worker queue with a short interval; emit a keepalive
+        # comment if no real event arrived. This prevents the SSE connection
+        # from going silent during long metric phases (e.g. entity extraction
+        # has no per-question events; only entity_eval_start/_complete framing).
+        # Without keepalives, intermediaries (or our own previous timeout) drop
+        # the stream and the frontend never receives the final `complete`.
+        # Termination is gated on the worker's None sentinel, which the worker
+        # always emits via its `finally` block.
         while True:
             try:
-                item = await asyncio.to_thread(q.get, timeout=300)
+                item = await asyncio.to_thread(q.get, timeout=10)
             except Exception:
-                break
+                yield ": keepalive\n\n"
+                continue
             if item is None:
                 break
             yield item
@@ -75,11 +84,16 @@ async def run_sweep(request: SweepRunRequest):
     thread.start()
 
     async def _stream():
+        # Same keepalive pattern as /benchmark/run — sweeps can run for
+        # tens of minutes with long quiet stretches between configs.
         while True:
             try:
-                item = await asyncio.to_thread(q.get, timeout=600)
+                item = await asyncio.to_thread(q.get, timeout=10)
             except Exception:
-                break
+                if not thread.is_alive():
+                    break
+                yield ": keepalive\n\n"
+                continue
             if item is None:
                 break
             yield item

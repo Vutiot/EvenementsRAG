@@ -6,6 +6,9 @@
 .env
 .env.local
 .env.*.local
+.env.bak*
+.env.*
+!.env.example
 *.key
 *.pem
 credentials.json
@@ -223,6 +226,7 @@ data/graph/*.gexf
 
 # Evaluation results
 data/evaluation/benchmarks/*.json
+data/evaluation/datasets/*.json
 data/evaluation/results/*.csv
 data/evaluation/results/*.json
 

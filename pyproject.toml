@@ -42,7 +42,8 @@ pyvis = "^0.3.2"
 # neo4j = "^5.16.0"  # Optional: uncomment for production graph DB
 
 # Evaluation
-ragas = "^0.1.1"
+ragas = "^0.4.3"
+instructor = "^1.14.0"
 datasets = "^2.16.0"
 
 # Web API

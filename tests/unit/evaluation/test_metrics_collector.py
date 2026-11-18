@@ -122,7 +122,7 @@ class TestComputeRagasMetrics:
         q_by_id = {"q1": {"question": "Q?"}}
         mc.compute_ragas_metrics(per_q, q_by_id)
 
-        mock_evaluator.evaluate.assert_called_once_with(per_q, q_by_id)
+        mock_evaluator.evaluate.assert_called_once_with(per_q, q_by_id, None)
 
     def test_ragas_import_error_message(self):
         cfg = EvaluationConfig(compute_ragas=True)

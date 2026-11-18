@@ -23,6 +23,12 @@ export interface ResultFileInfo {
   avg_doc_mrr: number | null;
   avg_chunk_precision_at_5: number | null;
   avg_context_precision: number | null;
+  avg_faithfulness: number | null;
+  avg_answer_relevancy: number | null;
+  avg_context_recall: number | null;
+  avg_context_entity_recall: number | null;
+  avg_answer_similarity: number | null;
+  avg_answer_correctness: number | null;
   avg_entity_precision_at_5: number | null;
   avg_entity_recall_at_5: number | null;
   avg_entity_mrr: number | null;

@@ -7,7 +7,9 @@ import PageHeader from "../components/layout/PageHeader";
 import ConfigBadges from "../components/config/ConfigBadges";
 import { MetricFilterBar } from "../components/charts";
 import RetrievalBarCharts from "../components/viz/RetrievalBarCharts";
+import RetrievalResultsTable from "../components/viz/RetrievalResultsTable";
 import GenerationBarCharts from "../components/viz/GenerationBarCharts";
+import GenerationResultsTable from "../components/viz/GenerationResultsTable";
 import BenchHeatmap from "../components/viz/BenchHeatmap";
 import {
   RETRIEVAL_METRICS,
@@ -127,6 +129,7 @@ export default function BenchViz() {
           onToggleAll={makeToggleAll(setActiveRetrieval)}
         />
         <RetrievalBarCharts result={result} activeMetrics={activeRetrieval} />
+        <RetrievalResultsTable result={result} activeMetrics={activeRetrieval} />
       </section>
 
       {/* Generation Evaluation */}
@@ -141,6 +144,7 @@ export default function BenchViz() {
           onToggleAll={makeToggleAll(setActiveGeneration)}
         />
         <GenerationBarCharts result={result} activeMetrics={activeGeneration} />
+        <GenerationResultsTable result={result} activeMetrics={activeGeneration} />
       </section>
 
       {/* Cross-section: Heatmap + Latency */}

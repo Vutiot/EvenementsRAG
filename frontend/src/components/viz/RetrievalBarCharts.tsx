@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 import type { NormalizedBenchmarkResult } from "../../api/types";
-import { EChartWrapper, buildBarChart, formatMetricValue } from "../charts";
+import { EChartWrapper, buildBarChart, formatMetricValue, SERIES_COLORS } from "../charts";
 import {
   RETRIEVAL_METRICS,
   getMetricValue,
@@ -94,23 +94,34 @@ function PrecisionTierCards({ result, activeMetrics }: Props) {
 export default function RetrievalBarCharts({ result, activeMetrics }: Props) {
   const metrics = useMemo(() => flatActive(activeMetrics), [activeMetrics]);
 
-  /* Overview bar chart — one bar per metric */
+  /* Per-metric color map: index in `metrics` → SERIES_COLORS slot.
+     Both charts use this map so the same metric gets the same color. */
+  const metricColor = useMemo(() => {
+    const map: Record<string, string> = {};
+    metrics.forEach((m, i) => {
+      map[m.key] = SERIES_COLORS[i % SERIES_COLORS.length]!;
+    });
+    return map;
+  }, [metrics]);
+
+  /* Overview bar chart — one bar per metric, each bar colored to match
+     the corresponding series in the by-type chart */
   const overviewOption = useMemo(() => {
     const categories: string[] = [];
-    const values: number[] = [];
+    const data: { value: number; itemStyle: { color: string } }[] = [];
     for (const m of metrics) {
       const v = getMetricValue(result, m.key);
       if (v !== null) {
         categories.push(m.label);
-        values.push(v);
+        data.push({ value: v, itemStyle: { color: metricColor[m.key]! } });
       }
     }
     return buildBarChart({
       categories,
-      series: [{ name: "Average", data: values }],
+      series: [{ name: "Average", data: data as unknown as number[] }],
       title: "Retrieval Metrics Overview",
     });
-  }, [result, metrics]);
+  }, [result, metrics, metricColor]);
 
   /* By question-type grouped bar chart */
   const byTypeOption = useMemo(() => {
@@ -121,9 +132,11 @@ export default function RetrievalBarCharts({ result, activeMetrics }: Props) {
       .map((m) => {
         const data = types.map((t) => result.metrics_by_type[t]?.[m.key] ?? 0);
         const hasData = data.some((v) => v > 0);
-        return hasData ? { name: m.label, data } : null;
+        return hasData
+          ? { name: m.label, data, color: metricColor[m.key]! }
+          : null;
       })
-      .filter((s): s is { name: string; data: number[] } => s !== null);
+      .filter((s): s is { name: string; data: number[]; color: string } => s !== null);
 
     if (series.length === 0) return null;
 
@@ -132,7 +145,7 @@ export default function RetrievalBarCharts({ result, activeMetrics }: Props) {
       series,
       title: "Metrics by Question Type",
     });
-  }, [result, metrics]);
+  }, [result, metrics, metricColor]);
 
   if (metrics.length === 0) {
     return (

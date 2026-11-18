@@ -22,6 +22,7 @@ import type {
   EnsureCollectionsRequest,
   HighlightChunksResponse,
   NormalizedBenchmarkResult,
+  RetrievedChunk,
   ResultFileInfo,
   SweepCompleteEvent,
   SweepConfigCompleteEvent,
@@ -116,6 +117,15 @@ export function getDatasets(collectionName?: string): Promise<{ datasets: Datase
 
 export function getDataset(id: string): Promise<DatasetDetail> {
   return fetchJSON(`${BASE}/datasets/${encodeURIComponent(id)}`);
+}
+
+export function getDatasetSourceChunk(
+  datasetId: string,
+  chunkId: string,
+): Promise<RetrievedChunk> {
+  return fetchJSON(
+    `${BASE}/datasets/${encodeURIComponent(datasetId)}/source-chunk/${encodeURIComponent(chunkId)}`,
+  );
 }
 
 export function deleteDataset(

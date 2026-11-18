@@ -72,7 +72,7 @@ class TestRepeatCountOne:
         # Mock the evaluator so it adds ragas_metrics in-place
         mock_evaluator = MagicMock()
 
-        def fake_evaluate(pq, qbi):
+        def fake_evaluate(pq, qbi, progress_callback=None):
             for entry in pq:
                 entry["ragas_metrics"] = {"faithfulness": 0.9, "coherence": 0.8}
             return []
@@ -146,7 +146,7 @@ class TestRepeatCountMultiple:
         def make_fake_evaluator(run_idx):
             mock = MagicMock()
 
-            def fake_evaluate(pq, qbi):
+            def fake_evaluate(pq, qbi, progress_callback=None):
                 scores = run_scores_sequence[run_idx]
                 for i, entry in enumerate(pq):
                     entry["ragas_metrics"] = dict(scores[i])
@@ -288,7 +288,7 @@ class TestRepeatCountMultiple:
             idx = call_count[0]
             call_count[0] += 1
 
-            def fake_eval(pq, qbi):
+            def fake_eval(pq, qbi, progress_callback=None):
                 # Record that we received a different list than per_q
                 received_entries.append(id(pq))
                 scores = run_scores[idx]

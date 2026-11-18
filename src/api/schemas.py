@@ -66,6 +66,12 @@ class ResultFileInfo(BaseModel):
     avg_doc_mrr: float | None = None
     avg_chunk_precision_at_5: float | None = None
     avg_context_precision: float | None = None
+    avg_faithfulness: float | None = None
+    avg_answer_relevancy: float | None = None
+    avg_context_recall: float | None = None
+    avg_context_entity_recall: float | None = None
+    avg_answer_similarity: float | None = None
+    avg_answer_correctness: float | None = None
     avg_entity_precision_at_5: float | None = None
     avg_entity_recall_at_5: float | None = None
     avg_entity_mrr: float | None = None
@@ -90,6 +96,7 @@ class NormalizedQuestion(BaseModel):
     generation_time_ms: float | None = None
     retrieved_contexts: list[str] | None = None
     ragas_metrics: dict[str, float] | None = None
+    ragas_metrics_std: dict[str, float] | None = None
 
 
 # ---------------------------------------------------------------------------

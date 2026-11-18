@@ -8,6 +8,8 @@ export interface BarSeriesInput {
   data: number[];
   stack?: string;
   color?: string;
+  /** Per-data-point colors (parallel array to `data`). Overrides `color`. */
+  dataItemColors?: string[];
 }
 
 export interface BuildBarChartParams {
@@ -210,13 +212,21 @@ export function buildBarChart(params: BuildBarChartParams): EChartsOption {
     },
   };
 
-  const echartsSeriesList = series.map((s) => ({
-    type: "bar" as const,
-    name: s.name,
-    data: s.data,
-    ...(s.stack ? { stack: s.stack } : {}),
-    ...(s.color ? { itemStyle: { color: s.color } } : {}),
-  }));
+  const echartsSeriesList = series.map((s) => {
+    const items = s.dataItemColors
+      ? s.data.map((v, i) => {
+          const c = s.dataItemColors?.[i];
+          return c ? { value: v, itemStyle: { color: c } } : { value: v };
+        })
+      : s.data;
+    return {
+      type: "bar" as const,
+      name: s.name,
+      data: items,
+      ...(s.stack ? { stack: s.stack } : {}),
+      ...(s.color ? { itemStyle: { color: s.color } } : {}),
+    };
+  });
 
   return {
     ...(title ? { title: { text: title } } : {}),

@@ -365,11 +365,11 @@ class TestGenerationSweeps:
 class TestEvaluationConfigRagas:
     def test_ragas_defaults(self):
         cfg = EvaluationConfig()
-        assert cfg.compute_ragas is False
-        assert len(cfg.ragas_metrics) == 12
+        assert cfg.compute_ragas is True
+        assert len(cfg.ragas_metrics) == 7
         assert "faithfulness" in cfg.ragas_metrics
         assert "answer_relevancy" in cfg.ragas_metrics
-        assert cfg.ragas_evaluator_model == "mistralai/mistral-small-4-119b-2603"
+        assert cfg.ragas_evaluator_model == "gpt-5-nano"
         assert cfg.ragas_max_workers == 1
         assert cfg.ragas_timeout == 180
 
@@ -382,9 +382,10 @@ class TestEvaluationConfigRagas:
             EvaluationConfig(ragas_metrics=["faithfulness", "nonexistent_metric"])
 
     def test_ragas_config_hash_changes(self, vanilla_config):
+        # Toggling compute_ragas off (it now defaults to True) must change the hash.
         h1 = vanilla_config.config_hash()
         modified = vanilla_config.model_copy(
-            update={"evaluation": EvaluationConfig(compute_ragas=True)}
+            update={"evaluation": EvaluationConfig(compute_ragas=False)}
         )
         assert modified.config_hash() != h1
 

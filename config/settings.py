@@ -73,6 +73,16 @@ class Settings(BaseSettings):
         description="NVIDIA API key for accessing models via build.nvidia.com",
     )
 
+    OPENROUTER_API_KEY: str = Field(
+        default="",
+        description="OpenRouter API key for routing to third-party providers",
+    )
+
+    GEMMA_API_KEY: str = Field(
+        default="",
+        description="OpenRouter API key dedicated to Gemma usage (fallback for OPENROUTER_API_KEY)",
+    )
+
     # ========================================================================
     # Qdrant Vector Database
     # ========================================================================

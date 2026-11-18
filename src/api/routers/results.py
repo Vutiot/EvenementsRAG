@@ -87,12 +87,15 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
     chunk_prec_at_k = eval_data.get("avg_chunk_precision_at_k", {})
     avg_chunk_precision_at_5 = chunk_prec_at_k.get("5") or chunk_prec_at_k.get(5)
 
-    # Context precision from RAGAS metrics summary
-    avg_context_precision = (
-        data.get("metrics_summary", {})
-        .get("ragas", {})
-        .get("avg_context_precision")
-    )
+    # RAGAS metrics from metrics summary
+    ragas_summary = data.get("metrics_summary", {}).get("ragas", {})
+    avg_context_precision = ragas_summary.get("avg_context_precision")
+    avg_faithfulness = ragas_summary.get("avg_faithfulness")
+    avg_answer_relevancy = ragas_summary.get("avg_answer_relevancy")
+    avg_context_recall = ragas_summary.get("avg_context_recall")
+    avg_context_entity_recall = ragas_summary.get("avg_context_entity_recall")
+    avg_answer_similarity = ragas_summary.get("avg_answer_similarity")
+    avg_answer_correctness = ragas_summary.get("avg_answer_correctness")
 
     # Entity metrics from entity metrics summary
     entity_summary = data.get("metrics_summary", {}).get("entity", {})
@@ -162,6 +165,12 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         avg_doc_mrr=round(avg_doc_mrr, 4) if avg_doc_mrr is not None else None,
         avg_chunk_precision_at_5=round(avg_chunk_precision_at_5, 4) if avg_chunk_precision_at_5 is not None else None,
         avg_context_precision=round(avg_context_precision, 4) if avg_context_precision is not None else None,
+        avg_faithfulness=round(avg_faithfulness, 4) if avg_faithfulness is not None else None,
+        avg_answer_relevancy=round(avg_answer_relevancy, 4) if avg_answer_relevancy is not None else None,
+        avg_context_recall=round(avg_context_recall, 4) if avg_context_recall is not None else None,
+        avg_context_entity_recall=round(avg_context_entity_recall, 4) if avg_context_entity_recall is not None else None,
+        avg_answer_similarity=round(avg_answer_similarity, 4) if avg_answer_similarity is not None else None,
+        avg_answer_correctness=round(avg_answer_correctness, 4) if avg_answer_correctness is not None else None,
         avg_entity_precision_at_5=round(avg_entity_precision_at_5, 4) if avg_entity_precision_at_5 is not None else None,
         avg_entity_recall_at_5=round(avg_entity_recall_at_5, 4) if avg_entity_recall_at_5 is not None else None,
         avg_entity_mrr=round(avg_entity_mrr, 4) if avg_entity_mrr is not None else None,
@@ -206,6 +215,7 @@ def _normalize_question_new(q: dict) -> NormalizedQuestion:
         generation_time_ms=q.get("generation_time_ms"),
         retrieved_contexts=q.get("retrieved_contexts"),
         ragas_metrics=q.get("ragas_metrics"),
+        ragas_metrics_std=q.get("ragas_metrics_std"),
     )
 
 
@@ -354,6 +364,12 @@ def _build_sweep_parents(
             avg_doc_mrr=None,
             avg_chunk_precision_at_5=None,
             avg_context_precision=None,
+            avg_faithfulness=None,
+            avg_answer_relevancy=None,
+            avg_context_recall=None,
+            avg_context_entity_recall=None,
+            avg_answer_similarity=None,
+            avg_answer_correctness=None,
             avg_entity_precision_at_5=None,
             avg_entity_recall_at_5=None,
             avg_entity_mrr=None,

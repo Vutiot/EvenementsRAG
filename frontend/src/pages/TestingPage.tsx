@@ -7,9 +7,11 @@ import QuestionPickerModal from "../components/config/QuestionPickerModal";
 import ExecutionPanel from "../components/testing/ExecutionPanel";
 import CollectionPreview from "../components/testing/CollectionPreview";
 import ChunkList from "../components/results/ChunkList";
+import GTChunkPanel from "../components/results/GTChunkPanel";
 import StreamingAnswer from "../components/results/StreamingAnswer";
 import LatencyBreakdown from "../components/results/LatencyBreakdown";
 import { EChartWrapper, buildBarChart } from "../components/charts";
+import { getRelevanceTier, RELEVANCE_HEX } from "../utils/chunkRelevance";
 import {
   getPresetConfig,
   ensureCollection,
@@ -17,6 +19,7 @@ import {
   getDatasets,
   getDataset,
   getDatasetRegistry,
+  getDatasetSourceChunk,
   getCollections,
   highlightChunks,
   runBenchmark,
@@ -73,6 +76,7 @@ export default function TestingPage() {
   const [highlightedChunks, setHighlightedChunks] = useState<Record<string, string>>({});
   const [relevanceMap, setRelevanceMap] = useState<Record<string, string>>({});
   const [highlighting, setHighlighting] = useState(false);
+  const [gtChunk, setGtChunk] = useState<RetrievedChunk | null>(null);
 
   // ── Streaming state ────────────────────────────────────────────────
   const [streamingTokens, setStreamingTokens] = useState<string[]>([]);
@@ -82,6 +86,7 @@ export default function TestingPage() {
   const [streamGenerationMs, setStreamGenerationMs] = useState<number | null>(null);
   const [streamError, setStreamError] = useState<string | undefined>(undefined);
   const streamControllerRef = useRef<AbortController | null>(null);
+  const gtChunkRef = useRef<RetrievedChunk | null>(null);
 
   // ── Benchmark-mode state ──────────────────────────────────────────
   const [benchPhase, setBenchPhase] = useState<BenchPhase>("idle");
@@ -123,6 +128,28 @@ export default function TestingPage() {
   const sourceChunkId =
     pickedQuestion && !isQueryEdited ? pickedQuestion.source_chunk_id : null;
 
+  // Highlighting gates the similarity-score chart and the streamed answer:
+  // both reveal only once highlighting completes (or was skipped/disabled).
+  const highlightAttempted =
+    !!effectiveConfig?.generation.highlight_chunks &&
+    (streamingChunks?.length ?? 0) > 0;
+  const isHighlightingDone =
+    !highlightAttempted ||
+    (!highlighting && Object.keys(highlightedChunks).length > 0);
+
+  const barColors = useMemo(() => {
+    if (!streamingChunks || !isHighlightingDone || !highlightAttempted) return null;
+    return streamingChunks.map((c) =>
+      RELEVANCE_HEX[
+        getRelevanceTier(
+          c.chunk_id,
+          sourceChunkId,
+          relevanceMap[c.chunk_id],
+          highlightedChunks[c.chunk_id],
+        )
+      ],
+    );
+  }, [streamingChunks, isHighlightingDone, highlightAttempted, sourceChunkId, relevanceMap, highlightedChunks]);
 
   const hideSections = useMemo(() => {
     if (mode === "benchmark" || mode === "sweep") return new Set(["Results"]);
@@ -232,6 +259,7 @@ export default function TestingPage() {
     setSelectedDatasetId(dsId);
     setDatasetQuestions([]);
     setPickedQuestion(null);
+    setGtChunk(null);
     if (!dsId) return;
     try {
       const detail = await getDataset(dsId);
@@ -245,7 +273,20 @@ export default function TestingPage() {
     setQuery(q.question);
     setPickedQuestion(q);
     setIsQueryEdited(false);
-  }, []);
+    setGtChunk(null);
+    gtChunkRef.current = null;
+    if (selectedDatasetId && q.source_chunk_id) {
+      getDatasetSourceChunk(selectedDatasetId, q.source_chunk_id)
+        .then((chunk) => {
+          setGtChunk(chunk);
+          gtChunkRef.current = chunk;
+        })
+        .catch(() => {
+          setGtChunk(null);
+          gtChunkRef.current = null;
+        });
+    }
+  }, [selectedDatasetId]);
 
   // ── Query-mode handler ────────────────────────────────────────────
 
@@ -299,8 +340,6 @@ export default function TestingPage() {
     setQueryPhase("querying");
 
     const ec = effectiveConfig;
-    // Store chunks in a local variable for highlighting in the completion callback
-    let retrievedChunks: RetrievedChunk[] = [];
 
     const controller = executeQueryStreaming(
       query,
@@ -308,9 +347,44 @@ export default function TestingPage() {
       Object.keys(finalOverrides).length > 0 ? finalOverrides : undefined,
       {
         onRetrievalComplete: (e) => {
-          retrievedChunks = e.chunks;
           setStreamingChunks(e.chunks);
           setStreamRetrievalMs(e.retrieval_time_ms);
+
+          // Kick off highlighting in parallel with generation. Best-effort:
+          // failures don't block the answer from being revealed.
+          if (ec.generation.highlight_chunks && e.chunks.length > 0) {
+            setHighlighting(true);
+            const toHighlight = e.chunks.map((c) => ({
+              chunk_id: c.chunk_id,
+              content: c.content,
+            }));
+            const gt = gtChunkRef.current;
+            if (gt && !e.chunks.some((c) => c.chunk_id === gt.chunk_id)) {
+              toHighlight.push({ chunk_id: gt.chunk_id, content: gt.content });
+            }
+            highlightChunks(
+              query,
+              toHighlight,
+              ec.generation.model ?? undefined,
+            )
+              .then((hlRes) => {
+                const hlMap: Record<string, string> = {};
+                const relMap: Record<string, string> = {};
+                for (const hl of hlRes.highlighted_chunks) {
+                  hlMap[hl.chunk_id] = hl.highlighted_content;
+                  if (hl.relevance) relMap[hl.chunk_id] = hl.relevance;
+                }
+                setHighlightedChunks(hlMap);
+                setRelevanceMap(relMap);
+              })
+              .catch(() => {
+                // best-effort
+              })
+              .finally(() => {
+                setHighlighting(false);
+              });
+          }
+
           if (ec.generation.enabled) {
             setIsStreaming(true);
           } else {
@@ -320,37 +394,10 @@ export default function TestingPage() {
         onGenerationToken: (e) => {
           setStreamingTokens((prev) => [...prev, e.token]);
         },
-        onGenerationComplete: async (e) => {
+        onGenerationComplete: (e) => {
           setIsStreaming(false);
           setStreamGenerationMs(e.generation_time_ms);
           setQueryPhase("idle");
-
-          // Trigger highlighting (best-effort)
-          if (ec.generation.highlight_chunks && retrievedChunks.length > 0) {
-            setHighlighting(true);
-            try {
-              const hlRes = await highlightChunks(
-                query,
-                retrievedChunks.map((c) => ({
-                  chunk_id: c.chunk_id,
-                  content: c.content,
-                })),
-                ec.generation.model ?? undefined,
-              );
-              const hlMap: Record<string, string> = {};
-              const relMap: Record<string, string> = {};
-              for (const hl of hlRes.highlighted_chunks) {
-                hlMap[hl.chunk_id] = hl.highlighted_content;
-                if (hl.relevance) relMap[hl.chunk_id] = hl.relevance;
-              }
-              setHighlightedChunks(hlMap);
-              setRelevanceMap(relMap);
-            } catch {
-              // best-effort
-            } finally {
-              setHighlighting(false);
-            }
-          }
         },
         onError: (msg) => {
           setIsStreaming(false);
@@ -432,6 +479,9 @@ export default function TestingPage() {
         },
         onMetricsProgress: (eventType, data) => {
           let label: string;
+          // Mirror the current phase's progress to the main bar so it
+          // doesn't stay stuck at the retrieval-phase final value.
+          let phaseProgress: { current: number; total: number } | null = null;
           if (eventType === "ragas_heartbeat") {
             const cur = (data.current as number) ?? 0;
             const tot = (data.total as number) ?? 0;
@@ -443,6 +493,7 @@ export default function TestingPage() {
             label = tot > 0
               ? `RAGAS evaluation\u2026 ${cur}/${tot} (${pct}%) \u2014 ${time}`
               : `RAGAS evaluation in progress\u2026 (${time})`;
+            if (tot > 0) phaseProgress = { current: cur, total: tot };
           } else if (eventType === "ragas_repeat_start") {
             label = `RAGAS repeat run ${data.run ?? ""}/${data.total_runs ?? ""} starting\u2026`;
           } else if (eventType === "ragas_repeat_complete") {
@@ -451,18 +502,37 @@ export default function TestingPage() {
             const cur = (data.current as number) ?? 0;
             const tot = (data.total as number) ?? 0;
             label = `Generating answers\u2026 ${cur}/${tot}`;
+            if (tot > 0) phaseProgress = { current: cur, total: tot };
+          } else if (eventType === "generation_start") {
+            label = "Generating answers\u2026";
+            // Reset the bar to 0/total at phase start
+            const tot = (data.num_questions as number) ?? 0;
+            if (tot > 0) phaseProgress = { current: 0, total: tot };
+          } else if (eventType === "ragas_eval_start") {
+            label = "RAGAS evaluation starting\u2026";
+            const tot = (data.num_questions as number) ?? 0;
+            if (tot > 0) phaseProgress = { current: 0, total: tot };
+          } else if (eventType === "entity_eval_start") {
+            label = "Entity metrics evaluation\u2026";
+            const tot = (data.num_questions as number) ?? 0;
+            if (tot > 0) phaseProgress = { current: 0, total: tot };
+          } else if (eventType === "entity_eval_complete") {
+            label = "Entity metrics complete";
+            const tot = (data.num_scored as number) ?? 0;
+            if (tot > 0) phaseProgress = { current: tot, total: tot };
+          } else if (eventType === "ragas_eval_complete") {
+            label = "RAGAS evaluation complete";
           } else {
-            const labels: Record<string, string> = {
-              generation_start: "Generating answers\u2026",
-              ragas_eval_start: "RAGAS evaluation starting\u2026",
-              ragas_eval_complete: "RAGAS evaluation complete",
-              entity_eval_start: "Entity metrics evaluation\u2026",
-              entity_eval_complete: "Entity metrics complete",
-            };
-            label = labels[eventType] ?? eventType;
+            label = eventType;
           }
           setActiveRun((prev) =>
-            prev ? { ...prev, metricsPhase: label } : prev,
+            prev
+              ? {
+                  ...prev,
+                  metricsPhase: label,
+                  ...(phaseProgress ? { progress: phaseProgress } : {}),
+                }
+              : prev,
           );
         },
         onComplete: () => {
@@ -673,10 +743,10 @@ export default function TestingPage() {
                     <select
                       value={selectedDatasetId}
                       onChange={(e) => handleDatasetChange(e.target.value)}
-                      className="rounded border-gray-300 bg-white px-2 py-1.5 text-xs shadow-sm
-                                 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 max-w-[160px]"
+                      className="rounded border-gray-300 bg-white pl-2 pr-7 py-1.5 text-xs shadow-sm
+                                 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 w-[210px]"
                     >
-                      <option value="">Eval dataset...</option>
+                      <option value="">Select from eval dataset...</option>
                       {filteredDatasets.map((ds) => (
                         <option key={ds.id} value={ds.id}>
                           {ds.name} ({ds.total_questions}q)
@@ -741,13 +811,27 @@ export default function TestingPage() {
                     retrievalMs={streamRetrievalMs}
                     generationMs={streamGenerationMs ?? 0}
                   />
-                  {streamingChunks.length > 0 && (
+                  {sourceChunkId && (
+                    <GTChunkPanel
+                      gtChunk={gtChunk}
+                      pickedQuestion={pickedQuestion}
+                      highlightedContent={highlightedChunks[sourceChunkId]}
+                    />
+                  )}
+                  {!isHighlightingDone && (
+                    <div className="flex flex-col items-center justify-center py-12 gap-3">
+                      <div className="h-8 w-8 animate-spin rounded-full border-4 border-amber-500 border-t-transparent" />
+                      <span className="text-sm text-gray-500">Highlighting chunks...</span>
+                    </div>
+                  )}
+                  {isHighlightingDone && streamingChunks.length > 0 && (
                     <EChartWrapper
                       option={buildBarChart({
-                        categories: streamingChunks.map((_, i) => `#${i + 1}`),
+                        categories: streamingChunks.map((_, i) => `#${i + 1}`).reverse(),
                         series: [{
                           name: "Score",
-                          data: streamingChunks.map((c) => c.score),
+                          data: streamingChunks.map((c) => c.score).reverse(),
+                          ...(barColors ? { dataItemColors: [...barColors].reverse() } : {}),
                         }],
                         title: "Chunk Similarity Scores",
                         horizontal: true,
@@ -755,14 +839,16 @@ export default function TestingPage() {
                       height={Math.max(200, streamingChunks.length * 28 + 80)}
                     />
                   )}
-                  <ChunkList
-                    chunks={streamingChunks}
-                    highlightedContent={highlightedChunks}
-                    highlighting={highlighting}
-                    sourceChunkId={sourceChunkId}
-                    relevanceMap={relevanceMap}
-                  />
-                  {(isStreaming || streamingTokens.length > 0) && (
+                  {isHighlightingDone && (
+                    <ChunkList
+                      chunks={streamingChunks}
+                      highlightedContent={highlightedChunks}
+                      highlighting={highlighting}
+                      sourceChunkId={sourceChunkId}
+                      relevanceMap={relevanceMap}
+                    />
+                  )}
+                  {isHighlightingDone && (isStreaming || streamingTokens.length > 0) && (
                     <StreamingAnswer
                       tokens={streamingTokens}
                       isStreaming={isStreaming}
