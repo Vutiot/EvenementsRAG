@@ -438,12 +438,13 @@ class TestLoadWithUserOverrides:
             "  max_tokens: 1000\n"
         )
 
+        base = BenchmarkConfig.from_yaml(base_path)
         cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
         assert cfg.generation.model == "custom-model:free"
         assert cfg.generation.temperature == 0.5
         assert cfg.generation.max_tokens == 1000
         # Other generation fields should remain unchanged (from default.yaml)
-        assert cfg.generation.top_k_chunks == 3
+        assert cfg.generation.top_k_chunks == base.generation.top_k_chunks
 
     def test_load_with_nested_override(self, tmp_path):
         """User config can override nested fields across different sections."""
@@ -456,10 +457,11 @@ class TestLoadWithUserOverrides:
             "  chunk_size: 1024\n"
         )
 
+        base = BenchmarkConfig.from_yaml(base_path)
         cfg = BenchmarkConfig.load_with_user_overrides(base_path, user_path)
         assert cfg.generation.model == "llama:free"
         assert cfg.chunking.chunk_size == 1024
-        assert cfg.chunking.chunk_overlap == 50  # Unchanged
+        assert cfg.chunking.chunk_overlap == base.chunking.chunk_overlap  # Unchanged
 
     def test_load_with_nonexistent_user_path(self, tmp_path):
         """If user_config_path doesn't exist, returns base config."""

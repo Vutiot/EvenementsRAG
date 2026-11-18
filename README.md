@@ -110,6 +110,13 @@ EvenementsRAG/
    python config/settings.py
    ```
 
+8. **Enable the pre-commit hook** (runs ruff on staged `src/`, `tests/`, `config/` files, the fast unit tests, and `tsc --noEmit` when frontend files change)
+   ```bash
+   pip install pre-commit
+   pre-commit install
+   ```
+   Run all checks by hand with `pre-commit run --all-files`. Coverage is no longer computed on every test run; ask for it with `pytest --cov=src --cov-report=term-missing`.
+
 ## Configuration
 
 All configuration is managed through environment variables in `.env` file:

@@ -1,0 +1,31 @@
+# Local checks run on every `git commit` (replaces CI for this solo project).
+# Setup once:  pip install pre-commit && pre-commit install
+# Run by hand: pre-commit run --all-files
+# Skip once (emergency only): git commit --no-verify
+repos:
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.8.4
+    hooks:
+      # Lint and format only the staged Python files; files are cleaned up
+      # gradually as they are touched, no repo-wide reformat.
+      - id: ruff
+        args: [--fix]
+        files: ^(src|tests|config)/
+      - id: ruff-format
+        files: ^(src|tests|config)/
+
+  - repo: local
+    hooks:
+      - id: pytest-unit
+        name: pytest (unit, no Qdrant)
+        entry: python -m pytest tests/unit -m "not qdrant" -q -x -p no:cacheprovider
+        language: system
+        types: [python]
+        pass_filenames: false
+
+      - id: frontend-tsc
+        name: tsc --noEmit (frontend)
+        entry: bash -c 'cd frontend && npx --no-install tsc --noEmit'
+        language: system
+        files: ^frontend/.*\.(ts|tsx)$
+        pass_filenames: false

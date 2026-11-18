@@ -70,7 +70,7 @@ pytest-cov = "^4.1.0"
 jupyter = "^1.0.0"
 ipykernel = "^6.29.0"
 black = "^24.1.1"
-ruff = "^0.2.1"
+ruff = ">=0.8.4"
 isort = "^5.13.2"
 
 [build-system]
@@ -89,6 +89,8 @@ line_length = 100
 [tool.ruff]
 line-length = 100
 target-version = "py310"
+
+[tool.ruff.lint]
 select = ["E", "F", "I", "N", "W"]
 ignore = ["E501"]
 
@@ -96,7 +98,9 @@ ignore = ["E501"]
 testpaths = ["tests"]
 python_files = "test_*.py"
 python_functions = "test_*"
-addopts = "-v --cov=src --cov-report=term-missing"
+# Coverage on demand: pytest --cov=src --cov-report=term-missing
+addopts = "-v"
 markers = [
     "qdrant: tests requiring a running Qdrant container",
+    "pgvector: tests requiring a running PostgreSQL with pgvector",
 ]

@@ -57,6 +57,14 @@ def mock_embedding_gen():
     return gen
 
 
+@pytest.fixture(autouse=True)
+def fake_nvidia_key(monkeypatch):
+    """The OpenAI client refuses an empty key; tests never call the API."""
+    from config.settings import settings
+
+    monkeypatch.setattr(settings, "NVIDIA_API_KEY", "test-key")
+
+
 @pytest.fixture
 def mock_hybrid_searcher(monkeypatch):
     searcher = MagicMock()

@@ -45,6 +45,9 @@ class TestBaseVectorStoreABC:
             def delete_collection(self, *a, **kw):
                 return True
 
+            def list_collections(self, *a, **kw):
+                return []
+
             def upsert_vectors(self, *a, **kw):
                 return 0
 
@@ -76,6 +79,9 @@ class TestBaseVectorStoreABC:
 
             def delete_collection(self, *a, **kw):
                 return True
+
+            def list_collections(self, *a, **kw):
+                return []
 
             def upsert_vectors(self, *a, **kw):
                 return 0
