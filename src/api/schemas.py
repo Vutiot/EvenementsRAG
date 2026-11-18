@@ -217,6 +217,7 @@ class BenchmarkRunRequest(BaseModel):
     config_overrides: dict | None = None
     eval_dataset_id: str
     name: str | None = None  # Optional user-provided run name
+    no_cache: bool = False  # Force a rerun even if this config was already evaluated
 
 
 class SweepRunRequest(BaseModel):
@@ -225,6 +226,7 @@ class SweepRunRequest(BaseModel):
     eval_dataset_id: str
     name: str | None = None
     config_overrides: dict | None = None
+    no_cache: bool = False  # Force a rerun even if a config was already evaluated
 
 
 class NormalizedBenchmarkResult(BaseModel):

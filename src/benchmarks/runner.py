@@ -24,6 +24,7 @@ from pathlib import Path
 from typing import Callable, Dict, List, Optional
 
 from src.benchmarks.config import BenchmarkConfig
+from src.benchmarks.result_cache import ResultCache, cache_key
 from src.evaluation.benchmark_runner import BenchmarkRunner
 from src.evaluation.metrics import EvaluationResults
 from src.utils.logger import get_logger
@@ -60,8 +61,46 @@ def _save_result(result: "BenchmarkResult", output_dir: Path) -> Path:
     hash8 = result.config_hash[:8]
     path = subdir / f"{result.phase_name}_{hash8}_{ts}.json"
     result.to_json(path)
+    result.result_path = path
     logger.info(f"Result saved: {path}", extra={"config_hash": result.config_hash})
     return path
+
+
+def _evaluation_from_dict(data: dict) -> EvaluationResults:
+    """Rebuild EvaluationResults from its JSON form (int keys come back as str)."""
+    known = EvaluationResults.__dataclass_fields__
+    kwargs = {}
+    for name, value in data.items():
+        if name not in known:
+            continue
+        if isinstance(value, dict) and name.startswith("avg_"):
+            value = {int(k) if str(k).isdigit() else k: v for k, v in value.items()}
+        kwargs[name] = value
+    return EvaluationResults(**kwargs)
+
+
+def _result_from_cache(
+    cached_path: Path,
+    config: BenchmarkConfig,
+    results_dir: Path,
+    eval_dataset_name: Optional[str],
+) -> "BenchmarkResult":
+    """A new BenchmarkResult for *config* carrying the metrics of a cached run."""
+    data = json.loads(cached_path.read_text(encoding="utf-8"))
+    return BenchmarkResult(
+        config=config,
+        config_hash=config.config_hash(),
+        phase_name=config.name,
+        timestamp=datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
+        evaluation=_evaluation_from_dict(data.get("evaluation", {})),
+        per_question_full=data.get("per_question_full", []),
+        total_wall_time_s=data.get("total_wall_time_s", 0.0),
+        metrics_summary=data.get("metrics_summary", {}),
+        eval_dataset_name=eval_dataset_name or data.get("eval_dataset_name"),
+        evaluation_mode=data.get("evaluation_mode", "direct"),
+        cached_from=data.get("cached_from")
+        or cached_path.relative_to(results_dir).as_posix(),
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -94,6 +133,16 @@ class BenchmarkResult:
     metrics_summary: dict = field(default_factory=dict)
     eval_dataset_name: str | None = None
     evaluation_mode: str = "direct"  # "direct" | "mapped"
+    # Set when the result was reused from the cache (E4-F1-T2): the original file.
+    cached_from: str | None = None
+    # Where the result was saved (not serialized).
+    result_path: Path | None = field(default=None, repr=False, compare=False)
+
+    def relative_filename(self, results_dir: Path) -> str:
+        """Saved file path relative to *results_dir* (as used by the results API)."""
+        if self.result_path is None:
+            raise ValueError("result has not been saved")
+        return Path(self.result_path).relative_to(results_dir).as_posix()
 
     def to_dict(self) -> dict:
         """Serialize to a plain dictionary."""
@@ -108,6 +157,7 @@ class BenchmarkResult:
             "metrics_summary": self.metrics_summary,
             "evaluation_mode": self.evaluation_mode,
             **({"eval_dataset_name": self.eval_dataset_name} if self.eval_dataset_name else {}),
+            **({"cached_from": self.cached_from} if self.cached_from else {}),
         }
 
     def to_json(self, path=None) -> str:
@@ -226,6 +276,7 @@ class ParameterizedBenchmarkRunner:
         eval_dataset_name: Optional[str] = None,
         mapped_ground_truth: Optional[Dict[str, List[str]]] = None,
         evaluation_mode: Optional[str] = None,
+        use_cache: bool = True,
     ) -> BenchmarkResult:
         """Run a full benchmark and return a BenchmarkResult.
 
@@ -233,6 +284,10 @@ class ParameterizedBenchmarkRunner:
             questions_file: Override the questions file from config.
             max_questions: Limit evaluation to the first N questions.
             output_dir: Path | str | None; if set, auto-saves result JSON.
+            use_cache: With ``output_dir``, reuse the result of an identical
+                earlier run (same parameters, same eval dataset contents)
+                instead of recomputing it. The reused metrics are saved as a
+                new result file carrying ``cached_from``.
 
         Returns:
             BenchmarkResult with retrieval metrics and optional generated answers.
@@ -262,6 +317,30 @@ class ParameterizedBenchmarkRunner:
         )
 
         questions_path = Path(questions_file or self.config.dataset.questions_file)
+
+        # Result cache (E4-F1-T2): only for runs saved to a results directory
+        cache: Optional[ResultCache] = None
+        key = ""
+        if output_dir is not None and use_cache:
+            cache = ResultCache(Path(output_dir))
+            key = cache_key(
+                self.config.config_hash(), questions_path, max_questions, evaluation_mode
+            )
+            cached_path = cache.lookup(key)
+            if cached_path is not None:
+                try:
+                    result = _result_from_cache(
+                        cached_path, self.config, Path(output_dir), eval_dataset_name
+                    )
+                except (OSError, ValueError, TypeError) as exc:
+                    logger.warning(f"Result cache: unreadable {cached_path} ({exc}), rerunning")
+                else:
+                    _save_result(result, Path(output_dir))
+                    logger.info(
+                        f"Result cache hit: {self.config.name} reuses {result.cached_from}",
+                        extra={"config_hash": result.config_hash},
+                    )
+                    return result
 
         # Initialise shared deps once (avoids double model loading in sweeps)
         if self._vector_store is None:
@@ -368,7 +447,9 @@ class ParameterizedBenchmarkRunner:
         )
 
         if output_dir is not None:
-            _save_result(result, Path(output_dir))
+            saved = _save_result(result, Path(output_dir))
+            if cache is not None:
+                cache.register(key, saved)
 
         logger.info(
             f"Benchmark run complete: {self.config.name}",

@@ -93,6 +93,7 @@ export default function TestingPage() {
   const [activeRun, setActiveRun] = useState<ActiveRun | null>(null);
   const [abortController, setAbortController] = useState<AbortController | null>(null);
   const [runName, setRunName] = useState("");
+  const [noCache, setNoCache] = useState(false);
 
   // ── Sweep-mode state ──────────────────────────────────────────────
   const [sweepPhase, setSweepPhase] = useState<SweepPhase>("idle");
@@ -460,6 +461,7 @@ export default function TestingPage() {
         config_overrides: Object.keys(finalOverrides).length > 0 ? finalOverrides : null,
         eval_dataset_id: selectedDatasetId,
         ...(runName ? { name: runName } : {}),
+        ...(noCache ? { no_cache: true } : {}),
       },
       {
         onStarted: (e) => {
@@ -535,10 +537,16 @@ export default function TestingPage() {
               : prev,
           );
         },
-        onComplete: () => {
+        onComplete: (e) => {
           setActiveRun(null);
           setBenchPhase("complete");
           setRunName("");
+          if (e.cached_from) {
+            setInfoMessages((prev) => [
+              ...prev,
+              `Same parameters and eval dataset as ${e.cached_from}: metrics reused from the cache, nothing was recomputed.`,
+            ]);
+          }
         },
         onError: (msg) => {
           setActiveRun({ status: "error", progress: { current: 0, total: 0 }, error: msg });
@@ -549,7 +557,7 @@ export default function TestingPage() {
     );
 
     setAbortController(controller);
-  }, [effectiveConfig, selectedDatasetId, overrides, overrideCount, runName]);
+  }, [effectiveConfig, selectedDatasetId, overrides, overrideCount, runName, noCache]);
 
   const handleBenchmarkCancel = useCallback(() => {
     abortController?.abort();
@@ -578,6 +586,7 @@ export default function TestingPage() {
         eval_dataset_id: selectedDatasetId,
         config_overrides: Object.keys(configOverrides).length > 0 ? configOverrides : null,
         ...(runName ? { name: runName } : {}),
+        ...(noCache ? { no_cache: true } : {}),
       },
       {
         onWarning: (e) => {
@@ -659,7 +668,7 @@ export default function TestingPage() {
     );
 
     setSweepAbort(controller);
-  }, [effectiveConfig, selectedDatasetId, overrides, runName]);
+  }, [effectiveConfig, selectedDatasetId, overrides, runName, noCache]);
 
   const handleSweepCancel = useCallback(() => {
     sweepAbort?.abort();
@@ -870,6 +879,8 @@ export default function TestingPage() {
             onDatasetChange={(id) => setSelectedDatasetId(id)}
             runName={runName}
             onRunNameChange={setRunName}
+            noCache={noCache}
+            onNoCacheChange={setNoCache}
             isRunning={isBenchRunning}
             onRun={handleBenchmarkRun}
             onCancel={handleBenchmarkCancel}
@@ -904,6 +915,8 @@ export default function TestingPage() {
             onDatasetChange={(id) => setSelectedDatasetId(id)}
             runName={runName}
             onRunNameChange={setRunName}
+            noCache={noCache}
+            onNoCacheChange={setNoCache}
             isRunning={isSweepRunning}
             onRun={handleSweepRun}
             onCancel={handleSweepCancel}

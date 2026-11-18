@@ -333,6 +333,8 @@ export interface BenchmarkRunRequest {
   config_overrides: Record<string, unknown> | null;
   eval_dataset_id: string;
   name?: string;
+  /** Force a rerun even if this config was already evaluated (result cache). */
+  no_cache?: boolean;
 }
 
 export interface BenchmarkStartedEvent {
@@ -350,6 +352,8 @@ export interface BenchmarkProgressEvent {
 
 export interface BenchmarkCompleteEvent {
   filename: string;
+  /** Set when the metrics were reused from an earlier identical run. */
+  cached_from?: string | null;
   phase_name: string;
   total_questions: number;
   avg_mrr: number;
@@ -385,6 +389,8 @@ export interface SweepRunRequest {
   eval_dataset_id: string;
   name?: string;
   config_overrides?: Record<string, unknown> | null;
+  /** Force a rerun even if a config was already evaluated (result cache). */
+  no_cache?: boolean;
 }
 
 export interface SweepStartedEvent {
@@ -417,6 +423,8 @@ export interface SweepConfigCompleteEvent {
   total_configs: number;
   status: "ok" | "error";
   filename?: string;
+  /** Set when the metrics were reused from an earlier identical run. */
+  cached_from?: string | null;
   error?: string;
   params: Record<string, unknown>;
   avg_mrr?: number;

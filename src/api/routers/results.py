@@ -14,6 +14,7 @@ from src.api.schemas import (
     NormalizedQuestion,
     ResultFileInfo,
 )
+from src.benchmarks.result_cache import INDEX_FILENAME as CACHE_INDEX_FILENAME
 from src.evaluation.metrics_collector import core_metrics_summary
 
 logger = logging.getLogger(__name__)
@@ -402,6 +403,8 @@ def list_results():
 
     infos = []
     for path in sorted(RESULTS_DIR.rglob("*.json")):
+        if path.name == CACHE_INDEX_FILENAME:
+            continue
         info = _parse_file_info(path)
         if info is not None:
             infos.append(info)

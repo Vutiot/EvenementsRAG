@@ -9,6 +9,8 @@ export interface ExecutionPanelProps {
   onDatasetChange: (id: string) => void;
   runName: string;
   onRunNameChange: (name: string) => void;
+  noCache: boolean;
+  onNoCacheChange: (value: boolean) => void;
   isRunning: boolean;
   onRun: () => void;
   onCancel: () => void;
@@ -33,6 +35,8 @@ export default function ExecutionPanel({
   onDatasetChange,
   runName,
   onRunNameChange,
+  noCache,
+  onNoCacheChange,
   isRunning,
   onRun,
   onCancel,
@@ -113,6 +117,20 @@ export default function ExecutionPanel({
           )}
         </div>
       </div>
+
+      <label
+        className="mt-2 inline-flex items-center gap-2 text-xs text-gray-500"
+        title="Already-evaluated configs (same parameters, same eval dataset) reuse their saved result. Tick to recompute, e.g. after changing metric code."
+      >
+        <input
+          type="checkbox"
+          checked={noCache}
+          onChange={(e) => onNoCacheChange(e.target.checked)}
+          disabled={isRunning}
+          className="rounded border-gray-300"
+        />
+        Ignore cache (recompute already-evaluated configs)
+      </label>
 
       {/* ── Benchmark progress ── */}
       {isBenchmark && activeRun && activeRun.status === "running" && activeRun.progress.total > 0 && (
@@ -292,7 +310,13 @@ export default function ExecutionPanel({
                   </td>
                   <td className="py-1">
                     {r.status === "ok" ? (
-                      <span className="text-green-600 font-medium">OK</span>
+                      r.cached_from ? (
+                        <span className="text-blue-600 font-medium" title={`Reused ${r.cached_from}`}>
+                          CACHED
+                        </span>
+                      ) : (
+                        <span className="text-green-600 font-medium">OK</span>
+                      )
                     ) : (
                       <span className="text-red-500" title={r.error}>ERR</span>
                     )}

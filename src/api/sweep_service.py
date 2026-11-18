@@ -6,9 +6,7 @@ import json
 import queue
 import re
 import threading
-import time
 from datetime import datetime, timezone
-from pathlib import Path
 from typing import Generator
 
 from src.api.collection_service import CollectionService
@@ -384,6 +382,7 @@ class SweepService:
                             mapped_ground_truth=_mgt,
                             evaluation_mode=_em,
                             eval_dataset_name=_edn,
+                            use_cache=not request.no_cache,
                         )
                         result_holder.append(result)
                     except Exception as exc:
@@ -427,10 +426,7 @@ class SweepService:
                     continue
 
                 result = result_holder[0]
-                technique = result.config.retrieval.technique
-                ts = result.timestamp.replace(":", "").replace("-", "")
-                hash8 = result.config_hash[:8]
-                rel_filename = f"{technique}/{result.phase_name}_{hash8}_{ts}.json"
+                rel_filename = result.relative_filename(RESULTS_DIR)
                 result_files.append(rel_filename)
 
                 ctx_prec = result.metrics_summary.get("ragas", {}).get("avg_context_precision")
@@ -450,6 +446,7 @@ class SweepService:
                     "avg_context_precision": round(ctx_prec, 4) if ctx_prec is not None else None,
                     "avg_entity_recall_at_5": round(ent_r5, 4) if ent_r5 is not None else None,
                     "total_wall_time_s": round(result.total_wall_time_s, 2),
+                    "cached_from": result.cached_from,
                     **core_metrics_summary(result.metrics_summary),
                 })
 

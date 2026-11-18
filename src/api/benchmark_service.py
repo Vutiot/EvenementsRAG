@@ -1,8 +1,6 @@
 """Benchmark run service — bridges API to ParameterizedBenchmarkRunner with SSE."""
 
 import json
-import time
-from pathlib import Path
 from typing import Generator
 
 from src.api.collection_service import CollectionService
@@ -166,8 +164,6 @@ class BenchmarkService:
             # use a list to accumulate them
             progress_events: list[str] = []
 
-            wall_start = time.time()
-
             # We can't yield from inside the callback, so we accumulate and yield after
             # Instead, run the benchmark and periodically yield progress
             # Use a threading approach similar to datasets
@@ -204,6 +200,7 @@ class BenchmarkService:
                         eval_dataset_name=eval_dataset_name,
                         mapped_ground_truth=mapped_ground_truth,
                         evaluation_mode=evaluation_mode,
+                        use_cache=not request.no_cache,
                     )
                     result_holder.append(result)
                 except Exception as exc:
@@ -238,14 +235,8 @@ class BenchmarkService:
             result = result_holder[0]
             wall_time = result.total_wall_time_s
 
-            # Build the filename from the saved result
-            from src.benchmarks.runner import _save_result
             # Result was already saved in run() because we passed output_dir
-            # Get the filename
-            technique = result.config.retrieval.technique
-            ts = result.timestamp.replace(":", "").replace("-", "")
-            hash8 = result.config_hash[:8]
-            rel_filename = f"{technique}/{result.phase_name}_{hash8}_{ts}.json"
+            rel_filename = result.relative_filename(RESULTS_DIR)
 
             yield _sse("complete", {
                 "filename": rel_filename,
@@ -255,6 +246,7 @@ class BenchmarkService:
                 "avg_recall_at_5": round(result.evaluation.avg_recall_at_k.get(5, 0.0), 4),
                 "avg_recall_at_10": round(result.evaluation.avg_recall_at_k.get(10, 0.0), 4),
                 "total_wall_time_s": round(wall_time, 2),
+                "cached_from": result.cached_from,
                 **core_metrics_summary(result.metrics_summary),
             })
 

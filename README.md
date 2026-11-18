@@ -110,7 +110,7 @@ EvenementsRAG/
    python config/settings.py
    ```
 
-8. **Enable the pre-commit hook** (runs ruff on staged `src/`, `tests/`, `config/` files, the fast unit tests, and `tsc --noEmit` when frontend files change)
+8. **Enable the pre-commit hook** (runs ruff lint on staged `src/`, `tests/`, `config/` files, the fast unit tests, and `tsc --noEmit` when frontend files change)
    ```bash
    pip install pre-commit
    pre-commit install

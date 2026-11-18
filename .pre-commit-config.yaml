@@ -6,13 +6,16 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.8.4
     hooks:
-      # Lint and format only the staged Python files; files are cleaned up
-      # gradually as they are touched, no repo-wide reformat.
+      # Lint only the staged Python files (safe autofixes: imports, f-strings).
       - id: ruff
         args: [--fix]
         files: ^(src|tests|config)/
-      - id: ruff-format
-        files: ^(src|tests|config)/
+      # ruff-format is off until the unmerged branches (VM vm-deploy-mobile,
+      # WSL work) are merged: reformatting whole files on first touch would
+      # make those merges conflict. Then run `ruff format src tests config`
+      # once in its own commit and uncomment:
+      # - id: ruff-format
+      #   files: ^(src|tests|config)/
 
   - repo: local
     hooks:
