@@ -458,16 +458,16 @@ File-based result cache so an already-evaluated config costs nothing. The result
 - agent_hint: Design normalized schema: (1) Benchmark runs table (config hash, timestamp, status), (2) Metric results (run_id, metric_name, value), (3) Query results (run_id, query, chunks_retrieved, generation_result). Support versioning.
 - description: Design database schema for storing benchmark runs, metrics, and query results with versioning and traceability.
 
-##### 🔵 E4-F1-T2: File-based benchmark result cache
+##### ✅ E4-F1-T2: File-based benchmark result cache
 - blocked_by: []
-- status: ready
+- status: done
 - effort: S
 - agent_hint: `ResultCache` over the existing results directory: (1) deterministic hash of all params + eval dataset id (reuse the sweep `config_hash` if it already covers this), (2) small index file `results/cache_index.json` mapping hash → result filename, (3) on run, return the cached result JSON if the hash exists, otherwise run and register it. File backend only.
 - description: When benchmarking a config that was already evaluated, reuse the existing result file instead of recomputing. Strongly recommended before AutoML studies (E9-F2-T3).
 
-##### ⚪ E4-F1-T3: Add cache invalidation & versioning
+##### ✅ E4-F1-T3: Add cache invalidation & versioning
 - blocked_by: [E4-F1-T2]
-- status: pending
+- status: done
 - effort: S
 - agent_hint: Include a hash of the eval dataset file (and collection name) in the cache key so a regenerated dataset misses the cache automatically. Add a `no_cache` flag (API + UI checkbox) to force a rerun. No code-version tracking: after a change in metric code, rerun with `no_cache`.
 - description: Keep the cache honest with a dataset hash in the key and a manual "no cache" switch.
@@ -572,9 +572,9 @@ Design notes: the harness is shared with E9 (AutoML assistant). Structured outpu
 
 #### E8-F1: Dataset Exploration Harness
 
-##### 🔵 E8-F1-T1: Deterministic dataset profiling harness
+##### ✅ E8-F1-T1: Deterministic dataset profiling harness
 - blocked_by: []
-- status: ready
+- status: done
 - effort: M
 - agent_hint: New `src/assistant/dataset_profiler.py`. Input: collection name. Reuse `DatasetService._load_chunks()`. Compute without LLM: doc/chunk counts, length distribution, language, date range (reuse `temporal_filter` date extraction), top entities (spaCy), thematic clusters (k-means on stored embeddings, k≈8, 3 representative chunks + top terms per cluster). Output a compact `DatasetProfile` Pydantic model (< 4k tokens when serialized). Cache the profile per collection on disk. Endpoint `GET /api/assistant/profile/{collection}`. Unit tests on a small fixture collection.
 - description: Build a reusable harness that explores a collection and produces a compact, LLM-ready profile of its content (size, themes, entities, period, document types). Shared by E8 and E9.
@@ -589,9 +589,9 @@ Design notes: the harness is shared with E9 (AutoML assistant). Structured outpu
 
 #### E8-F2: Conversational Interview
 
-##### ⚪ E8-F2-T1: Assistant chat backend (SSE, session state)
+##### 🔵 E8-F2-T1: Assistant chat backend (SSE, session state)
 - blocked_by: [E8-F1-T1]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: `POST /api/assistant/eval/chat` streaming SSE (`token`, `plan_update`, `done`, `error`), reusing the SSE helpers of `query_service`. Session kept in an in-memory dict keyed by session id (collection, profile, messages, current draft plan); lost on restart, which is fine for local single-user use. System prompt drives a guided interview: intended question types, persona(s) of the askers (e.g. student, historian, analyst), themes / periods to cover or exclude, difficulty mix, answer language, total volume. Ask one thing at a time, propose defaults from the profile, stop once the plan is complete. No dataset generation from this endpoint.
 - description: Backend for the guided conversation that collects the user's intent for the eval dataset, grounded on the dataset profile.
@@ -637,16 +637,16 @@ Design notes: replaces the exhaustive cartesian sweep for large spaces. Every tr
 
 #### E9-F1: Cost Model
 
-##### 🔵 E9-F1-T1: Model pricing catalog
+##### ✅ E9-F1-T1: Model pricing catalog
 - blocked_by: []
-- status: ready
+- status: done
 - effort: S
 - agent_hint: `config/pricing.yaml`: per model, price per 1M input / output tokens and currency, for generation, RAGAS judge and entity-extraction models; embedding and reranker models carry a local compute-time estimate instead. Edited by hand; a small loader with Pydantic validation, no API and no settings UI. The E9 interview may append missing prices to the file from the backend. Ship no default prices that pretend to be current.
 - description: A user-editable catalog of API prices per model, used for every cost estimate and budget check.
 
-##### ⚪ E9-F1-T2: Token and cost tracking per run
+##### 🔵 E9-F1-T2: Token and cost tracking per run
 - blocked_by: [E9-F1-T1]
-- status: pending
+- status: ready
 - effort: M
 - note: Builds on E10-F3-T1, which already records generation and judge cost per question; what remains is the other LLM stages (RAGAS, entity extraction, dataset generation, assistant) and the per-run summary.
 - agent_hint: Wrap every LLM call (generation, RAGAS evaluator incl. `ragas_repeat_count`, entity extractor, dataset generation, assistant) to record input/output tokens per model. Store `cost_summary` in the result JSON (tokens and cost by stage), surface `total_cost` in `ResultFileInfo` and as a Run History column.
@@ -713,9 +713,9 @@ Lightweight safety net for a solo, local project, in place of CI.
 
 #### E11-F1: Checks before commit
 
-##### 🔵 E11-F1-T1: Local pre-commit hook
+##### ✅ E11-F1-T1: Local pre-commit hook
 - blocked_by: []
-- status: ready
+- status: done
 - effort: S
 - agent_hint: Add `.pre-commit-config.yaml` with ruff (lint + format) and a local hook running `pytest tests/unit -m "not qdrant" -q -x`. Remove `--cov` from `addopts` in `pyproject.toml` so the hook stays fast (coverage on demand with `pytest --cov=src`). Optionally a frontend hook running `npx tsc --noEmit` on staged `.ts/.tsx` files. Document `pip install pre-commit && pre-commit install` in the README.
 - description: Run lint and fast unit tests automatically on each commit, without any CI service.
@@ -923,21 +923,19 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 59 in this file (E6 and E7 detailed in `roadmap_unification.md` and `roadmap-evaluation.md`, all done except E6-F7) |
-| **Done** | 37 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F2-T3, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3, E3-F5-T1, E3-F5-T2, E3-F5-T3, E6-F6-T1, E6-F6-T2, E10-F1-T1, E10-F2-T1, E10-F2-T2, E10-F3-T1, E10-F4-T1) |
-| **Ready (no blockers)** | 5 (E11-F1-T1, E4-F1-T2, E5-F1-T1, E8-F1-T1, E9-F1-T1) |
+| **Done** | 42 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F2-T3, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3, E3-F5-T1, E3-F5-T2, E3-F5-T3, E6-F6-T1, E6-F6-T2, E10-F1-T1, E10-F2-T1, E10-F2-T2, E10-F3-T1, E10-F4-T1, E4-F1-T2, E4-F1-T3, E8-F1-T1, E9-F1-T1, E11-F1-T1) |
+| **Ready (no blockers)** | 3 (E8-F2-T1, E9-F1-T2, E5-F1-T1) |
 | **In Progress** | 0 |
-| **Pending** | 13 (E4-F1-T3, E8-F2-T1, E8-F2-T2, E8-F3-T1, E8-F3-T2, E9-F1-T2, E9-F1-T3, E9-F2-T1, E9-F2-T2, E9-F2-T3, E9-F3-T1, E9-F3-T2, E9-F3-T3) |
+| **Pending** | 10 (E8-F2-T2, E8-F3-T1, E8-F3-T2, E9-F1-T3, E9-F2-T1, E9-F2-T2, E9-F2-T3, E9-F3-T1, E9-F3-T2, E9-F3-T3) |
 | **Deferred** | 3 (E5-F1-T2, E8-F1-T2, E8-F3-T3) |
 | **Dropped** | 1 (E4-F1-T1) |
 | **Critical Path Length** | Original 14-task path complete; next path is AutoML (E9) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
-1. E11-F1-T1: Local pre-commit hook (S, replaces CI)
-2. E8-F1-T1: Dataset profiling harness (unblocks both assistants, E8 and E9)
-3. E9-F1-T1: Model pricing catalog as a hand-edited YAML (start of the AutoML cost model)
-4. E4-F1-T2: File-based result cache (recommended before AutoML studies)
-5. E5-F1-T1: Implement LazyGraphRAG variant
+1. E9-F1-T2: Token and cost tracking per run (next on the AutoML critical path; unblocks E9-F1-T3 and E9-F2-T1)
+2. E8-F2-T1: Assistant chat backend (builds on the dataset profile, unblocks the E8 chat panel and E9-F3-T1)
+3. E5-F1-T1: Implement LazyGraphRAG variant (L, independent)
 
 **Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) complete — E3-F1, E3-F3, E3-F4, E3-F5 all done; E3-F2-T3 was covered by E7-F4.
 
@@ -1310,6 +1308,22 @@ The project is developed by one person on a local machine. Decisions:
 - **Assistants trimmed to the core loop.** In-memory chat sessions (E8-F2-T1), hand-edited `config/pricing.yaml` without API or UI (E9-F1-T1), single-objective pruning only (E9-F2-T2). E8-F1-T2, E8-F3-T3 and E5-F1-T2 deferred.
 - **E3-F2-T3 closed** as delivered by E7-F4 (SweepViz, ECharts).
 - Low-value UI polish deferred: E6-F7-T2, E6-F7-T3, E6-F7-T4 (see `roadmap_unification.md`).
+
+### E11-F1-T1 — Local pre-commit hook (2026-11-18)
+
+**ruff lint + fast unit tests + `tsc --noEmit`, ruff-format off for now.** The hook lints staged files under `src/`, `tests/`, `config/` (scripts and notebooks are left alone), runs `pytest tests/unit -m "not qdrant" -x`, and type-checks the frontend only when `.ts/.tsx` files are staged. `ruff format` is commented out: 62 files are not formatted yet, and reformatting each file on first touch would make the unmerged branches (VM `vm-deploy-mobile`, WSL work) conflict on every touched file. Once those are merged, run `ruff format src tests config` in one commit and enable the hook. Coverage left `addopts` (`pytest --cov=src` on demand). Four stale unit tests were fixed so the hook starts green (default.yaml values, `list_collections` abstract method, empty NVIDIA key).
+
+### E9-F1-T1 — Pricing catalog (2026-11-18)
+
+**`config/pricing.yaml` ships every known model with `null` prices.** `null` means unknown, and estimates must report a model as unpriced instead of assuming it is free (0 is the explicit way to say "free"). Local embedding/reranker models carry an optional `seconds_per_1k_items` instead of a price. Loader in `src/automl/pricing.py` (Pydantic: both prices or neither, no price on local models, known roles only). `add_model()` appends to the file rather than rewriting it so the hand-written comments survive; existing entries are only edited by hand.
+
+### E4-F1-T2 / E4-F1-T3 — Result cache (2026-11-18)
+
+**Cache key = `config_hash` + SHA-256 of the eval dataset file + `max_questions` + evaluation mode**, stored in `results/cache_index.json` (key → result file). The dataset content hash makes a regenerated dataset miss automatically, so T3 was done together with T2. **A hit writes a new result file** under the new run name with `cached_from` pointing at the original, instead of returning the old file: sweeps (and future AutoML trials) keep their own named runs in Run History and SweepViz. Only runs saved to a results directory use the cache. `no_cache` on the benchmark and sweep requests (UI: "Ignore cache") forces a rerun, e.g. after a change in metric code; there is no code-version tracking.
+
+### E8-F1-T1 — Dataset profiler (2026-11-18)
+
+**No LLM, no new dependency.** k-means is a small deterministic k-means++ in NumPy on the L2-normalised stored embeddings (k=8, capped at 20k points), rather than adding scikit-learn. Years are extracted with a generic 1000–2099 pattern (the `TemporalFilter` pattern is WW2-specific) and reported as min/max plus a robust p5–p95 range. Entities use spaCy NER when an English model is installed (`en_core_web_lg` → `md` → `sm`, on at most 1,500 evenly spaced chunks), else a capitalised-sequence heuristic; `entity_method` says which. Records are sorted by id before profiling so the result does not depend on scroll order. Cached as `data/profiles/<collection>.json` (git-ignored); `?refresh=true` recomputes.
 
 ## Notes
 
