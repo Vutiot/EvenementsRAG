@@ -480,9 +480,9 @@ Later-phase implementations for advanced retrieval methods.
 
 #### E5-F1: Advanced RAG Methods
 
-##### 🔵 E5-F1-T1: Implement LazyGraphRAG variant
+##### ✅ E5-F1-T1: Implement LazyGraphRAG variant
 - blocked_by: [E2-F3-T3]
-- status: ready
+- status: done
 - effort: L
 - agent_hint: Implement lightweight graph-based retrieval without full Neo4j. Extract entities/relationships from chunks, build lightweight graph, support path-based retrieval. Benchmark vs hybrid.
 - description: Implement a simplified graph RAG approach using entity/relationship extraction without full knowledge graph infrastructure. Benchmark against hybrid retrieval.
@@ -589,25 +589,25 @@ Design notes: the harness is shared with E9 (AutoML assistant). Structured outpu
 
 #### E8-F2: Conversational Interview
 
-##### 🔵 E8-F2-T1: Assistant chat backend (SSE, session state)
+##### ✅ E8-F2-T1: Assistant chat backend (SSE, session state)
 - blocked_by: [E8-F1-T1]
-- status: ready
+- status: done
 - effort: M
 - agent_hint: `POST /api/assistant/eval/chat` streaming SSE (`token`, `plan_update`, `done`, `error`), reusing the SSE helpers of `query_service`. Session kept in an in-memory dict keyed by session id (collection, profile, messages, current draft plan); lost on restart, which is fine for local single-user use. System prompt drives a guided interview: intended question types, persona(s) of the askers (e.g. student, historian, analyst), themes / periods to cover or exclude, difficulty mix, answer language, total volume. Ask one thing at a time, propose defaults from the profile, stop once the plan is complete. No dataset generation from this endpoint.
 - description: Backend for the guided conversation that collects the user's intent for the eval dataset, grounded on the dataset profile.
 
-##### ⚪ E8-F2-T2: Chat panel in the Evaluations tab
+##### 🔵 E8-F2-T2: Chat panel in the Evaluations tab
 - blocked_by: [E8-F2-T1]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: Collapsible right-side panel (or "Assistant" toggle above "Create Evaluation Set") in `DatasetManager.tsx`; extract it as `components/assistant/AssistantChat.tsx` so E9 can reuse it. Shows the profile card (themes, period, entity chips), streamed messages, quick-reply chips proposed by the assistant, and a live preview of the draft plan. Extract chat state into a hook to avoid growing DatasetManager (already 1.4k lines).
 - description: User-facing chat in the Evaluations tab, with the dataset profile visible and quick replies to speed up the interview.
 
 #### E8-F3: Structured Output → Form
 
-##### ⚪ E8-F3-T1: `EvalDatasetPlan` structured output
+##### 🔵 E8-F3-T1: `EvalDatasetPlan` structured output
 - blocked_by: [E8-F2-T1]
-- status: pending
+- status: ready
 - effort: S
 - agent_hint: Pydantic model: `persona`, `themes[]`, `language`, `system_prompt`, `categories[{type, prompt, count, difficulty_mix}]`, `model` (one of `LLM_MODELS`), `rationale`. Category `type` reuses the existing types when they fit (factual, temporal, comparative, entity_centric, relationship, analytical, and the query-style ones such as keywords, telegraphic, grammar_typos) and may add new ones. Constrained JSON output when supported, else validate + retry (max 2). Emit as `plan_update` SSE event. Unit tests on validation and retry.
 - description: Define and enforce the structured plan the LLM returns at the end of the interview, matching exactly what the dataset form needs.
@@ -644,26 +644,26 @@ Design notes: replaces the exhaustive cartesian sweep for large spaces. Every tr
 - agent_hint: `config/pricing.yaml`: per model, price per 1M input / output tokens and currency, for generation, RAGAS judge and entity-extraction models; embedding and reranker models carry a local compute-time estimate instead. Edited by hand; a small loader with Pydantic validation, no API and no settings UI. The E9 interview may append missing prices to the file from the backend. Ship no default prices that pretend to be current.
 - description: A user-editable catalog of API prices per model, used for every cost estimate and budget check.
 
-##### 🔵 E9-F1-T2: Token and cost tracking per run
+##### ✅ E9-F1-T2: Token and cost tracking per run
 - blocked_by: [E9-F1-T1]
-- status: ready
+- status: done
 - effort: M
 - note: Builds on E10-F3-T1, which already records generation and judge cost per question; what remains is the other LLM stages (RAGAS, entity extraction, dataset generation, assistant) and the per-run summary.
 - agent_hint: Wrap every LLM call (generation, RAGAS evaluator incl. `ragas_repeat_count`, entity extractor, dataset generation, assistant) to record input/output tokens per model. Store `cost_summary` in the result JSON (tokens and cost by stage), surface `total_cost` in `ResultFileInfo` and as a Run History column.
 - description: Measure real token usage and cost for every run, broken down by pipeline stage.
 
-##### ⚪ E9-F1-T3: Cost pilot harness and estimator
+##### 🔵 E9-F1-T3: Cost pilot harness and estimator
 - blocked_by: [E9-F1-T2, E8-F1-T1]
-- status: pending
+- status: ready
 - effort: M
 - agent_hint: Run 1–2 reference configs on a small question subset (e.g. 10 questions) to measure tokens/question per stage and wall time. Build `estimate_trial_cost(config, n_questions)` from these measurements + pricing: generation and judge tokens scale with `top_k_chunks`, `max_tokens`, metrics enabled and repeat count; new collections add embedding time. Report estimate ± spread. Endpoint `POST /api/automl/estimate`.
 - description: Turn a short pilot run into a per-trial cost model, so the assistant can say how many trials a given budget buys.
 
 #### E9-F2: Bayesian Optimization Engine
 
-##### ⚪ E9-F2-T1: Optuna search under a budget
+##### 🔵 E9-F2-T1: Optuna search under a budget
 - blocked_by: [E9-F1-T2]
-- status: pending
+- status: ready
 - effort: L
 - agent_hint: `src/automl/optimizer.py`. Search space built from the same registries as `paramOptions.ts` (chunk size/overlap, embedding model, technique, sparse type/weight, fusion, reranker + model, top_k, rerank_k, LLM model) with conditional params (sparse_* only if hybrid, reranker model only if reranker ≠ none). TPE sampler, objective = weighted sum of chosen metrics (via `metrics_collector`). Stop when cumulative measured cost ≥ budget or n_trials reached. Prefer configs whose collection already exists (collection creation cost in the estimate). Deterministic seed.
 - description: Core optimizer that explores the parameter space with Bayesian search and stops at the user's budget.
@@ -923,19 +923,20 @@ This is the path to a complete benchmarking + visualization system. Shorter path
 | Metric | Value |
 |--------|-------|
 | **Total Tasks** | 59 in this file (E6 and E7 detailed in `roadmap_unification.md` and `roadmap-evaluation.md`, all done except E6-F7) |
-| **Done** | 42 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F2-T3, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3, E3-F5-T1, E3-F5-T2, E3-F5-T3, E6-F6-T1, E6-F6-T2, E10-F1-T1, E10-F2-T1, E10-F2-T2, E10-F3-T1, E10-F4-T1, E4-F1-T2, E4-F1-T3, E8-F1-T1, E9-F1-T1, E11-F1-T1) |
-| **Ready (no blockers)** | 3 (E8-F2-T1, E9-F1-T2, E5-F1-T1) |
+| **Done** | 45 (E1-F1-T1, E1-F1-T2, E1-F1-T3, E1-F2-T1, E1-F2-T2, E2-F1-T1, E2-F1-T2, E2-F1-T3, E2-F2-T1, E2-F2-T2, E2-F2-T3, E2-F3-T1, E2-F3-T2, E2-F3-T3, E2-F4-T1, E3-F1-T1, E3-F1-T2, E3-F1-T3, E3-F2-T1, E3-F2-T2, E3-F2-T3, E3-F3-T1, E3-F3-T2, E3-F3-T3, E3-F4-T1, E3-F4-T2, E3-F4-T3, E3-F5-T1, E3-F5-T2, E3-F5-T3, E6-F6-T1, E6-F6-T2, E10-F1-T1, E10-F2-T1, E10-F2-T2, E10-F3-T1, E10-F4-T1, E4-F1-T2, E4-F1-T3, E8-F1-T1, E9-F1-T1, E11-F1-T1, E9-F1-T2, E8-F2-T1, E5-F1-T1) |
+| **Ready (no blockers)** | 4 (E9-F1-T3, E9-F2-T1, E8-F2-T2, E8-F3-T1) |
 | **In Progress** | 0 |
-| **Pending** | 10 (E8-F2-T2, E8-F3-T1, E8-F3-T2, E9-F1-T3, E9-F2-T1, E9-F2-T2, E9-F2-T3, E9-F3-T1, E9-F3-T2, E9-F3-T3) |
+| **Pending** | 6 (E8-F3-T2, E9-F2-T2, E9-F2-T3, E9-F3-T1, E9-F3-T2, E9-F3-T3) |
 | **Deferred** | 3 (E5-F1-T2, E8-F1-T2, E8-F3-T3) |
 | **Dropped** | 1 (E4-F1-T1) |
 | **Critical Path Length** | Original 14-task path complete; next path is AutoML (E9) |
 | **Parallel Groups** | 3 major opportunities (A: params, B: UI, C: storage/advanced) |
 
 **Next Immediate Steps** (Ready to start):
-1. E9-F1-T2: Token and cost tracking per run (next on the AutoML critical path; unblocks E9-F1-T3 and E9-F2-T1)
-2. E8-F2-T1: Assistant chat backend (builds on the dataset profile, unblocks the E8 chat panel and E9-F3-T1)
-3. E5-F1-T1: Implement LazyGraphRAG variant (L, independent)
+1. Rerun the reference benchmarks (vanilla, hybrid, reranker, lazygraph): retrieval metrics now follow the technique and the hybrid sparse index is fixed (see Architecture Decisions, 2026-11-19)
+2. E9-F2-T1: Optuna search under a budget (AutoML critical path)
+3. E9-F1-T3: Cost pilot harness and estimator (fill `config/pricing.yaml` first)
+4. E8-F3-T1: `EvalDatasetPlan` structured output, then E8-F2-T2: chat panel in the Evaluations tab
 
 **Parallel Group A** (E2 parameters) is complete. **Parallel Group B** (UI) complete — E3-F1, E3-F3, E3-F4, E3-F5 all done; E3-F2-T3 was covered by E7-F4.
 
@@ -1324,6 +1325,22 @@ The project is developed by one person on a local machine. Decisions:
 ### E8-F1-T1 — Dataset profiler (2026-11-18)
 
 **No LLM, no new dependency.** k-means is a small deterministic k-means++ in NumPy on the L2-normalised stored embeddings (k=8, capped at 20k points), rather than adding scikit-learn. Years are extracted with a generic 1000–2099 pattern (the `TemporalFilter` pattern is WW2-specific) and reported as min/max plus a robust p5–p95 range. Entities use spaCy NER when an English model is installed (`en_core_web_lg` → `md` → `sm`, on at most 1,500 evenly spaced chunks), else a capitalised-sequence heuristic; `entity_method` says which. Records are sorted by id before profiling so the result does not depend on scroll order. Cached as `data/profiles/<collection>.json` (git-ignored); `?refresh=true` recomputes.
+
+### E9-F1-T2 — Token and cost tracking (2026-11-19)
+
+**Per-question data first, instrumented clients for the rest.** Generation and judge usage were already stored on each question entry (E10), so the run summary is rebuilt from them; RAGAS (all repeats, Instructor retries included) and entity extraction get a *private* OpenAI client wrapped by `instrument_client()`, which records every `chat.completions.create`. The shared clients of `get_llm_client()` are never wrapped. Result JSON: `metrics_summary.cost_summary` (tokens and cost by stage and model, `unpriced_models`, `complete`). A provider-reported cost (OpenRouter `usage.cost`, Jev) wins; otherwise `config/pricing.yaml` prices the tokens; a model with neither is listed as unpriced and left out of the total instead of counted as free. Run History shows a "Run $" column (`*` when partial); a sweep parent sums its children. A cached run (E4) keeps the original run's cost and is flagged `cached`.
+
+### E8-F2-T1 — Eval assistant backend (2026-11-19)
+
+**Free-text turns plus a hidden `<draft>{json}</draft>` block**, stripped from the token stream (a small filter holds back a partial `<draft` marker) and merged into the session draft; the server, not the model, decides when the plan is complete (required: question types, personas, themes, difficulty mix, language, volume). This keeps streaming natural without function calling, which not every provider streams well; E8-F3-T1 adds the strict `EvalDatasetPlan` on top. Sessions are in memory (LRU 50), one turn at a time per session, cost tracked per session under stage `assistant`. Model from `ASSISTANT_MODEL` / `ASSISTANT_PROVIDER` (GLM 5.3 Flash via OpenRouter).
+
+### E5-F1-T1 — LazyGraphRAG and evaluation fixes (2026-11-19)
+
+**Concept graph without LLM, fused with dense by weighted RRF.** Concepts are capitalised phrases (honorifics stripped, generic words dropped) or spaCy entities, plus the article title; edges are chunk co-occurrence; concepts in more than max(50, 5% of chunks) are dropped. No community summaries: the "lazy" part is that nothing is summarised at index time. Graph built on first use and pickled in `data/graph/` (≈5 s for 30k chunks with the heuristic). Query: concepts named in the query (weight 1) and concepts of the top-3 dense hits (0.5), expanded `graph_hops` times (weight × 0.5 × relative edge strength), idf-weighted chunk scores; `graph_weight` sets the share of the graph ranking.
+
+**Retrieval metrics now follow the technique.** Until now `BenchmarkRunner` scored hit@k/recall on its own dense search, so technique and reranker sweeps reported identical retrieval numbers (only the generation pass differed). It now takes a `retrieve_fn`: anything other than vanilla-without-reranker goes through the RAG pipeline (plus the reranker for vanilla). `RetrievedChunk.point_id` carries the store UUID that ground truth uses. Hybrid and lazygraph fetch at least `top_k` candidates so the eval depth (50) is not cut at `rerank_k`.
+
+**Hybrid sparse index fixed.** It read `payload["chunk_text"]` while the indexer writes `content`: BM25/TF-IDF were fitted on empty strings and the first chunks of the collection entered the fusion as noise. Old hybrid and reranker results are not comparable with new ones and must be rerun. The new `graph_*` fields changed every `config_hash`, so the result cache does not serve pre-fix runs.
 
 ## Notes
 
