@@ -72,7 +72,8 @@ class LazyGraphRetriever(VanillaRetriever):
         top_k: int = 5,
         filters: Optional[Dict] = None,
     ) -> List[RetrievedChunk]:
-        dense = super().retrieve(query, top_k=self._rerank_k, filters=filters)
+        n_cand = max(self._rerank_k, top_k)  # never fewer candidates than asked for
+        dense = super().retrieve(query, top_k=n_cand, filters=filters)
         graph = self.graph
 
         seeds: Dict[str, float] = {c: 1.0 for c in graph.match_query(query)}
@@ -89,9 +90,7 @@ class LazyGraphRetriever(VanillaRetriever):
             # Graph-only hits cannot honour store-side filters: keep dense ones only
             allowed = {self._point_id(c) for c in dense}
             graph_scores = {k: v for k, v in graph_scores.items() if k in allowed}
-        graph_ranked = sorted(graph_scores.items(), key=lambda kv: (-kv[1], kv[0]))[
-            : self._rerank_k
-        ]
+        graph_ranked = sorted(graph_scores.items(), key=lambda kv: (-kv[1], kv[0]))[:n_cand]
 
         fused: Dict[str, float] = defaultdict(float)
         chunks: Dict[str, RetrievedChunk] = {}
@@ -111,7 +110,7 @@ class LazyGraphRetriever(VanillaRetriever):
                     point_id=pid,
                 )
 
-        ordered = sorted(fused.items(), key=lambda kv: (-kv[1], kv[0]))[: self._rerank_k]
+        ordered = sorted(fused.items(), key=lambda kv: (-kv[1], kv[0]))[:n_cand]
         candidates = []
         for pid, score in ordered:
             c = chunks[pid]

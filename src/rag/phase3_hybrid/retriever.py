@@ -150,7 +150,8 @@ class HybridRetriever(BaseRAG):
         candidates = self._hybrid_searcher.search(
             query=query,
             collection_name=self.collection_name,
-            top_k=self._rerank_k,
+            # never fewer candidates than asked for (eval asks for the full depth)
+            top_k=max(self._rerank_k, top_k),
             filter_conditions=filters,
         )
 
