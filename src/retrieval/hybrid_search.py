@@ -5,10 +5,10 @@ Combines semantic (vector) search with BM25 or TF-IDF (keyword) search using
 Reciprocal Rank Fusion (RRF) to merge results.
 """
 
-from typing import List, Dict, Literal, Optional, Tuple
-from dataclasses import dataclass
 import math
 from collections import defaultdict
+from dataclasses import dataclass
+from typing import Dict, List, Literal, Optional, Tuple
 
 from src.utils.logger import get_logger
 
@@ -154,6 +154,7 @@ class HybridSearcher:
         # Keep self.bm25 as alias for backward compatibility
         self.bm25 = self._sparse_index
         self.chunk_ids = []  # Map sparse doc index to chunk UUID
+        self._payloads: Dict[str, Dict] = {}  # chunk UUID -> payload
 
         logger.info(
             f"HybridSearcher initialized: "
@@ -172,6 +173,7 @@ class HybridSearcher:
         # Scroll through entire collection
         chunks = []
         chunk_ids = []
+        payloads: Dict[str, Dict] = {}
         offset = None
 
         while True:
@@ -187,9 +189,13 @@ class HybridSearcher:
                 break
 
             for point in results:
-                chunk_text = point.payload.get("chunk_text", "")
+                payload = point.payload or {}
+                # The indexer stores the text under "content"; "chunk_text" is
+                # an older name kept for compatibility.
+                chunk_text = payload.get("content") or payload.get("chunk_text", "")
                 chunks.append(chunk_text)
                 chunk_ids.append(str(point.id))
+                payloads[str(point.id)] = payload
 
             if offset is None:
                 break
@@ -197,6 +203,7 @@ class HybridSearcher:
         # Build sparse index (BM25 or TF-IDF)
         self._sparse_index.fit(chunks)
         self.chunk_ids = chunk_ids
+        self._payloads = payloads
 
         logger.info(
             f"{self.sparse_type.upper()} index ready: {len(chunks)} chunks indexed"
@@ -231,8 +238,13 @@ class HybridSearcher:
             filter_conditions=filter_conditions,
         )
 
-        # 2. Sparse (keyword) search — BM25 or TF-IDF
-        bm25_results = self._sparse_index.search(query, top_k=top_k * 2)
+        # 2. Sparse (keyword) search — BM25 or TF-IDF. Documents with a zero
+        # score share no term with the query: they must not enter the fusion.
+        bm25_results = [
+            (idx, score)
+            for idx, score in self._sparse_index.search(query, top_k=top_k * 2)
+            if score > 0
+        ]
 
         # 3. Apply RRF to merge results
         merged = self._reciprocal_rank_fusion(
@@ -269,7 +281,7 @@ class HybridSearcher:
         # Add vector search scores (weighted)
         semantic_weight = 1.0 - self.bm25_weight
         for rank, result in enumerate(vector_results, start=1):
-            chunk_id = result["id"]
+            chunk_id = str(result["id"])
             rrf_scores[chunk_id] += semantic_weight * (1.0 / (self.rrf_k + rank))
             chunk_data[chunk_id] = result["payload"]
 
@@ -278,18 +290,9 @@ class HybridSearcher:
             chunk_id = self.chunk_ids[doc_idx]
             rrf_scores[chunk_id] += self.bm25_weight * (1.0 / (self.rrf_k + rank))
 
-            # Store payload if not already from vector search
+            # Payload kept from indexing (no extra round trip to the store)
             if chunk_id not in chunk_data:
-                # Need to fetch payload from Qdrant
-                try:
-                    point = self.qdrant.client.retrieve(
-                        collection_name=self.qdrant.collection_name,
-                        ids=[chunk_id],
-                        with_payload=True,
-                    )[0]
-                    chunk_data[chunk_id] = point.payload
-                except:
-                    chunk_data[chunk_id] = {}
+                chunk_data[chunk_id] = self._payloads.get(chunk_id, {})
 
         # Sort by RRF score and create results
         sorted_chunks = sorted(
