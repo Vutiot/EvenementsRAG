@@ -56,14 +56,14 @@ def _load_ragas_metrics() -> Dict[str, Any]:
         return _RAGAS_METRIC_REGISTRY
 
     try:
-        from ragas.metrics._faithfulness import Faithfulness
+        from ragas.metrics._answer_correctness import AnswerCorrectness
         from ragas.metrics._answer_relevance import AnswerRelevancy
+        from ragas.metrics._answer_similarity import AnswerSimilarity
+        from ragas.metrics._aspect_critic import AspectCritic
+        from ragas.metrics._context_entities_recall import ContextEntityRecall
         from ragas.metrics._context_precision import ContextPrecision
         from ragas.metrics._context_recall import ContextRecall
-        from ragas.metrics._context_entities_recall import ContextEntityRecall
-        from ragas.metrics._answer_similarity import AnswerSimilarity
-        from ragas.metrics._answer_correctness import AnswerCorrectness
-        from ragas.metrics._aspect_critic import AspectCritic
+        from ragas.metrics._faithfulness import Faithfulness
     except ImportError as exc:
         raise ImportError(
             "ragas is required for RAGAS metrics. "
@@ -136,7 +136,7 @@ def _resolve_evaluator_provider(model: str) -> tuple[str, str, str]:
     )
 
 
-def _build_evaluator_llm(eval_config: EvaluationConfig):
+def _build_evaluator_llm(eval_config: EvaluationConfig, usage_tracker=None):
     """Create a RAGAS v0.4 InstructorLLM for evaluation, routing by model prefix.
 
     Uses ``ragas.llms.llm_factory`` which wraps an openai-compatible client
@@ -164,6 +164,11 @@ def _build_evaluator_llm(eval_config: EvaluationConfig):
     logger.info(f"RAGAS evaluator LLM: provider={provider}, model={model}")
 
     client = OpenAI(api_key=api_key, base_url=api_base)
+    if usage_tracker is not None:
+        from src.llm.usage import instrument_client
+
+        # Private client: every RAGAS/Instructor call (incl. retries) is counted
+        instrument_client(client, usage_tracker, "ragas", model)
     # RAGAS v0.4 guidance: reasoning models with structured output need ≥4096
     # to avoid truncated JSON. 4096 is safe for non-reasoning too.
     factory_kwargs: dict = {"max_tokens": 4096}
@@ -221,8 +226,9 @@ class RagasEvaluator:
     (LLM, embeddings, RunConfig, Dataset construction) isolated.
     """
 
-    def __init__(self, eval_config: EvaluationConfig) -> None:
+    def __init__(self, eval_config: EvaluationConfig, usage_tracker=None) -> None:
         self._config = eval_config
+        self._usage_tracker = usage_tracker
         self._llm = None
         self._embeddings = None
         self._run_config = None
@@ -293,7 +299,7 @@ class RagasEvaluator:
 
         # Build deps lazily
         if self._llm is None:
-            self._llm = _build_evaluator_llm(self._config)
+            self._llm = _build_evaluator_llm(self._config, self._usage_tracker)
         if self._embeddings is None:
             self._embeddings = _build_evaluator_embeddings()
         if self._run_config is None:

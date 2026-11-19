@@ -49,8 +49,10 @@ class EntityExtractor:
         api_key: Optional[str] = None,
         rate_limit_seconds: float = 1.5,
         max_retries: int = 3,
+        usage_tracker=None,
     ) -> None:
         self._model = model
+        self._usage_tracker = usage_tracker
         self._rate_limit_seconds = rate_limit_seconds
         self._max_retries = max_retries
         self._cache: dict[str, set[str]] = {}
@@ -75,7 +77,7 @@ class EntityExtractor:
         # Strip markdown code fences if present
         if raw.startswith("```"):
             lines = raw.split("\n")
-            lines = [l for l in lines if not l.strip().startswith("```")]
+            lines = [ln for ln in lines if not ln.strip().startswith("```")]
             raw = "\n".join(lines).strip()
 
         try:
@@ -119,6 +121,12 @@ class EntityExtractor:
                     temperature=0.0,
                     max_tokens=1024,
                 )
+                if self._usage_tracker is not None:
+                    from src.llm import extract_usage
+
+                    self._usage_tracker.record_usage(
+                        "entity_extraction", self._model, extract_usage(response)
+                    )
                 raw = response.choices[0].message.content or ""
                 entities = self._parse_entities(raw)
                 logger.info(f"Entity extraction returned {len(entities)} entities")

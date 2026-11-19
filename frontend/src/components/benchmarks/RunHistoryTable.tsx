@@ -70,6 +70,20 @@ function CoreMetricCells({ r, highlight = false }: { r: ResultFileInfo; highligh
         <td key={k} className={cls}>{fmt(m[k])}</td>
       ))}
       <td className={cls}>{fmtUsd(m.cost_per_question_usd)}</td>
+      <td
+        className={cls}
+        title={
+          r.cached_from
+            ? `Metrics reused from ${r.cached_from}: this run itself cost nothing`
+            : r.cost_complete === false
+              ? "Partial: some models have no price in config/pricing.yaml"
+              : undefined
+        }
+      >
+        {fmtUsd(r.total_cost_usd)}
+        {r.cost_complete === false && <span className="text-amber-500">*</span>}
+        {r.cached_from && <span className="ml-1 text-[10px] text-blue-500">cached</span>}
+      </td>
     </>
   );
 }
@@ -165,7 +179,7 @@ function buildDisplayRows(results: ResultFileInfo[]): DisplayRow[] {
 /* Constants                                                           */
 /* ------------------------------------------------------------------ */
 
-const TOTAL_COLS = 34;
+const TOTAL_COLS = 35;
 
 const stickyCls = "sticky left-0 z-10 bg-white";
 const stickyStyle: React.CSSProperties = {
@@ -303,6 +317,7 @@ export default function RunHistoryTable({ results, activeRun }: Props) {
             <th className="px-3 py-2 text-right" title="Binary answer correctness, LLM judge">Correct</th>
             <th className="px-3 py-2 text-right" title="Binary answer correctness, Jev (second judge)">Jev</th>
             <th className="px-3 py-2 text-right" title="Cost per question: generation + judges">$/q</th>
+            <th className="px-3 py-2 text-right" title="Whole-run LLM cost, all stages (generation, judges, RAGAS, entity extraction)">Run $</th>
             <th className="px-3 py-2 text-right">Time</th>
           </tr>
         </thead>

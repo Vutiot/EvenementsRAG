@@ -4,7 +4,6 @@ import json
 import re
 import time
 from datetime import datetime
-from pathlib import Path
 from typing import Generator
 
 import openai
@@ -207,6 +206,11 @@ class DatasetService:
             api_key=settings.NVIDIA_API_KEY,
             base_url=settings.NVIDIA_BASE_URL,
         )
+        # Private client: count tokens of every generation call (E9-F1-T2)
+        from src.llm.usage import UsageTracker, instrument_client
+
+        usage = UsageTracker()
+        instrument_client(client, usage, "dataset_generation")
 
         start_time = time.time()
         question_counter = 0
@@ -225,11 +229,11 @@ class DatasetService:
             pool_iter = iter(pool)
 
             for _ in range(cat.count):
-                MAX_RETRIES = 5
+                max_retries = 5
                 retries = 0
                 success = False
 
-                while retries < MAX_RETRIES:
+                while retries < max_retries:
                     chunk = next(pool_iter, None)
                     if chunk is None:
                         random.shuffle(pool)
@@ -245,11 +249,11 @@ class DatasetService:
                         )
                     except Exception as exc:
                         retries += 1
-                        logger.warning("LLM error ({}/{}) for {}: {}", retries, MAX_RETRIES, cat.type, exc)
+                        logger.warning("LLM error ({}/{}) for {}: {}", retries, max_retries, cat.type, exc)
                         yield self._sse("retry", {
                             "category": cat.type,
                             "attempt": retries,
-                            "max_retries": MAX_RETRIES,
+                            "max_retries": max_retries,
                             "message": str(exc),
                         })
                         time.sleep(2)
@@ -304,6 +308,7 @@ class DatasetService:
             "total_generated": len(all_questions),
             "unique_articles": unique_articles,
             "generation_time_s": round(elapsed, 1),
+            "cost_summary": usage.summary(),
         }
         dataset["total_questions"] = len(all_questions)
         self._save(dataset)

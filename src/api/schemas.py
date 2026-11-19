@@ -84,6 +84,11 @@ class ResultFileInfo(BaseModel):
     # answer_correctness, answer_correctness_jev, judge_agreement, judge_kappa,
     # cost_per_question_usd, latency_per_question_ms
     core_metrics: dict[str, float] | None = None
+    # Whole-run LLM cost (E9-F1-T2, metrics_summary.cost_summary); for a sweep
+    # parent, the sum over its children. None when unknown.
+    total_cost_usd: float | None = None
+    cost_complete: bool | None = None  # False when some model has no price
+    cached_from: str | None = None  # E4-F1-T2: metrics reused from this file
 
 
 class NormalizedQuestion(BaseModel):

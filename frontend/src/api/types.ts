@@ -57,6 +57,12 @@ export interface ResultFileInfo {
   /** E10 core metrics: hit_at_5, hit_at_10, hit_at_c4k, hit_at_c8k, answer_correctness,
    *  answer_correctness_jev, judge_agreement, judge_kappa, cost_per_question_usd, latency_per_question_ms */
   core_metrics?: Record<string, number> | null;
+  /** Whole-run LLM cost, all stages (E9-F1-T2); sum of children for a sweep. */
+  total_cost_usd?: number | null;
+  /** False when some model of the run has no price in config/pricing.yaml. */
+  cost_complete?: boolean | null;
+  /** Set when the metrics were reused from an earlier identical run (cache). */
+  cached_from?: string | null;
 }
 
 /** Sweep metadata for grouped sweep runs */

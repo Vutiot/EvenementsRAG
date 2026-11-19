@@ -40,6 +40,22 @@ def _infer_phase_name(filename: str, data: dict) -> str:
     return cleaned
 
 
+def _run_cost(data: dict) -> dict:
+    """``total_cost_usd`` / ``cost_complete`` of a result file.
+
+    Uses the per-stage ``cost_summary`` (E9-F1-T2) when present, else the
+    generation + judges total of older E10 results.
+    """
+    ms = data.get("metrics_summary") or {}
+    cs = ms.get("cost_summary")
+    if isinstance(cs, dict) and cs.get("total_cost_usd") is not None:
+        return {"total_cost_usd": cs["total_cost_usd"], "cost_complete": bool(cs.get("complete"))}
+    total = (ms.get("cost") or {}).get("total_cost_usd")
+    if total is not None:
+        return {"total_cost_usd": total, "cost_complete": None}
+    return {}
+
+
 def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
     """Parse a result JSON file into a ResultFileInfo summary."""
     mtime = filepath.stat().st_mtime
@@ -182,6 +198,8 @@ def _parse_file_info(filepath: Path) -> ResultFileInfo | None:
         eval_dataset_name=eval_dataset_name,
         evaluation_mode=evaluation_mode,
         core_metrics=core_metrics_summary(data.get("metrics_summary")) or None,
+        **_run_cost(data),
+        cached_from=data.get("cached_from") if is_new_format else None,
     )
     _file_info_cache[cache_key] = (mtime, info)
     return info
@@ -356,6 +374,22 @@ def _build_sweep_parents(
         )
 
         rel_path = f"sweeps/{meta_path.name}"
+        child_costs = [
+            infos_by_filename[fn].total_cost_usd
+            for fn in child_filenames
+            if fn in infos_by_filename
+        ]
+        sweep_cost = (
+            round(sum(child_costs), 6)
+            if child_costs and all(c is not None for c in child_costs)
+            else None
+        )
+        sweep_cost_complete = (
+            all(infos_by_filename[fn].cost_complete is not False
+                for fn in child_filenames if fn in infos_by_filename)
+            if sweep_cost is not None
+            else None
+        )
 
         parent = ResultFileInfo(
             filename=rel_path,
@@ -389,6 +423,8 @@ def _build_sweep_parents(
             run_name=meta.get("sweep_name", meta["sweep_id"]),
             eval_dataset_name=eval_dataset_name,
             evaluation_mode=evaluation_mode,
+            total_cost_usd=sweep_cost,
+            cost_complete=sweep_cost_complete,
         )
         parents.append(parent)
 

@@ -432,6 +432,12 @@ class ParameterizedBenchmarkRunner:
 
         collector.compute_latency_metrics(per_q)
         collector.compute_cost_metrics(per_q)
+        collector.compute_cost_summary(
+            per_q,
+            generation_model=self.config.generation.model
+            if self.config.generation.enabled
+            else None,
+        )
 
         result = BenchmarkResult(
             config=self.config,

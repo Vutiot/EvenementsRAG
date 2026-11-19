@@ -68,6 +68,12 @@ class MetricsCollector:
         self._latency: Optional[LatencyMetrics] = None
         self._correctness: Optional[dict] = None
         self._cost: Optional[dict] = None
+        self._cost_summary: Optional[dict] = None
+        # LLM usage of the metric stages that do not store it per question
+        # (RAGAS, entity extraction); see compute_cost_summary().
+        from src.llm.usage import UsageTracker
+
+        self.usage = UsageTracker()
 
     # ------------------------------------------------------------------
     # Public API
@@ -225,9 +231,9 @@ class MetricsCollector:
         self._ensure_entity_extractor()
 
         from src.evaluation.metrics import (
+            entity_mrr_score,
             entity_precision_at_k,
             entity_recall_at_k,
-            entity_mrr_score,
         )
 
         precisions: List[float] = []
@@ -426,6 +432,48 @@ class MetricsCollector:
         }
         return self._cost
 
+    def compute_cost_summary(
+        self,
+        per_question: List[dict],
+        generation_model: Optional[str] = None,
+        pricing=None,
+    ) -> dict:
+        """Tokens and cost of the whole run by stage and model (E9-F1-T2).
+
+        Generation and judge usage come from what each question entry already
+        stores (``generation_usage``, ``correctness``); RAGAS and entity
+        extraction usage come from ``self.usage``. Provider-reported costs are
+        used as is, other calls are priced from ``config/pricing.yaml``.
+        """
+        from src.llm.usage import UsageTracker
+
+        cfg = self._config
+        tracker = UsageTracker()
+        tracker.merge(self.usage)
+        for entry in per_question:
+            gen = entry.get("generation_usage")
+            if gen:
+                tracker.record_usage("generation", generation_model, gen)
+            for name, verdict in (entry.get("correctness") or {}).items():
+                if not isinstance(verdict, dict):
+                    continue
+                if verdict.get("input_tokens") is None and verdict.get("cost_usd") is None:
+                    continue  # no API call (skipped or failed before the request)
+                if name == "llm":
+                    stage, model = "judge_llm", cfg.correctness_judge_model
+                else:
+                    stage = f"judge_{name}"
+                    model = verdict.get("snapshot") or getattr(cfg, "jev_snapshot", None) or name
+                tracker.record(
+                    stage,
+                    model,
+                    verdict.get("input_tokens"),
+                    verdict.get("output_tokens"),
+                    verdict.get("cost_usd"),
+                )
+        self._cost_summary = tracker.summary(pricing)
+        return self._cost_summary
+
     @staticmethod
     def summarize_hits(per_question: List[dict]) -> dict:
         """Average the hit@K / hit@C values stored in each entry's metrics."""
@@ -448,6 +496,9 @@ class MetricsCollector:
 
         if self._cost is not None:
             summary["cost"] = self._cost
+
+        if self._cost_summary is not None:
+            summary["cost_summary"] = self._cost_summary
 
         if self._ragas_evaluator is not None:
             ragas_agg = self._ragas_evaluator.get_aggregated()
@@ -474,7 +525,7 @@ class MetricsCollector:
                 "ragas is required for RAGAS metrics. "
                 "Install with: uv pip install ragas --python .venv/bin/python"
             ) from exc
-        self._ragas_evaluator = RagasEvaluator(self._config)
+        self._ragas_evaluator = RagasEvaluator(self._config, usage_tracker=self.usage)
         logger.debug("RagasEvaluator initialised")
 
     def _ensure_ragas_evaluator_for_context_precision(self):
@@ -489,7 +540,7 @@ class MetricsCollector:
                 "Install with: uv pip install ragas --python .venv/bin/python"
             ) from exc
         cfg = self._config.model_copy(update={"ragas_metrics": ["context_precision"]})
-        self._ragas_evaluator = RagasEvaluator(cfg)
+        self._ragas_evaluator = RagasEvaluator(cfg, usage_tracker=self.usage)
         logger.debug("RagasEvaluator initialised (context_precision only)")
 
     def _ensure_entity_extractor(self):
@@ -497,7 +548,7 @@ class MetricsCollector:
         if self._entity_extractor is not None:
             return
         from src.evaluation.entity_extractor import EntityExtractor
-        self._entity_extractor = EntityExtractor()
+        self._entity_extractor = EntityExtractor(usage_tracker=self.usage)
         logger.debug("EntityExtractor initialised")
 
 
