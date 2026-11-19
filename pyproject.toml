@@ -94,6 +94,10 @@ target-version = "py310"
 select = ["E", "F", "I", "N", "W"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+# Settings expose UPPER_CASE properties on purpose (same names as env vars)
+"config/settings.py" = ["N802"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 python_files = "test_*.py"

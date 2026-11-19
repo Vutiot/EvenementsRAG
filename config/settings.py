@@ -359,6 +359,16 @@ class Settings(BaseSettings):
         description="Minimum acceptable Recall@5 threshold",
     )
 
+    # Conversational assistants (E8/E9)
+    ASSISTANT_MODEL: str = Field(
+        default="z-ai/glm-5.3-flash",
+        description="Model driving the eval-dataset / AutoML assistant interviews",
+    )
+    ASSISTANT_PROVIDER: str = Field(
+        default="openrouter",
+        description="Provider of ASSISTANT_MODEL (openrouter, nvidia or openai)",
+    )
+
     # Question generation LLM settings
     QUESTION_GEN_MODEL: str = Field(
         default="mistralai/mistral-small-4-119b-2603",
