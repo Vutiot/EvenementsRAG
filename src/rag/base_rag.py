@@ -37,6 +37,9 @@ class RetrievedChunk:
     content: str
     score: float
     metadata: Dict = field(default_factory=dict)
+    # Vector-store point id (UUID), the id ground-truth chunks are expressed in.
+    # ``chunk_id`` may instead hold the payload's original chunk identifier.
+    point_id: Optional[str] = None
 
     # Metadata fields commonly used
     @property
@@ -304,7 +307,7 @@ if __name__ == "__main__":
     # Test full query
     print("\n--- Testing Full Query ---")
     response = rag.query("What is D-Day?", top_k=3)
-    print(f"\nResponse:")
+    print("\nResponse:")
     print(f"  Query: {response.query}")
     print(f"  Answer: {response.answer}")
     print(f"  Sources: {response.sources}")

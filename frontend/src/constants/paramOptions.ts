@@ -64,6 +64,20 @@ export const BACKEND_OPTIONS = [
 export const TECHNIQUE_OPTIONS = [
   { value: "vanilla", label: "vanilla" },
   { value: "hybrid", label: "hybrid" },
+  { value: "lazygraph", label: "lazygraph" },
+];
+
+/** LazyGraphRAG: share of the concept-graph ranking in the fusion with dense. */
+export const GRAPH_WEIGHT_OPTIONS = [
+  { value: 0.3, label: "0.3" },
+  { value: 0.5, label: "0.5" },
+  { value: 0.7, label: "0.7" },
+];
+
+export const GRAPH_HOPS_OPTIONS = [
+  { value: 0, label: "0" },
+  { value: 1, label: "1" },
+  { value: 2, label: "2" },
 ];
 
 export const SPARSE_TYPE_OPTIONS = [

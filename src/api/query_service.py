@@ -30,6 +30,7 @@ MAX_CACHED_PIPELINES = 5
 _RAG_REGISTRY: Dict[str, str] = {
     "vanilla": "src.rag.phase1_vanilla.retriever.VanillaRetriever",
     "hybrid": "src.rag.phase3_hybrid.retriever.HybridRetriever",
+    "lazygraph": "src.rag.phase4_graph.retriever.LazyGraphRetriever",
 }
 
 
@@ -82,10 +83,10 @@ class QueryService:
         retrieve_k = config.retrieval.top_k
 
         # Determine if post-retrieval reranking is needed
-        # (hybrid technique handles reranking internally)
+        # (hybrid and lazygraph techniques rerank internally)
         needs_rerank = (
             config.reranker.type != "none"
-            and config.retrieval.technique != "hybrid"
+            and config.retrieval.technique not in ("hybrid", "lazygraph")
         )
 
         # Retrieve
@@ -140,7 +141,7 @@ class QueryService:
         retrieve_k = config.retrieval.top_k
         needs_rerank = (
             config.reranker.type != "none"
-            and config.retrieval.technique != "hybrid"
+            and config.retrieval.technique not in ("hybrid", "lazygraph")
         )
 
         # ── Retrieval ─────────────────────────────────────────────────
@@ -284,7 +285,7 @@ class QueryService:
         module = importlib.import_module(module_path)
         cls = getattr(module, class_name)
 
-        extra = {"config": config} if technique == "hybrid" else {}
+        extra = {"config": config} if technique in ("hybrid", "lazygraph") else {}
         if config.generation.llm_provider in ("openrouter", "nvidia", "openai"):
             from src.llm import get_llm_client
 

@@ -36,7 +36,6 @@ from config.settings import settings
 from src.embeddings.embedding_generator import EmbeddingGenerator
 from src.evaluation.metrics import (
     EvaluationResults,
-    RetrievalMetrics,
     chunk_token_count,
     compute_hit_metrics,
     compute_metrics_by_type,
@@ -59,6 +58,7 @@ class BenchmarkRunner:
         k_values: Optional[List[int]] = None,
         hit_token_budgets: Optional[List[int]] = None,
         budget_retrieval_depth: int = 50,
+        retrieve_fn=None,
     ):
         """
         Initialize benchmark runner.
@@ -70,6 +70,10 @@ class BenchmarkRunner:
             k_values: K values for Recall@K metrics
             hit_token_budgets: Token budgets C for hit@C (e.g. [4000, 8000])
             budget_retrieval_depth: Ranked-list depth retrieved for hit@C
+            retrieve_fn: Optional ``(question_text, k) -> List[RetrievedChunk]``.
+                When set, retrieval metrics are computed on what the configured
+                RAG technique (hybrid, lazygraph, reranker...) returns instead of
+                a plain dense search.
         """
         self.questions_file = questions_file or (
             settings.DATA_DIR / "evaluation" / "generated_questions.json"
@@ -79,6 +83,7 @@ class BenchmarkRunner:
         self.k_values = k_values or settings.EVALUATION_K_VALUES
         self.hit_token_budgets = list(hit_token_budgets) if hit_token_budgets is not None else [4000, 8000]
         self.budget_retrieval_depth = budget_retrieval_depth
+        self.retrieve_fn = retrieve_fn
 
         logger.info(
             "BenchmarkRunner initialized",
@@ -137,6 +142,20 @@ class BenchmarkRunner:
             Dictionary with retrieved results and metadata
         """
         question_text = question.get("question", "")
+
+        if self.retrieve_fn is not None:
+            start_time = time.time()
+            chunks = self.retrieve_fn(question_text, top_k)
+            retrieval_time_ms = (time.time() - start_time) * 1000
+            return {
+                "question_id": question.get("id"),
+                "question_text": question_text,
+                "question_type": question.get("type"),
+                "retrieved_chunks": [str(c.point_id or c.chunk_id) for c in chunks],
+                "retrieved_payloads": [c.metadata for c in chunks],
+                "retrieval_time_ms": retrieval_time_ms,
+                "num_retrieved": len(chunks),
+            }
 
         # Generate query embedding
         query_embedding = self.embedding_gen.generate_embedding(question_text)

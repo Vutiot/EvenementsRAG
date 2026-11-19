@@ -110,6 +110,7 @@ def _result_from_cache(
 _RAG_REGISTRY = {
     "vanilla": "src.rag.phase1_vanilla.retriever.VanillaRetriever",
     "hybrid": "src.rag.phase3_hybrid.retriever.HybridRetriever",
+    "lazygraph": "src.rag.phase4_graph.retriever.LazyGraphRetriever",
     "temporal": None, # NotImplementedError until E2-F1 (see ROADMAP.md)
 }
 
@@ -363,6 +364,7 @@ class ParameterizedBenchmarkRunner:
             k_values=self.config.evaluation.k_values,
             hit_token_budgets=self.config.evaluation.hit_token_budgets,
             budget_retrieval_depth=self.config.evaluation.budget_retrieval_depth,
+            retrieve_fn=self._eval_retrieve_fn(),
         )
         eval_results = legacy_runner.run_benchmark(
             collection_name=self.config.dataset.collection_name,
@@ -522,6 +524,33 @@ class ParameterizedBenchmarkRunner:
     # Private helpers
     # ------------------------------------------------------------------
 
+    def _eval_retrieve_fn(self) -> Optional[Callable]:
+        """Retrieval used for the retrieval metrics.
+
+        Plain vanilla without reranker keeps the direct dense search (same
+        numbers as before). Every other setup goes through the RAG pipeline so
+        hit@k reflects the technique (hybrid, lazygraph) and the reranker.
+        """
+        technique = self.config.retrieval.technique
+        reranker_cfg = self.config.reranker
+        if technique == "vanilla" and reranker_cfg.type == "none":
+            return None
+        pipeline = self._rag_pipeline
+        if technique != "vanilla":
+            # hybrid / lazygraph rerank internally (rerank_k -> k)
+            return lambda text, k: pipeline.retrieve(text, top_k=k)
+
+        from src.retrieval.reranker_factory import RerankerFactory
+
+        reranker = RerankerFactory.from_config(reranker_cfg)
+        rerank_k = self.config.retrieval.rerank_k
+
+        def _vanilla_reranked(text: str, k: int):
+            candidates = pipeline.retrieve(text, top_k=max(k, rerank_k))
+            return reranker.rerank(text, candidates, top_k=k)
+
+        return _vanilla_reranked
+
     def _build_rag_pipeline(self) -> None:
         """Instantiate the RAG pipeline for config.retrieval.technique."""
         technique = self.config.retrieval.technique
@@ -537,7 +566,7 @@ class ParameterizedBenchmarkRunner:
         module = importlib.import_module(module_path)
         cls = getattr(module, class_name)
 
-        extra = {"config": self.config} if technique == "hybrid" else {}
+        extra = {"config": self.config} if technique in ("hybrid", "lazygraph") else {}
         if self.config.generation.llm_provider in ("openrouter", "nvidia", "openai"):
             from src.llm import get_llm_client
 

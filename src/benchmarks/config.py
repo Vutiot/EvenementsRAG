@@ -23,7 +23,6 @@ from typing import List, Literal, Optional
 import yaml
 from pydantic import BaseModel, Field, model_validator
 
-
 # ---------------------------------------------------------------------------
 # Utilities
 # ---------------------------------------------------------------------------
@@ -103,13 +102,18 @@ class ChunkingConfig(BaseModel):
 
 
 class RetrievalConfig(BaseModel):
-    technique: Literal["vanilla", "hybrid", "temporal"] = "vanilla"
+    technique: Literal["vanilla", "hybrid", "temporal", "lazygraph"] = "vanilla"
     top_k: int = Field(10, ge=1, le=200)
     rerank_k: int = Field(20, ge=1, le=200)
     sparse_weight: float = Field(0.3, ge=0.0, le=1.0)
     dense_weight: float = Field(0.7, ge=0.0, le=1.0)
     fusion_method: Literal["rrf", "weighted_sum"] = "rrf"
     sparse_type: Literal["bm25", "tfidf"] = "bm25"
+    # LazyGraphRAG (technique="lazygraph", E5-F1-T1)
+    graph_weight: float = Field(0.5, ge=0.0, le=1.0)  # share of the graph ranking in the fusion
+    graph_hops: int = Field(1, ge=0, le=2)
+    graph_max_neighbors: int = Field(10, ge=1, le=50)
+    graph_concepts: Literal["heuristic", "spacy"] = "heuristic"
 
     @model_validator(mode="after")
     def check_hybrid_weights(self) -> "RetrievalConfig":

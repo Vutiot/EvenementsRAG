@@ -19,6 +19,8 @@ const PARAM_SHORT: Record<string, string> = {
   "embedding.model_name": "embed",
   "retrieval.top_k": "k",
   "retrieval.sparse_weight": "sw",
+  "retrieval.graph_weight": "gw",
+  "retrieval.graph_hops": "gh",
   "retrieval.sparse_type": "st",
   "retrieval.fusion_method": "fm",
   "reranker.type": "reranker",

@@ -161,6 +161,7 @@ class HybridRetriever(BaseRAG):
                 content=r.payload.get("content", ""),
                 score=r.score,
                 metadata=r.payload,
+                point_id=str(r.chunk_id),
             )
             for r in candidates
         ]

@@ -312,3 +312,6 @@ frontend/dist-demo/
 
 # Cached dataset profiles (E8-F1-T1), recomputed on demand
 data/profiles/
+
+# LazyGraphRAG concept graph cache (E5-F1-T1), rebuilt on demand
+data/graph/*.pkl

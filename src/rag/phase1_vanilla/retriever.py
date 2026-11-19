@@ -22,7 +22,7 @@ import openai
 
 from config.settings import settings
 from src.embeddings.embedding_generator import EmbeddingGenerator
-from src.rag.base_rag import BaseRAG, RAGResponse, RetrievedChunk
+from src.rag.base_rag import BaseRAG, RetrievedChunk
 from src.utils.logger import get_logger
 from src.vector_store.qdrant_manager import QdrantManager
 
@@ -136,6 +136,7 @@ class VanillaRetriever(BaseRAG):
                 content=result["payload"].get("content", ""),
                 score=result["score"],
                 metadata=result["payload"],
+                point_id=str(result["id"]),
             )
             retrieved_chunks.append(chunk)
 
@@ -283,7 +284,7 @@ if __name__ == "__main__":
             response = retriever.query(test_query, top_k=3)
 
             print(f"\nQuery: {response.query}")
-            print(f"\nAnswer:")
+            print("\nAnswer:")
             print("-" * 70)
             print(response.answer)
             print("-" * 70)

@@ -298,6 +298,11 @@ export interface BenchmarkConfig {
     dense_weight: number;
     fusion_method: string;
     sparse_type: string;
+    /** LazyGraphRAG (technique "lazygraph") */
+    graph_weight?: number;
+    graph_hops?: number;
+    graph_max_neighbors?: number;
+    graph_concepts?: string;
   };
   reranker: {
     type: string;

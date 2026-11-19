@@ -6,8 +6,7 @@ run_sweep() batching, _filter_top_k_articles helper — all external I/O is mock
 """
 
 import json
-from pathlib import Path
-from unittest.mock import ANY, MagicMock, call, patch
+from unittest.mock import ANY, MagicMock, patch
 
 import pytest
 
@@ -18,9 +17,7 @@ from src.benchmarks.runner import (
     _filter_top_k_articles,
     _save_result,
 )
-from src.evaluation.metrics import RetrievalMetrics
 from src.rag.base_rag import RetrievedChunk
-
 
 # ---------------------------------------------------------------------------
 # File-scoped fixture: fully mocked run() context
@@ -257,6 +254,7 @@ class TestRun:
             k_values=vanilla_config_no_gen.evaluation.k_values,
             hit_token_budgets=vanilla_config_no_gen.evaluation.hit_token_budgets,
             budget_retrieval_depth=vanilla_config_no_gen.evaluation.budget_retrieval_depth,
+            retrieve_fn=None,  # vanilla without reranker: direct dense search
         )
 
 

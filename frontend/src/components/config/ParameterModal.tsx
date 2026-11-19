@@ -10,6 +10,8 @@ import type { ParsedCollectionParams } from "../../constants/paramOptions";
 import {
   DATASET_OPTIONS,
   TECHNIQUE_OPTIONS,
+  GRAPH_WEIGHT_OPTIONS,
+  GRAPH_HOPS_OPTIONS,
   SPARSE_TYPE_OPTIONS,
   SPARSE_WEIGHT_OPTIONS,
   FUSION_OPTIONS,
@@ -402,6 +404,26 @@ export default function ParameterModal({
                       />
                     </>
                   )}
+                  {(Array.isArray(effective("retrieval.technique"))
+                    ? (effective("retrieval.technique") as string[]).includes("lazygraph")
+                    : technique === "lazygraph") && (
+                    <>
+                      <MultiSelectChips
+                        label="Graph Weight"
+                        options={GRAPH_WEIGHT_OPTIONS}
+                        values={effectiveArray<number>("retrieval.graph_weight")}
+                        presetValue={(preset("retrieval.graph_weight") ?? 0.5) as number}
+                        onChange={(vs) => handleArrayChange("retrieval.graph_weight", vs)}
+                      />
+                      <MultiSelectChips
+                        label="Graph Hops"
+                        options={GRAPH_HOPS_OPTIONS}
+                        values={effectiveArray<number>("retrieval.graph_hops")}
+                        presetValue={(preset("retrieval.graph_hops") ?? 1) as number}
+                        onChange={(vs) => handleArrayChange("retrieval.graph_hops", vs)}
+                      />
+                    </>
+                  )}
                 </>
               ) : (
                 <>
@@ -446,6 +468,26 @@ export default function ParameterModal({
                         value={effective("retrieval.fusion_method") as string}
                         presetValue={preset("retrieval.fusion_method") as string}
                         onChange={(v) => handleChange("retrieval.fusion_method", v)}
+                      />
+                    </>
+                  )}
+                  {technique === "lazygraph" && (
+                    <>
+                      <ParamSlider
+                        label="Graph Weight"
+                        min={0}
+                        max={1}
+                        step={0.05}
+                        value={(effective("retrieval.graph_weight") ?? 0.5) as number}
+                        presetValue={(preset("retrieval.graph_weight") ?? 0.5) as number}
+                        onChange={(v) => handleChange("retrieval.graph_weight", v)}
+                      />
+                      <ParamChips
+                        label="Graph Hops"
+                        options={GRAPH_HOPS_OPTIONS}
+                        value={(effective("retrieval.graph_hops") ?? 1) as number}
+                        presetValue={(preset("retrieval.graph_hops") ?? 1) as number}
+                        onChange={(v) => handleChange("retrieval.graph_hops", v)}
                       />
                     </>
                   )}
